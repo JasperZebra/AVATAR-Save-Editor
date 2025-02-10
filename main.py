@@ -82,14 +82,24 @@ class SaveEditor:
             )
             self.xml_editor_button.pack(side=tk.LEFT, padx=5)
             
-            # Add Save Changes button here
             self.save_button = ttk.Button(
                 button_frame,
                 text="Save Changes",
                 command=self.save_changes,
-                state="disabled"  # Initially disabled until file is loaded
+                state="disabled"
             )
             self.save_button.pack(side=tk.LEFT, padx=5)
+            
+            # Add checksum status indicator
+            checksum_frame = ttk.Frame(file_frame)
+            checksum_frame.pack(side=tk.RIGHT, padx=5)
+            
+            self.checksum_label = ttk.Label(
+                checksum_frame,
+                text="Checksum: None",
+                font=("", 9)
+            )
+            self.checksum_label.pack(side=tk.RIGHT, padx=5)
             
             # Right side labels
             label_frame = ttk.Frame(file_frame)
@@ -108,8 +118,6 @@ class SaveEditor:
                 foreground="red"
             )
             self.unsaved_label.pack(side=tk.LEFT, padx=5)
-            
-            self.logger.debug("File section created successfully")
             
         except Exception as e:
             self.logger.error(f"Error creating file section: {str(e)}", exc_info=True)
@@ -183,6 +191,17 @@ class SaveEditor:
             self.logger.debug(f"Selected file: {self.file_path}")
             self.file_label.config(text=self.file_path.name)
 
+            # Read file and verify checksum before loading XML
+            with open(self.file_path, 'rb') as f:
+                file_data = f.read()
+            
+            # Verify checksum
+            is_valid = XMLHandler.verify_checksum(file_data)
+            self.checksum_label.config(
+                text=f"Checksum: {'Valid' if is_valid else 'Invalid'}", 
+                foreground="dark green" if is_valid else "red"
+            )
+
             self.logger.debug("Loading XML tree from file")
             self.tree, self.xml_start, self.original_size = XMLHandler.load_xml_tree(self.file_path)
             
@@ -208,39 +227,70 @@ class SaveEditor:
             return
                 
         try:
-            # Update the XML tree with changes from each manager
-            self.logger.debug("Updating XML tree with changes")
-            
-            # Update stats
+            # Ensure the root element exists
             root = self.tree.getroot()
+            if root is None:
+                self.logger.error("XML tree root is None")
+                raise ValueError("Invalid XML structure")
+
+            # Create profile if it doesn't exist
             profile = root.find("PlayerProfile")
-            if profile is not None:
-                updates = self.stats_manager.get_stats_updates()
-                self.logger.debug(f"Applying stats updates: {updates}")
+            if profile is None:
+                profile = ET.SubElement(root, "PlayerProfile")
+            
+            # Get updates from each manager
+            stats_updates = self.stats_manager.get_stats_updates()
+            
+            # Update sections with fallback creation
+            sections = {
+                "BaseInfo": stats_updates.get("BaseInfo", {}),
+                "XpInfo": stats_updates.get("XpInfo", {}),
+                "OptionsInfo": stats_updates.get("OptionsInfo", {}),
+                "TimeInfo": stats_updates.get("TimeInfo", {})
+            }
+            
+            for section_name, updates in sections.items():
+                # Find or create the section
+                section = profile.find(section_name)
+                if section is None:
+                    section = ET.SubElement(profile, section_name)
                 
-                for section, section_updates in updates.items():
-                    if section == "Metagame":
-                        metagame = root.find("Metagame")
-                        if metagame is not None:
-                            for key, value in section_updates.items():
-                                metagame.set(key, value)
-                    else:
-                        section_elem = profile.find(section)
-                        if section_elem is not None:
-                            for key, value in section_updates.items():
-                                section_elem.set(key, str(value))
-
-            # Update territory data
-            self.logger.debug("Applying territory changes")
-            self.tree = self.territory_manager.save_territory_changes(self.tree)
-
+                # Update section attributes
+                for key, value in updates.items():
+                    section.set(key, str(value))
+            
+            # Update territories
+            try:
+                self.territory_manager.save_territory_changes(self.tree)
+            except Exception as territory_error:
+                self.logger.error(f"Error saving territory changes: {str(territory_error)}")
+            
             # Update achievements
-            self.logger.debug("Applying achievement changes")
-            self.tree = self.achievements_manager.save_achievement_changes(self.tree)
-
-            # Save the updated XML tree while preserving file size
-            self.logger.debug("Saving updated XML tree to file")
+            try:
+                self.achievements_manager.save_achievement_changes(self.tree)
+            except Exception as achievement_error:
+                self.logger.error(f"Error saving achievement changes: {str(achievement_error)}")
+            
+            # Save file and update checksum
             XMLHandler.save_xml_tree(self.tree, self.file_path)
+            
+            # Verify checksum after save
+            try:
+                with open(self.file_path, 'rb') as f:
+                    file_data = f.read()
+                is_valid = XMLHandler.verify_checksum(file_data)
+                
+                # Update checksum status
+                self.checksum_label.config(
+                    text=f"Checksum: {'Valid' if is_valid else 'Invalid'}", 
+                    foreground="dark green" if is_valid else "red"
+                )
+            except Exception as checksum_error:
+                self.logger.error(f"Checksum verification failed: {str(checksum_error)}")
+                self.checksum_label.config(
+                    text="Checksum: Error", 
+                    foreground="red"
+                )
             
             self.unsaved_label.config(text="")
             self.logger.debug("Changes saved successfully")
@@ -253,8 +303,7 @@ class SaveEditor:
                 "Try removing some modifications to reduce the size.")
         except Exception as e:
             self.logger.error(f"Failed to save changes: {str(e)}", exc_info=True)
-            messagebox.showerror("Error", f"Failed to save changes: {str(e)}")
-            
+            messagebox.showerror("Error", f"Failed to save changes: {str(e)}")           
 
     def _on_close(self):
         self.logger.debug("Application closing")

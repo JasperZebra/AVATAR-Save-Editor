@@ -54,8 +54,21 @@ class StatsManager:
                         "7": "Level 7",
                         "8": "Level 8",
                         "9": "Level 9",
-                        "10": "Level 10"
-                        # Add more levels as needed
+                        "10": "Level 10",
+                        "11": "Level 11",
+                        "12": "Level 12",
+                        "13": "Level 13",
+                        "14": "Level 14",
+                        "15": "Level 15",
+                        "16": "Level 16",
+                        "17": "Level 17",
+                        "18": "Level 18",
+                        "19": "Level 19",
+                        "20": "Level 20",
+                        "21": "Level 21",
+                        "22": "Level 22",
+                        "23": "Level 23",
+                        "24": "Level 24"
                     }),
                     ("Current XP", "iCurrentXP"),
                     ("Total EP", "TotalEP")
@@ -233,66 +246,76 @@ class StatsManager:
 
     def get_stats_updates(self) -> Dict[str, Dict[str, str]]:
         self.logger.debug("[STATS_UPDATE] Starting stats updates collection")
-
-        # Define XP thresholds for each level (same as in _update_xp_info)
-        xp_thresholds = [
-            0,      # Level 0
-            1000,   # Level 1
-            3000,   # Level 2
-            6000,   # Level 3
-            10000,  # Level 4
-            15000,  # Level 5
-            21000,  # Level 6
-            28000,  # Level 7
-            36000,  # Level 8
-            45000,  # Level 9
-            55000   # Level 10
-            # Add more levels as needed
-        ]
-
-        # Initialize updates dictionary
-        updates = {
-            "BaseInfo": {},
-            "XpInfo": {},
-            "OptionsInfo": {},
-            "TimeInfo": {},
-            "Metagame": {}
-        }
-
-        # Get current XP and level values
-        current_xp = int(self.entries["iCurrentXP"].get())
-
-        # Extract numeric level from the combobox text
-        current_level_str = self.entries["iCurrentLevel"].get()
-        current_level = int(current_level_str.split()[-1])  # "Level X" -> X
-
-        # If XP is changed, update the level
-        if current_level < len(xp_thresholds) - 1 and current_xp >= xp_thresholds[current_level + 1]:
-            # Find the correct level for the current XP
-            for level, threshold in enumerate(xp_thresholds):
-                if current_xp < threshold:
-                    current_level = level - 1
-                    break
-            
-            # Update the level entry
-            self.entries["iCurrentLevel"].delete(0, tk.END)
-            self.entries["iCurrentLevel"].insert(0, f"Level {current_level}")
-
-        # If level is changed, set XP to the minimum threshold for that level
-        elif current_xp < xp_thresholds[current_level]:
-            current_xp = xp_thresholds[current_level]
-            self.entries["iCurrentXP"].delete(0, tk.END)
-            self.entries["iCurrentXP"].insert(0, str(current_xp))
-
-        self.logger.debug("[STATS_UPDATE] Collecting base info updates")
         try:
+            # Define XP and EP thresholds for each level (same values for both)
+            level_thresholds = [
+                {"xp": 0, "ep": 0},          # Level 0
+                {"xp": 1600, "ep": 1600},    # Level 1
+                {"xp": 4600, "ep": 4600},    # Level 2
+                {"xp": 8000, "ep": 8000},    # Level 3
+                {"xp": 12100, "ep": 12100},  # Level 4
+                {"xp": 17000, "ep": 17000},  # Level 5
+                {"xp": 38500, "ep": 38500},  # Level 6
+                {"xp": 45750, "ep": 45750},  # Level 7
+                {"xp": 53250, "ep": 53250},  # Level 8
+                {"xp": 61250, "ep": 61250},  # Level 9
+                {"xp": 70250, "ep": 70250},  # Level 10
+                {"xp": 79750, "ep": 79750},  # Level 11
+                {"xp": 91250, "ep": 91250},  # Level 12
+                {"xp": 104750, "ep": 104750},# Level 13
+                {"xp": 119250, "ep": 119250},# Level 14
+                {"xp": 143250, "ep": 143250},# Level 15
+                {"xp": 169250, "ep": 169250},# Level 16
+                {"xp": 197250, "ep": 197250},# Level 17
+                {"xp": 227250, "ep": 227250},# Level 18
+                {"xp": 249250, "ep": 249250},# Level 19
+                {"xp": 273250, "ep": 273250},# Level 20
+                {"xp": 299250, "ep": 299250},# Level 21
+                {"xp": 327250, "ep": 327250},# Level 22
+                {"xp": 357250, "ep": 357250},# Level 23
+                {"xp": 389250, "ep": 389250} # Level 24
+            ]
+
+            # Initialize updates dictionary
+            updates = {
+                "BaseInfo": {},
+                "XpInfo": {},
+                "OptionsInfo": {},
+                "TimeInfo": {},
+                "Metagame": {}
+            }
+
+            # Get current XP, level, and EP values
+            current_xp = int(self.entries["iCurrentXP"].get())
+            current_level_str = self.entries["iCurrentLevel"].get()
+            current_level = int(current_level_str.split()[-1])  # "Level X" -> X
+
+            # If XP is changed, update the level and EP
+            if current_level < len(level_thresholds) - 1 and current_xp >= level_thresholds[current_level + 1]["xp"]:
+                # Find the correct level for the current XP
+                for level, threshold in enumerate(level_thresholds):
+                    if current_xp < threshold["xp"]:
+                        current_level = level - 1
+                        break
+                
+                # Update the level entry and EP
+                self.entries["iCurrentLevel"].set(f"Level {current_level}")
+                self.entries["TotalEP"].delete(0, tk.END)
+                self.entries["TotalEP"].insert(0, str(current_xp))  # Set EP equal to XP
+
+            # If level is changed, set XP and EP to the minimum threshold for that level
+            elif current_xp < level_thresholds[current_level]["xp"]:
+                current_xp = level_thresholds[current_level]["xp"]
+                self.entries["iCurrentXP"].delete(0, tk.END)
+                self.entries["iCurrentXP"].insert(0, str(current_xp))
+                self.entries["TotalEP"].delete(0, tk.END)
+                self.entries["TotalEP"].insert(0, str(current_xp))  # Set EP equal to XP
+
             # Update BaseInfo
             base_fields = ["side", "pawn", "face", "TotalEP"]
             for field in base_fields:
                 if field in self.entries:
                     if field == "face":
-                        self.logger.debug(f"[STATS_UPDATE] Getting face value: {self.entries[field].get()}")
-                        # Convert face value from "Gender XX" format back to numeric ID
                         face_value = self.entries[field].get()
                         gender, number = face_value.split()
                         pair_number = int(number)
@@ -300,42 +323,21 @@ class StatsManager:
                         updates["BaseInfo"][field] = str(face_number)
                     else:
                         updates["BaseInfo"][field] = self.entries[field].get()
-            
+
             # Handle boolean fields
             updates["BaseInfo"]["isfemale"] = "1" if self.entries["isfemale"].get() == "Yes" else "0"
             updates["BaseInfo"]["bEntityScanningEnabled"] = "1" if self.entries["bEntityScanningEnabled"].get() == "Yes" else "0"
 
-            # Add location to base info updates if it's not empty
-            location_value = self.entries.get("YouAreHere_LatitudeLongitude", "")
-            if hasattr(location_value, "get"):
-                location_value = location_value.get()
-                # Split the location into latitude and longitude
-                try:
-                    latitude, longitude = location_value.split(',')
-                    # Create or update LocationInfo with the new location
-                    updates["BaseInfo"]["LocationInfo"] = {
-                        "Latitude": latitude.strip(),
-                        "Longitude": longitude.strip()
-                    }
-                except ValueError:
-                    self.logger.warning(f"Invalid location format: {location_value}")
-
-            self.logger.debug(f"Base info updates: {updates['BaseInfo']}")
-
             # Update XpInfo
             updates["XpInfo"]["iCurrentXP"] = str(current_xp)
             updates["XpInfo"]["iCurrentLevel"] = str(current_level)
-            self.logger.debug(f"XP info updates: {updates['XpInfo']}")
 
-            # Update OptionsInfo
+            # Update remaining sections
             updates["OptionsInfo"]["RumbleEnabled"] = "1" if self.entries["RumbleEnabled"].get() == "Yes" else "0"
             updates["OptionsInfo"]["FirstPersonMode"] = "1" if self.entries["FirstPersonMode"].get() == "Yes" else "0"
-            self.logger.debug(f"Options info updates: {updates['OptionsInfo']}")
 
-            # Update Metagame
             faction_map = {"Undecided": "0", "Navi": "1", "Corp": "2"}
             updates["Metagame"]["PlayerFaction"] = faction_map[self.entries["PlayerFaction"].get()]
-            self.logger.debug(f"Metagame updates: {updates['Metagame']}")
 
             # Update TimeInfo
             time_fields = [
@@ -353,9 +355,10 @@ class StatsManager:
                 value = self.entries[field].get()
                 xml_key = time_xml_mapping.get(field, field)
                 updates["TimeInfo"][xml_key] = self._convert_time_to_seconds(value)
+            
             self.logger.debug(f"Time info updates: {updates['TimeInfo']}")
-
             return updates
+            
         except Exception as e:
             self.logger.error(f"Error getting stats updates: {str(e)}", exc_info=True)
             raise
@@ -439,20 +442,33 @@ class StatsManager:
         if xp_info is None:
             return
         
-        # Define XP thresholds for each level
-        xp_thresholds = [
-            0,      # Level 0
-            1000,   # Level 1
-            3000,   # Level 2
-            6000,   # Level 3
-            10000,  # Level 4
-            15000,  # Level 5
-            21000,  # Level 6
-            28000,  # Level 7
-            36000,  # Level 8
-            45000,  # Level 9
-            55000   # Level 10
-            # Add more levels as needed
+        # Define XP and EP thresholds for each level (same values for both)
+        level_thresholds = [
+            {"xp": 0, "ep": 0},          # Level 0
+            {"xp": 1600, "ep": 1600},    # Level 1
+            {"xp": 4600, "ep": 4600},    # Level 2
+            {"xp": 8000, "ep": 8000},    # Level 3
+            {"xp": 12100, "ep": 12100},  # Level 4
+            {"xp": 17000, "ep": 17000},  # Level 5
+            {"xp": 38500, "ep": 38500},  # Level 6
+            {"xp": 45750, "ep": 45750},  # Level 7
+            {"xp": 53250, "ep": 53250},  # Level 8
+            {"xp": 61250, "ep": 61250},  # Level 9
+            {"xp": 70250, "ep": 70250},  # Level 10
+            {"xp": 79750, "ep": 79750},  # Level 11
+            {"xp": 91250, "ep": 91250},  # Level 12
+            {"xp": 104750, "ep": 104750},# Level 13
+            {"xp": 119250, "ep": 119250},# Level 14
+            {"xp": 143250, "ep": 143250},# Level 15
+            {"xp": 169250, "ep": 169250},# Level 16
+            {"xp": 197250, "ep": 197250},# Level 17
+            {"xp": 227250, "ep": 227250},# Level 18
+            {"xp": 249250, "ep": 249250},# Level 19
+            {"xp": 273250, "ep": 273250},# Level 20
+            {"xp": 299250, "ep": 299250},# Level 21
+            {"xp": 327250, "ep": 327250},# Level 22
+            {"xp": 357250, "ep": 357250},# Level 23
+            {"xp": 389250, "ep": 389250} # Level 24
         ]
 
         mappings = {
@@ -462,13 +478,12 @@ class StatsManager:
 
         # Get current XP and level values
         current_xp = int(xp_info.get(mappings["iCurrentXP"], "0"))
-        # Optionally, get the level from XML if it exists
         current_level_from_xml = int(xp_info.get(mappings["iCurrentLevel"], "0"))
 
         # Determine current level based on XP
         current_level = 0
-        for level, threshold in enumerate(xp_thresholds):
-            if current_xp < threshold:
+        for level, threshold in enumerate(level_thresholds):
+            if current_xp < threshold["xp"]:
                 current_level = level - 1
                 break
 
@@ -482,8 +497,12 @@ class StatsManager:
             self.entries[mappings["iCurrentXP"]].insert(0, str(current_xp))
         
         if mappings["iCurrentLevel"] in self.entries:
-            # Ensure the level is displayed in the dropdown
             self.entries[mappings["iCurrentLevel"]].set(f"Level {current_level}")
+            
+        # Update Total EP to match current XP
+        if "TotalEP" in self.entries:
+            self.entries["TotalEP"].delete(0, tk.END)
+            self.entries["TotalEP"].insert(0, str(current_xp))
 
     def _update_options_info(self, options_info: Optional[ET.Element]) -> None:
         if options_info is None:
