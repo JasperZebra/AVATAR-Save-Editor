@@ -11,6 +11,11 @@ A Python-based save editor for Avatar: The Game for the Xbox 360 version of the 
 - Built-in XML editor for advanced modifications **(WIP)**
 - Automatic backup system
 
+![Screenshot 2025-02-10 203951](https://github.com/user-attachments/assets/949766e8-d7af-4be0-9734-b3ee12161c7f)
+![Screenshot 2025-02-10 204032](https://github.com/user-attachments/assets/6abd9821-d1b2-47bc-98b3-8af532742897)
+![Screenshot 2025-02-10 204046](https://github.com/user-attachments/assets/c2379b20-6e8d-4c68-b200-d48f2343eea5)
+![Screenshot 2025-02-10 204120](https://github.com/user-attachments/assets/e97c439f-9d03-4ae6-a777-25994e7f2c90)
+
 ## Requirements
 
 - Python 3.x
