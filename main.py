@@ -9,7 +9,7 @@ from xml_handler import XMLHandler
 from territory_manager import TerritoryManager
 from stats_manager import StatsManager
 from ui_components import ScrollableFrame
-from xml_editor import XMLEditorWindow
+from xml_viewer import XMLViewerWindow
 from achievements_manager import AchievementsManager
 
 # Configure logging
@@ -75,12 +75,12 @@ class SaveEditor:
             )
             self.load_button.pack(side=tk.LEFT, padx=5)
             
-            self.xml_editor_button = ttk.Button(
+            self.xml_viewer_button = ttk.Button(
                 button_frame,
-                text="Open XML Editor",
-                command=self.open_xml_editor
+                text="View XML",  # Changed from "Open XML Editor"
+                command=self.open_xml_viewer  # Changed from open_xml_editor
             )
-            self.xml_editor_button.pack(side=tk.LEFT, padx=5)
+            self.xml_viewer_button.pack(side=tk.LEFT, padx=5)
             
             self.save_button = ttk.Button(
                 button_frame,
@@ -123,21 +123,21 @@ class SaveEditor:
             self.logger.error(f"Error creating file section: {str(e)}", exc_info=True)
             raise
 
-    def open_xml_editor(self):
-        self.logger.debug("Opening XML editor")
+    def open_xml_viewer(self):
+        self.logger.debug("Opening XML viewer")
         try:
             if not self.tree:
-                self.logger.warning("Attempted to open XML editor with no file loaded")
+                self.logger.warning("Attempted to open XML viewer with no file loaded")
                 messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
                 return
             
             xml_text = XMLHandler.get_pretty_xml(self.tree)
-            editor = XMLEditorWindow(self.root, main_editor=self, xml_text=xml_text)  # Pass self as main_editor
-            self.logger.debug("XML editor opened successfully")
+            XMLViewerWindow(self.root, xml_text=xml_text)
+            self.logger.debug("XML viewer opened successfully")
             
         except Exception as e:
-            self.logger.error(f"Error opening XML editor: {str(e)}", exc_info=True)
-            messagebox.showerror("Error", f"Failed to open XML editor: {str(e)}")
+            self.logger.error(f"Error opening XML viewer: {str(e)}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to open XML viewer: {str(e)}")
 
     def _create_notebook(self) -> None:
         self.logger.debug("Creating notebook tabs")
