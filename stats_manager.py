@@ -68,7 +68,7 @@ class StatsManager:
                         "21": "Level 21",
                         "22": "Level 22",
                         "23": "Level 23",
-                        "24": "Level 24"
+                        "24": "Level 24 Max Level"
                     }),
                     ("Current XP", "iCurrentXP"),
                     ("Total EP", "TotalEP")

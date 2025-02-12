@@ -143,10 +143,3 @@ class AchievementsManager:
             messagebox.showerror("Error", f"Failed to unlock all achievements: {str(e)}")
 
 
-
-
-
-
-
-
-
