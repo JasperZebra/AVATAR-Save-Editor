@@ -81,19 +81,26 @@ class TerritoryManager:
             ("Active", "Active", {"0": "Inactive", "1": "Active"}, "Territory status")
         ]
 
-        for i, (label_text, key, values, tooltip) in enumerate(edit_fields):
-            input_widget = LabeledInput(
-                edit_frame, 
-                label_text, 
-                "combobox" if values else "entry",
-                values,
-                tooltip
-            )
-            input_widget.grid(row=i, column=0, sticky="ew", padx=5, pady=2)
-            self.territory_editors[key] = input_widget.input
+        # Create rows with 3 fields each
+        num_columns = 3
+        for row_idx in range(0, len(edit_fields), num_columns):
+            row_fields = edit_fields[row_idx:row_idx + num_columns]
+            
+            for col_idx, (label_text, key, values, tooltip) in enumerate(row_fields):
+                input_widget = LabeledInput(
+                    edit_frame, 
+                    label_text, 
+                    "combobox" if values else "entry",
+                    values,
+                    tooltip
+                )
+                input_widget.grid(row=row_idx // num_columns, column=col_idx, sticky="ew", padx=5, pady=2)
+                self.territory_editors[key] = input_widget.input
 
+        # Create button frame in a new row
         button_frame = ttk.Frame(edit_frame)
-        button_frame.grid(row=len(edit_fields), column=0, columnspan=2, pady=10)
+        button_frame.grid(row=(len(edit_fields) + num_columns - 1) // num_columns, 
+                        column=0, columnspan=num_columns, pady=10)
 
         ttk.Button(
             button_frame,

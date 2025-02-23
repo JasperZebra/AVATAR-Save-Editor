@@ -166,19 +166,10 @@ class XMLHandler:
                     with open(backup_path, 'wb') as dst:
                         dst.write(original_data)
 
-            # Generate new XML with full XML declaration
+            # Generate new XML without declaration (this was key in working version)
             xml_buffer = BytesIO()
-            tree.write(xml_buffer, encoding='utf-8', xml_declaration=True)
+            tree.write(xml_buffer, encoding='utf-8', xml_declaration=False)
             new_xml = xml_buffer.getvalue()
-
-            # Validate XML
-            if len(new_xml) < 50:
-                logger.error("Generated XML is too small")
-                raise ValueError("Generated XML is invalid or empty")
-
-            # Log XML for debugging
-            logger.debug("New XML content:")
-            logger.debug(new_xml.decode('utf-8'))
 
             # Replace XML section content using the preservation method
             updated_data = XMLHandler.preserve_xml_structure(original_data, new_xml)
@@ -379,48 +370,39 @@ class XMLHandler:
     @staticmethod
     def preserve_xml_structure(original_data: bytearray, new_xml: bytes) -> bytearray:
         """
-        Carefully preserve the entire original file structure when writing new XML
+        Preserve the original file structure when writing new XML
         """
         logger = XMLHandler.get_logger()
         
         try:
-            # Detect XML start and end markers with multiple variations
-            xml_start_markers = [b'<Savegame', b'<SaveGame', b'<savegame']
-            xml_end_markers = [b'</Savegame', b'</SaveGame', b'</savegame']
-            
-            # Find XML start position
+            # Find start and end positions
             original_start = -1
-            for marker in xml_start_markers:
+            original_end = -1
+            
+            # Look for XML start marker
+            for marker in [b'<Savegame', b'<SaveGame', b'<savegame']:
                 original_start = original_data.find(marker)
                 if original_start != -1:
                     break
             
-            # Find XML end position
-            original_end = -1
-            for marker in xml_end_markers:
+            # Look for XML end marker
+            for marker in [b'</Savegame>', b'</SaveGame>', b'</savegame>']:
                 original_end = original_data.rfind(marker)
                 if original_end != -1:
                     original_end += len(marker)
                     break
-            
-            # Validate XML markers were found
+
             if original_start == -1 or original_end == -1:
-                logger.error("Could not find XML markers in original data")
-                raise ValueError("Invalid XML structure in original save file")
-            
-            # Debug logging
-            logger.debug(f"Original XML start: {original_start}, end: {original_end}")
-            logger.debug(f"Original data length: {len(original_data)}")
-            logger.debug(f"New XML length: {len(new_xml)}")
-            
-            # Create a copy of the original data
+                raise ValueError("Could not find XML markers")
+
+            # Create copy of original data
             updated_data = bytearray(original_data)
             
-            # Replace ONLY the XML section
+            # Simply replace the XML section
             updated_data[original_start:original_end] = new_xml
             
             return updated_data
             
         except Exception as e:
-            logger.error(f"Error preserving XML structure: {str(e)}")
+            logger.error(f"Error preserving XML: {str(e)}")
             raise

@@ -170,25 +170,37 @@ class ScrollableFrame:
 
 class LabeledInput:
     def __init__(self, parent: tk.Widget, label_text: str, input_type: str = "entry", 
-                 values: Dict[Any, str] = None, tooltip: str = None):
+                values: Dict[Any, str] = None, tooltip: str = None, width: int = 12, state: str = 'normal'):
         self.logger = logging.getLogger('LabeledInput')
         self.logger.debug(f"Initializing LabeledInput for {label_text}")
         try:
             self.frame = ttk.Frame(parent)
             
             self.label = ttk.Label(self.frame, text=f"{label_text}:")
-            self.label.grid(row=0, column=0, sticky="e", padx=5, pady=2)
-            
+            self.label.grid(row=0, column=0, sticky="e", padx=(0, 5), pady=2)
+                        
             if input_type == "combobox" and values:
+                # For comboboxes, use 'disabled' when readonly
+                combobox_state = "disabled" if state == "disabled" else "readonly"
                 self.input = ttk.Combobox(
                     self.frame,
-                    values=list(values.values()),
-                    state="readonly"
+                    values=list(values.values()) if values else [],
+                    state=combobox_state,
+                    width=12  # Add width parameter here
                 )
-                self.logger.debug(f"Created combobox with values: {values}")
+                # Prevent mousewheel from changing combobox values
+                def block_mousewheel(event):
+                    return "break"
+                
+                self.input.bind("<MouseWheel>", block_mousewheel)  # Windows
+                self.input.bind("<Button-4>", block_mousewheel)    # Linux scroll up
+                self.input.bind("<Button-5>", block_mousewheel)    # Linux scroll down
+                self.input.bind("<Command-MouseWheel>", block_mousewheel)  # macOS
+                self.logger.debug(f"Created combobox with values and blocked mousewheel: {values}")
             else:
-                self.input = ttk.Entry(self.frame)
-                self.logger.debug("Created entry widget")
+                # For entries, use the provided state
+                self.input = ttk.Entry(self.frame, width=12, state=state)  # Also add width to Entry
+                self.logger.debug(f"Created entry widget with state: {state}")
                 
             self.input.grid(row=0, column=1, sticky="w", padx=5, pady=2)
             

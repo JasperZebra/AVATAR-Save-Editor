@@ -1,16 +1,19 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, font
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 import xml.etree.ElementTree as ET
 import logging
 
 from xml_handler import XMLHandler
 from territory_manager import TerritoryManager
 from stats_manager import StatsManager
-from ui_components import ScrollableFrame
 from xml_viewer import XMLViewerWindow
 from achievements_manager import AchievementsManager
+from navigation_manager import NavigationManager
+
+# Might re-add ScrollableFrame
+# from ui_components import ScrollableFrame
 
 # Configure logging
 logging.basicConfig(
@@ -22,13 +25,182 @@ logging.basicConfig(
     ]
 )
 
+def setup_dark_theme(root):
+    """Configure dark theme styling for the application"""
+    # Create a style object to manage themed widget appearances
+    style = ttk.Style()
+    
+    # Use clam theme as base - this helps with styling control
+    style.theme_use('clam')
+    
+    # Define a color palette for consistent dark mode theming
+    colors = {
+        'background': '#1e1e1e',       # Main background color (darkest grey)
+        'foreground': '#ffffff',       # Primary text color (white)
+        'selected': '#1e1e1e',         # Background color for selected items
+        'active': '#1e1e1e',           # Highlight color for active elements
+        'border': '#121212',           # Border color (nearly black)
+        'input_bg': '#2c2c2c',         # Background for input fields (dark grey)
+        'button_bg': '#3c3f41',        # Button background color
+        'button_pressed': '#1e1e1e',   # Color when button is pressed
+        'error': '#ff6b6b',            # Error/warning color (soft red)
+        'tooltip_bg': '#4a4a4a',       # Tooltip background color
+    }
+
+    # GLOBAL STYLE CONFIGURATION
+    # Set default styles for all ttk widgets
+    style.configure('.',
+        background=colors['background'],     # Default background
+        foreground=colors['foreground'],     # Default text color
+        fieldbackground=colors['input_bg'],  # Default field background
+        troughcolor=colors['background'],    # Color for progress/scroll troughs
+        borderwidth=1,                       # Default border width
+        bordercolor=colors['border']         # Default border color
+    )
+
+    # FRAME STYLING
+    # Configure standard frames
+    style.configure('TFrame',
+        background=colors['background']
+    )
+
+    # LABEL FRAME STYLING
+    # Style for framed labels and their containers
+    style.configure('TLabelframe',
+        background=colors['background'],
+        bordercolor=colors['border']
+    )
+    style.configure('TLabelframe.Label',
+        background=colors['background'],
+        foreground=colors['foreground']
+    )
+
+    # BUTTON STYLING
+    # Configure button appearance and interaction states
+    style.configure('TButton',
+        background=colors['button_bg'],      # Button background
+        foreground=colors['foreground'],     # Button text color
+        bordercolor=colors['border'],        # Button border
+        lightcolor=colors['button_bg'],      # Light shade of button
+        darkcolor=colors['button_bg'],       # Dark shade of button
+        focuscolor=colors['active']          # Color when button is focused
+    )
+    # Button state-based styling
+    style.map('TButton',
+        background=[('pressed', colors['button_pressed']), ('active', colors['active'])],
+        foreground=[('pressed', colors['foreground']), ('active', colors['foreground'])]
+    )
+
+    # ENTRY FIELD STYLING
+    # Configure text input fields
+    style.configure('TEntry',
+        fieldbackground=colors['input_bg'],  # Input field background
+        foreground=colors['foreground'],     # Input text color
+        bordercolor=colors['border']         # Input field border
+    )
+
+    # COMBOBOX (DROPDOWN) STYLING
+    # Configure dropdown/select input fields
+    style.configure('TCombobox',
+        fieldbackground=colors['input_bg'],  # Dropdown background
+        background=colors['input_bg'],       # Dropdown arrow background
+        foreground=colors['foreground'],     # Dropdown text color
+        arrowcolor=colors['foreground'],     # Dropdown arrow color
+        bordercolor=colors['border']         # Dropdown border
+    )
+    # Combobox state-based styling
+    style.map('TCombobox',
+        fieldbackground=[('readonly', colors['input_bg'])],      # Background when read-only
+        selectbackground=[('readonly', colors['selected'])]      # Selection background
+    )
+
+    # Additional styling to force dark background
+    root.option_add('*TCombobox*Listbox.background', colors['input_bg'])
+    root.option_add('*TCombobox*Listbox.foreground', colors['foreground'])
+    root.option_add('*TCombobox*Listbox.selectBackground', colors['selected'])
+    root.option_add('*TCombobox*Listbox.selectForeground', colors['foreground'])
+
+    # LABEL STYLING
+    # Configure standard labels
+    style.configure('TLabel',
+        background=colors['background'],
+        foreground=colors['foreground']
+    )
+
+    # NOTEBOOK (TAB) STYLING
+    # Configure notebook/tabbed interfaces
+    style.configure('TNotebook',
+        background=colors['background'],
+        bordercolor=colors['border']
+    )
+    style.configure('TNotebook.Tab',
+        background=colors['button_bg'],      # Tab background
+        foreground=colors['foreground'],     # Tab text color
+        lightcolor=colors['border'],         # Tab light border
+        bordercolor=colors['border']         # Tab border
+    )
+    # Tab state-based styling
+    style.map('TNotebook.Tab',
+        background=[('selected', colors['active'])],      # Selected tab background
+        foreground=[('selected', colors['foreground'])]   # Selected tab text
+    )
+
+    # TREEVIEW STYLING
+    # Configure list/tree view widgets
+    style.configure('Treeview',
+        background=colors['input_bg'],        # Treeview background
+        foreground=colors['foreground'],      # Treeview text
+        fieldbackground=colors['input_bg']    # Treeview field background
+    )
+    style.configure('Treeview.Heading',
+        background=colors['button_bg'],       # Column headers background
+        foreground=colors['foreground'],      # Column headers text
+        borderwidth=1,
+        bordercolor=colors['border']          # Column headers border
+    )
+    # Treeview state-based styling
+    style.map('Treeview',
+        background=[('selected', colors['active'])],      # Selected item background
+        foreground=[('selected', colors['foreground'])]   # Selected item text
+    )
+
+    # SCROLLBAR STYLING
+    # Configure scrollbar appearance
+    style.configure('TScrollbar',
+        background=colors['button_bg'],       # Scrollbar background
+        bordercolor=colors['border'],         # Scrollbar border
+        arrowcolor=colors['foreground'],      # Scrollbar arrow color
+        troughcolor=colors['background']      # Scrollbar trough color
+    )
+    # Scrollbar state-based styling
+    style.map('TScrollbar',
+        background=[('pressed', colors['button_pressed']), ('active', colors['active'])]
+    )
+
+    # ROOT WINDOW BACKGROUND
+    # Set the overall application background
+    root.configure(bg=colors['background'])
+
+    # TEXT WIDGET SPECIFIC STYLING
+    # Configure colors for text widgets (like XML viewer)
+    root.option_add('*Text*background', colors['input_bg'])          # Text background
+    root.option_add('*Text*foreground', colors['foreground'])        # Text color
+    root.option_add('*Text*selectBackground', colors['active'])      # Text selection background
+    root.option_add('*Text*selectForeground', colors['foreground'])  # Text selection foreground
+
+    # Return the configured style object
+    return style
+
 class SaveEditor:
     def __init__(self, root: tk.Tk) -> None:
         self.logger = logging.getLogger('SaveEditor')
         self.logger.debug("Initializing Save Editor")
         self.root = root
         self.root.title("Avatar: The Game - Save Editor")
-        self.root.geometry("925x600")
+        self.root.geometry("1130x680")
+
+        # Setup dark theme
+        self.style = setup_dark_theme(self.root)
         
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -43,12 +215,12 @@ class SaveEditor:
     def setup_ui(self):
         self.logger.debug("Setting up UI components")
         try:
-            container = ttk.Frame(self.root)
-            container.pack(fill=tk.BOTH, expand=True)
-            
-            scrollable = ScrollableFrame(container)
-            self.main_frame = scrollable.scrollable_frame
-            scrollable.pack(fill=tk.BOTH, expand=True)
+            self.main_frame = ttk.Frame(self.root)
+            self.main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+            # scrollable = ScrollableFrame(container)
+            # self.main_frame = scrollable.scrollable_frame
+            # scrollable.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
             
             self._create_file_section()
             self._create_notebook()
@@ -62,7 +234,7 @@ class SaveEditor:
         self.logger.debug("Creating file operations section")
         try:
             file_frame = ttk.LabelFrame(self.main_frame, text="File Operations", padding=10)
-            file_frame.pack(fill=tk.X, pady=(0, 15))
+            file_frame.pack(fill=tk.X, pady=(0, 10))
             
             # Left side buttons
             button_frame = ttk.Frame(file_frame)
@@ -77,8 +249,8 @@ class SaveEditor:
             
             self.xml_viewer_button = ttk.Button(
                 button_frame,
-                text="View XML",  # Changed from "Open XML Editor"
-                command=self.open_xml_viewer  # Changed from open_xml_editor
+                text="View XML",
+                command=self.open_xml_viewer
             )
             self.xml_viewer_button.pack(side=tk.LEFT, padx=5)
             
@@ -90,18 +262,7 @@ class SaveEditor:
             )
             self.save_button.pack(side=tk.LEFT, padx=5)
             
-            # Add checksum status indicator
-            checksum_frame = ttk.Frame(file_frame)
-            checksum_frame.pack(side=tk.RIGHT, padx=5)
-            
-            self.checksum_label = ttk.Label(
-                checksum_frame,
-                text="Checksum: None",
-                font=("", 9)
-            )
-            self.checksum_label.pack(side=tk.RIGHT, padx=5)
-            
-            # Right side labels
+            # Middle frame for file labels
             label_frame = ttk.Frame(file_frame)
             label_frame.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
 
@@ -119,6 +280,39 @@ class SaveEditor:
             )
             self.unsaved_label.pack(side=tk.LEFT, padx=5)
             
+            # Right side frame for time stats and checksum
+            right_frame = ttk.Frame(file_frame)
+            right_frame.pack(side=tk.RIGHT, padx=5)
+            
+            # Time stats frame - now horizontal
+            time_stats_frame = ttk.Frame(right_frame)
+            time_stats_frame.pack(side=tk.LEFT, padx=(0, 20))
+            
+            # Create time stat labels horizontally with smaller font
+            self.time_labels = {}
+            time_font = ("", 8)  # Smaller font size
+            
+            # Single frame for all time stats
+            time_row = ttk.Frame(time_stats_frame)
+            time_row.pack(fill=tk.X)
+            
+            # Add each time stat horizontally
+            for i, stat in enumerate(["Game Time", "Played Time", "Environment Time"]):
+                if i > 0:  # Add separator except for first item
+                    ttk.Label(time_row, text=" | ", font=time_font).pack(side=tk.LEFT)
+                    
+                ttk.Label(time_row, text=f"{stat}:", font=time_font).pack(side=tk.LEFT)
+                self.time_labels[stat] = ttk.Label(time_row, text="0h 00m 00s", font=time_font)
+                self.time_labels[stat].pack(side=tk.LEFT)
+
+            # Checksum label
+            self.checksum_label = ttk.Label(
+                right_frame,
+                text="Checksum: None",
+                font=("", 9)
+            )
+            self.checksum_label.pack(side=tk.RIGHT)
+
         except Exception as e:
             self.logger.error(f"Error creating file section: {str(e)}", exc_info=True)
             raise
@@ -148,15 +342,19 @@ class SaveEditor:
             self.stats_frame = ttk.Frame(self.notebook, padding=10)
             self.territory_frame = ttk.Frame(self.notebook, padding=10)
             self.achievements_frame = ttk.Frame(self.notebook, padding=10)
-            
+            self.navigation_frame = ttk.Frame(self.notebook, padding=10)
+
             self.notebook.add(self.stats_frame, text="Player Stats")
             self.notebook.add(self.territory_frame, text="Territory Control")
             self.notebook.add(self.achievements_frame, text="Achievements")
-            
+            self.notebook.add(self.navigation_frame, text="Navigation")
+
             self.stats_manager = StatsManager(self.stats_frame, self)
-            self.territory_manager = TerritoryManager(self.territory_frame, main_window=self)  # Pass self as main_window
+            self.territory_manager = TerritoryManager(self.territory_frame, main_window=self)
             self.achievements_manager = AchievementsManager(self.achievements_frame, self)
-            
+            self.navigation_manager = NavigationManager(self.navigation_frame, self)
+
+
             self.logger.debug("Notebook and manager instances created successfully")
             
         except Exception as e:
@@ -209,7 +407,9 @@ class SaveEditor:
             self.stats_manager.load_stats(self.tree)
             self.territory_manager.load_territory_data(self.tree)
             self.achievements_manager.load_achievements(self.tree)
-        
+            self.navigation_manager.load_navigation_data(self.tree)
+
+
             self.save_button.config(state="normal")
             self.unsaved_label.config(text="")
             self.logger.debug("Save file loaded successfully")
@@ -334,6 +534,32 @@ class SaveEditor:
         except Exception as e:
             self.logger.error(f"Error during application close: {str(e)}", exc_info=True)
             self.root.destroy()  # Ensure application closes even if there's an error          
+
+    def _format_time(self, seconds: str) -> str:
+        """Convert time in seconds to formatted string."""
+        try:
+            total_seconds = int(float(seconds))
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            secs = total_seconds % 60
+            return f"{hours}h {minutes:02d}m {secs:02d}s"
+        except (ValueError, TypeError):
+            return "0h 00m 00s"
+
+    def update_time_display(self, time_info: Dict[str, str]) -> None:
+        """Update the time display labels with new values."""
+        mapping = {
+            "Game Time": "GameTime",
+            "Played Time": "PlayedTime",
+            "Environment Time": "EnvTime"
+        }
+        
+        for display_name, xml_name in mapping.items():
+            if display_name in self.time_labels:
+                value = time_info.get(xml_name, "0")
+                formatted_time = self._format_time(value)
+                self.time_labels[display_name].config(text=formatted_time)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
