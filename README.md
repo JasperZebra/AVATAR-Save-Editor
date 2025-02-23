@@ -1,103 +1,57 @@
-# Avatar: The Game - Save Editor (WIP)
+# Avatar: The Game  - Save Editor (WIP)
 
-A Python-based save editor for Avatar: The Game for the Xbox 360 version of the game, featuring a graphical user interface for modifying game saves.
+A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version of the game, featuring a graphical user interface for modifying game saves.
 
-## Features
-
-- Edit player stats and character information
-- Manage territory control and base configurations
-- Track and modify achievements **(WIP)**
-- View and edit character face selections **(WIP)**
-- Built-in XML editor for advanced modifications **(WIP)**
-- Automatic backup system
-
-![Screenshot 2025-02-22 000615](https://github.com/user-attachments/assets/2f129354-69a5-4192-8cd6-7eab12b5a099)
-![Screenshot 2025-02-22 000614](https://github.com/user-attachments/assets/78253f82-48a1-4ba7-bc51-bc72a2e78d43)
-![Screenshot 2025-02-22 000613](https://github.com/user-attachments/assets/da73c199-a265-4563-9c8b-b848627789e1)
-![Screenshot 2025-02-22 000612](https://github.com/user-attachments/assets/9d68e73e-2a34-459e-bc19-675ed679c675)
-![Screenshot 2025-02-22 000611](https://github.com/user-attachments/assets/2cb10f4f-9379-4db4-9962-44e61251c1e0)
-
-
-## Requirements
-
-- Python 3.x
-- tkinter
-- Pillow (PIL)
-- xml.etree.ElementTree
-
-## Installation
-
-1. Clone the repository
-2. Install dependencies:
-```bash
-pip install pillow
-```
-
-## Usage
-
-1. Run the editor:
-```bash
-python main.py
-```
-
-2. Click "Load Save File" to open your .sav file
-3. Modify settings in any of the available tabs:
-   - Player Stats: Modify character attributes, faction alignment, and game progress
-   - Territory Control: Manage territory ownership and unit deployment
-   - Achievements: View and unlock achievements **(WIP)**
-
-## Features Detail
-
-### Player Stats
-- Character appearance customization **(WIP)**
-- Faction alignment (Na'vi/RDA)
-- Experience points and level management **(WIP)**
-- Game time tracking
-- Location coordinates
-
-### Territory Management
+## Player Stats
+- Displays player stats and character information
+  - Character's face
+  - Name
+  - Location coordinates
+  - Current level
+  - Faction alignment **(Na'vi/RDA)**
+  - Game time tracking
+  - Loadout display for **RDA** and **Na'vi**
+  - See screenshot section for more
+    
+## Territory Control
 - Territory ownership assignment
 - Unit deployment (Ground/Air/Troops)
 - Base configuration
 - Defense flag management
 
-### Achievements **(WIP)**
+## Achievements **(WIP)**
 - View achievement status
 - Unlock individual or all achievements
 - Track completion progress
 
-### XML Editor **(WIP)**
-- Direct XML editing capability
+## Navigation
+- Displays all maps in the game
+- Shows chechkpoint **Visited** or **Unvisited**
+- `Show All Cheeckpoints` button shows all checkpoint in the game
+
+## Pandora-Pedia
+- Shows all articles in the game
+- Displays the status for each articles **(Locked, In Progress, and Unlocked)**
+
+## XML Editor **(WIP)**
+- Direct XML view capability
 - Syntax validation
 - Pretty-printing
 - Section navigation
 
-## File Structure
-- `main.py`: Main application entry point
-- `stats_manager.py`: Player statistics handling
-- `territory_manager.py`: Territory control management
-- `achievements_manager.py`: Achievement system
-- `xml_handler.py`: Save file XML processing
-- `Face_Image_Window.py`: Character face preview
-- `ui_components.py`: Common UI elements
+# Screenshots
+![Screenshot 2025-02-23 120812](https://github.com/user-attachments/assets/51308f01-8090-47bb-a529-43fba3fb9c91)
+![Screenshot 2025-02-23 121053](https://github.com/user-attachments/assets/02bda648-3b9f-4da8-8891-5fe9d0cc0d41)
+![Screenshot 2025-02-23 121104](https://github.com/user-attachments/assets/d1bacb26-de0a-4d13-b9a1-525d46a89fee)
+![Screenshot 2025-02-23 121120](https://github.com/user-attachments/assets/95b176f6-fca4-417c-85f5-c2e1a3784eb6)
+![Screenshot 2025-02-23 120829](https://github.com/user-attachments/assets/10266c2f-48ba-437f-ba68-d8cd9f290aa6)
+![Screenshot 2025-02-22 000611](https://github.com/user-attachments/assets/2cb10f4f-9379-4db4-9962-44e61251c1e0)
 
 ## Safety Features
-- Automatic backup creation
+- Automatic `.sav` backup system
 - Size validation for save files
 - XML structure validation
 - Error logging
-
-## Technical Notes
-- Save file size must match the expected 444 KB
-- Handles UTF-8 encoding with error correction
-- Maintains original file structure outside XML section
-
-## Error Handling
-The editor includes comprehensive error handling and logging:
-- Invalid file format detection
-- XML parsing error recovery
-- Size validation warnings
-- Automatic backup on modifications
 
 ## Contributing
 Found a bug or want to contribute? Please create an issue or submit a pull request.
