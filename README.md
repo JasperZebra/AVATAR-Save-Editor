@@ -33,19 +33,20 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 - Shows all articles in the game
 - Displays the status for each articles **(Locked, In Progress, and Unlocked)**
 
-## XML Editor **(WIP)**
+## XML Viewer
 - Direct XML view capability
 - Syntax validation
 - Pretty-printing
 - Section navigation
 
 # Screenshots
-![Screenshot 2025-02-23 120812](https://github.com/user-attachments/assets/51308f01-8090-47bb-a529-43fba3fb9c91)
-![Screenshot 2025-02-23 121053](https://github.com/user-attachments/assets/02bda648-3b9f-4da8-8891-5fe9d0cc0d41)
-![Screenshot 2025-02-23 121104](https://github.com/user-attachments/assets/d1bacb26-de0a-4d13-b9a1-525d46a89fee)
-![Screenshot 2025-02-23 121120](https://github.com/user-attachments/assets/95b176f6-fca4-417c-85f5-c2e1a3784eb6)
-![Screenshot 2025-02-23 120829](https://github.com/user-attachments/assets/10266c2f-48ba-437f-ba68-d8cd9f290aa6)
-![Screenshot 2025-02-22 000611](https://github.com/user-attachments/assets/2cb10f4f-9379-4db4-9962-44e61251c1e0)
+![Screenshot 2025-03-09 211351](https://github.com/user-attachments/assets/3a72c8a9-508c-4c29-9eba-32cb0741f0aa)
+![Screenshot 2025-03-09 211409](https://github.com/user-attachments/assets/a01bde8c-ad49-4c76-8220-5ab087ec3c68)
+![Screenshot 2025-03-09 211421](https://github.com/user-attachments/assets/c32e94f1-6e18-4ed7-8f61-5c523f4a94a9)
+![Screenshot 2025-03-09 211452](https://github.com/user-attachments/assets/e8a5f045-c012-43bc-b1a5-50c66d60e671)
+![Screenshot 2025-03-09 211504](https://github.com/user-attachments/assets/bfeb0d39-71bd-494c-893a-f6c015439a6b)
+![Screenshot 2025-03-09 212336](https://github.com/user-attachments/assets/37252903-457d-456f-b840-be46c9f00ef4)
+
 
 ## Safety Features
 - Automatic `.sav` backup system
