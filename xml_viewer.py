@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox, font
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from io import StringIO
+import os
 import logging
 
 class XMLViewerWindow:
@@ -12,6 +13,14 @@ class XMLViewerWindow:
         self.window = tk.Toplevel(parent)
         self.window.title("XML Viewer")
         self.window.geometry("1200x700")
+        
+        # Set the window icon to match the main application
+        try:
+            icon_path = os.path.join("icon", "avatar_icon.ico")
+            self.window.iconbitmap(icon_path)
+            self.logger.debug(f"XML Viewer icon set successfully from path: {icon_path}")
+        except Exception as e:
+            self.logger.error(f"Failed to set XML Viewer icon: {str(e)}")
         
         self.current_tree = None
         self.setup_ui()
@@ -23,7 +32,7 @@ class XMLViewerWindow:
                 self.populate_sections()
             except Exception as e:
                 self.logger.error(f"Error parsing initial XML: {str(e)}")
-
+                
     def setup_ui(self):
         # Main container with two columns
         main_frame = ttk.Frame(self.window, padding=10)
