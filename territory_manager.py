@@ -70,7 +70,7 @@ class TerritoryManager:
         edit_frame.pack(fill=tk.X, pady=5)
 
         edit_fields = [
-            ("Faction", "Faction", {"1": "Navi", "2": "Corp"}, "Select territory faction"),
+            ("Faction", "Faction", {"0": "Undecided", "1": "Navi", "2": "Corp"}, "Select territory faction"),
             ("Base Units", "BaseUnits", None, "Number of base units"),
             ("Troops", "Troops", None, "Number of troop units"),
             ("Ground Units", "Ground", None, "Number of ground units"),
@@ -166,10 +166,23 @@ class TerritoryManager:
             return
 
         try:
-            values = self.territory_tree.item(selection[0])["values"]
+            selected_item = selection[0]
+            values = self.territory_tree.item(selected_item)["values"]
             self.logger.debug(f"Selected territory values: {values}")
             
-            self.territory_editors["Faction"].set("Navi" if values[1] == "1" else "Corp")
+            # Get the faction value and log its type and value
+            faction_value = str(values[1]).strip()  # Ensure it's a string and remove any whitespace
+            self.logger.debug(f"Faction value: '{faction_value}', Type: {type(faction_value)}")
+            
+            # Set faction dropdown based on value
+            if faction_value == "0":
+                self.territory_editors["Faction"].set("Undecided")
+            elif faction_value == "1":
+                self.territory_editors["Faction"].set("Navi")
+            else:
+                self.territory_editors["Faction"].set("Corp")
+            
+            # Continue with other fields...
             self.territory_editors["BaseUnits"].delete(0, tk.END)
             self.territory_editors["BaseUnits"].insert(0, values[2])
             self.territory_editors["Troops"].delete(0, tk.END)

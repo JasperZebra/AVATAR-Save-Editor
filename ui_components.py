@@ -226,3 +226,13 @@ class LabeledInput:
             self.frame.grid(**kwargs)
         except Exception as e:
             self.logger.error(f"Error adding LabeledInput to grid: {str(e)}", exc_info=True)
+
+def block_combobox_mousewheel(combobox):
+    """Apply mousewheel event blocking to a combobox"""
+    def block_mousewheel(event):
+        return "break"
+    
+    combobox.bind("<MouseWheel>", block_mousewheel)  # Windows
+    combobox.bind("<Button-4>", block_mousewheel)    # Linux scroll up
+    combobox.bind("<Button-5>", block_mousewheel)    # Linux scroll down
+    combobox.bind("<Command-MouseWheel>", block_mousewheel)  # macOS

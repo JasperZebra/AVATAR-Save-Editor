@@ -1,3 +1,4 @@
+import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, font
 from pathlib import Path
@@ -11,9 +12,7 @@ from stats_manager import StatsManager
 from xml_viewer import XMLViewerWindow
 from achievements_manager import AchievementsManager
 from navigation_manager import NavigationManager
-
-# Might re-add ScrollableFrame
-# from ui_components import ScrollableFrame
+from pandora_pedia_manager import PandoraPediaManager
 
 # Configure logging
 logging.basicConfig(
@@ -46,6 +45,19 @@ def setup_dark_theme(root):
         'error': '#ff6b6b',            # Error/warning color (soft red)
         'tooltip_bg': '#4a4a4a',       # Tooltip background color
     }
+
+    # CHECKBUTTON STYLING
+    # Configure checkbox appearance
+    style.configure('TCheckbutton',
+        background=colors['background'],
+        foreground=colors['foreground'],
+        focuscolor=colors['active']
+    )
+    # Checkbutton state-based styling
+    style.map('TCheckbutton',
+        background=[('active', colors['button_bg'])],
+        foreground=[('active', colors['foreground'])]
+    )
 
     # GLOBAL STYLE CONFIGURATION
     # Set default styles for all ttk widgets
@@ -111,7 +123,12 @@ def setup_dark_theme(root):
     # Combobox state-based styling
     style.map('TCombobox',
         fieldbackground=[('readonly', colors['input_bg'])],      # Background when read-only
-        selectbackground=[('readonly', colors['selected'])]      # Selection background
+        selectbackground=[('readonly', colors['selected'])],     # Selection background
+        background=[
+            ('active', colors['active']),                     # Arrow box background when hovered
+            ('pressed', colors['button_pressed']),               # Arrow box background when pressed
+            ('readonly', colors['input_bg'])                     # Arrow box background when readonly
+        ]
     )
 
     # Additional styling to force dark background
@@ -141,8 +158,16 @@ def setup_dark_theme(root):
     )
     # Tab state-based styling
     style.map('TNotebook.Tab',
-        background=[('selected', colors['active'])],      # Selected tab background
-        foreground=[('selected', colors['foreground'])]   # Selected tab text
+        background=[
+            ('selected', colors['active']),      # Selected tab background
+            ('active', colors['active']),     # Hover tab background
+            ('!selected', colors['button_bg'])   # Normal tab background
+        ],
+        foreground=[
+            ('selected', colors['foreground']),  # Selected tab text
+            ('active', colors['foreground']),    # Hover tab text
+            ('!selected', colors['foreground'])  # Normal tab text
+        ]
     )
 
     # TREEVIEW STYLING
@@ -160,8 +185,22 @@ def setup_dark_theme(root):
     )
     # Treeview state-based styling
     style.map('Treeview',
-        background=[('selected', colors['active'])],      # Selected item background
-        foreground=[('selected', colors['foreground'])]   # Selected item text
+        background=[
+            ('selected', colors['active']),      # Selected item background
+            ('!selected', colors['input_bg']),   # Normal background
+            ('active', colors['button_bg'])      # Hovered item background
+        ],
+        foreground=[
+            ('selected', colors['foreground']),  # Selected item text
+            ('active', colors['foreground'])     # Hovered item text
+        ]
+    )
+    # Treeview Heading (column headers) state-based styling
+    style.map('Treeview.Heading',
+        background=[
+            ('active', colors['active']),     # Header hover background
+            ('pressed', colors['button_pressed']) # Header click background
+        ]
     )
 
     # SCROLLBAR STYLING
@@ -196,8 +235,16 @@ class SaveEditor:
         self.logger = logging.getLogger('SaveEditor')
         self.logger.debug("Initializing Save Editor")
         self.root = root
-        self.root.title("Avatar: The Game - Save Editor")
+        self.root.title("Avatar: The Game - Xbox 360 Save Editor")
         self.root.geometry("1130x680")
+
+        # Set the window icon
+        try:
+            icon_path = os.path.join("icon", "avatar_icon.ico")
+            self.root.iconbitmap(icon_path)
+            self.logger.debug(f"Application icon set successfully from path: {icon_path}")
+        except Exception as e:
+            self.logger.error(f"Failed to set application icon: {str(e)}")
 
         # Setup dark theme
         self.style = setup_dark_theme(self.root)
@@ -217,10 +264,6 @@ class SaveEditor:
         try:
             self.main_frame = ttk.Frame(self.root)
             self.main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-            # scrollable = ScrollableFrame(container)
-            # self.main_frame = scrollable.scrollable_frame
-            # scrollable.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
             
             self._create_file_section()
             self._create_notebook()
@@ -343,16 +386,22 @@ class SaveEditor:
             self.territory_frame = ttk.Frame(self.notebook, padding=10)
             self.achievements_frame = ttk.Frame(self.notebook, padding=10)
             self.navigation_frame = ttk.Frame(self.notebook, padding=10)
+            self.pandora_pedia_frame = ttk.Frame(self.notebook, padding=10)  
+
 
             self.notebook.add(self.stats_frame, text="Player Stats")
             self.notebook.add(self.territory_frame, text="Territory Control")
             self.notebook.add(self.achievements_frame, text="Achievements")
             self.notebook.add(self.navigation_frame, text="Navigation")
+            self.notebook.add(self.pandora_pedia_frame, text="Pandora-Pedia")  
+
 
             self.stats_manager = StatsManager(self.stats_frame, self)
             self.territory_manager = TerritoryManager(self.territory_frame, main_window=self)
             self.achievements_manager = AchievementsManager(self.achievements_frame, self)
             self.navigation_manager = NavigationManager(self.navigation_frame, self)
+            self.pandora_pedia_manager = PandoraPediaManager(self.pandora_pedia_frame, self) 
+
 
 
             self.logger.debug("Notebook and manager instances created successfully")
@@ -408,6 +457,8 @@ class SaveEditor:
             self.territory_manager.load_territory_data(self.tree)
             self.achievements_manager.load_achievements(self.tree)
             self.navigation_manager.load_navigation_data(self.tree)
+            self.pandora_pedia_manager.load_pandora_pedia(self.tree)
+
 
 
             self.save_button.config(state="normal")
@@ -425,7 +476,7 @@ class SaveEditor:
             self.logger.warning("Attempted to save with no file loaded")
             messagebox.showerror("Error", "No save file loaded!")
             return
-                
+                    
         try:
             # Ensure the root element exists
             root = self.tree.getroot()
@@ -440,6 +491,10 @@ class SaveEditor:
             
             # Get updates from each manager
             stats_updates = self.stats_manager.get_stats_updates()
+            
+            # Debug print for faction value
+            if "Metagame" in stats_updates and "PlayerFaction" in stats_updates["Metagame"]:
+                print(f"DEBUG: Faction value from stats_updates: {stats_updates['Metagame']['PlayerFaction']}")
             
             # Update sections with fallback creation
             sections = {
@@ -459,11 +514,61 @@ class SaveEditor:
                 for key, value in updates.items():
                     section.set(key, str(value))
             
+            # Handle RecoveryBits separately
+            if "PlayerInfo" in stats_updates:
+                recovery_bits = stats_updates["PlayerInfo"].get("RecoveryBits")
+                if recovery_bits is not None:
+                    # Look for existing Possessions_Recovery element
+                    recovery = profile.find("Possessions_Recovery")
+                    if recovery is None:
+                        # If not found, create a new Possessions_Recovery element
+                        recovery = ET.SubElement(profile, "Possessions_Recovery")
+                    
+                    # Set the RecoveryBits attribute
+                    recovery.set("RecoveryBits", str(recovery_bits))
+
+            # Update Metagame section - specifically Player0 attributes
+            if "Player0" in stats_updates:
+                metagame = root.find("Metagame")
+                if metagame is not None:
+                    player0 = metagame.find("Player0")
+                    if player0 is None:
+                        player0 = ET.SubElement(metagame, "Player0")
+                    
+                    # Update Player0 attributes
+                    for key, value in stats_updates["Player0"].items():
+                        player0.set(key, str(value))
+                else:
+                    self.logger.warning("Metagame element not found, cannot update Player0")
+            
+            # Update metagame directly with faction and cost values
+            if "Metagame" in stats_updates:
+                metagame = root.find("Metagame")
+                if metagame is not None:
+                    for key, value in stats_updates["Metagame"].items():
+                        metagame.set(key, str(value))
+                        if key == "PlayerFaction":
+                            self.logger.debug(f"Updated PlayerFaction to {value}")
+                else:
+                    # Create metagame if it doesn't exist
+                    metagame = ET.SubElement(root, "Metagame")
+                    for key, value in stats_updates["Metagame"].items():
+                        metagame.set(key, str(value))
+                        
+                if metagame is not None:
+                    print(f"DEBUG: Faction value after applying updates: {metagame.get('PlayerFaction', 'Unknown')}")
+            
             # Update territories
             try:
                 self.territory_manager.save_territory_changes(self.tree)
             except Exception as territory_error:
                 self.logger.error(f"Error saving territory changes: {str(territory_error)}")
+            
+            # Update Pandora-pedia entries
+            try:
+                self.pandora_pedia_manager.save_pandora_pedia_changes(self.tree)
+            except Exception as pandora_pedia_error:
+                self.logger.error(f"Error saving Pandora-Pedia changes: {str(pandora_pedia_error)}")
             
             # Update achievements
             try:
@@ -471,8 +576,38 @@ class SaveEditor:
             except Exception as achievement_error:
                 self.logger.error(f"Error saving achievement changes: {str(achievement_error)}")
             
+            # AMMO DEBUG: Check weapon ammo values before saving
+            try:
+                print("SAVE_DEBUG: Checking weapon ammo values before saving")
+                root = self.tree.getroot()
+                profile = root.find("PlayerProfile")
+                
+                # Check RDA weapons
+                soldier = profile.find("Possessions_Soldier")
+                if soldier:
+                    possessions = soldier.find("Posessions")
+                    if possessions:
+                        for poss in possessions.findall("Poss"):
+                            clip = poss.get("NbInClip", "?")
+                            if clip not in ["0", "?"] and int(clip) > 100:
+                                print(f"SAVE_DEBUG: Found RDA weapon with clip {clip}")
+                
+                # Check Na'vi weapons
+                avatar = profile.find("Possessions_Avatar")
+                if avatar:
+                    possessions = avatar.find("Posessions")
+                    if possessions:
+                        for poss in possessions.findall("Poss"):
+                            clip = poss.get("NbInClip", "?")
+                            if clip not in ["0", "?"] and int(clip) > 100:
+                                print(f"SAVE_DEBUG: Found Na'vi weapon with clip {clip}")
+            except Exception as debug_e:
+                print(f"SAVE_DEBUG ERROR: {str(debug_e)}")
+            
             # Save file and update checksum
+            self.logger.debug("Saving XML tree to file...")
             XMLHandler.save_xml_tree(self.tree, self.file_path)
+            self.logger.debug("XML tree saved successfully")
             
             # Verify checksum after save
             try:
@@ -503,7 +638,7 @@ class SaveEditor:
                 "Try removing some modifications to reduce the size.")
         except Exception as e:
             self.logger.error(f"Failed to save changes: {str(e)}", exc_info=True)
-            messagebox.showerror("Error", f"Failed to save changes: {str(e)}")           
+            messagebox.showerror("Error", f"Failed to save changes: {str(e)}")
 
     def _on_close(self):
         self.logger.debug("Application closing")
@@ -535,16 +670,6 @@ class SaveEditor:
             self.logger.error(f"Error during application close: {str(e)}", exc_info=True)
             self.root.destroy()  # Ensure application closes even if there's an error          
 
-    def _format_time(self, seconds: str) -> str:
-        """Convert time in seconds to formatted string."""
-        try:
-            total_seconds = int(float(seconds))
-            hours = total_seconds // 3600
-            minutes = (total_seconds % 3600) // 60
-            secs = total_seconds % 60
-            return f"{hours}h {minutes:02d}m {secs:02d}s"
-        except (ValueError, TypeError):
-            return "0h 00m 00s"
 
     def update_time_display(self, time_info: Dict[str, str]) -> None:
         """Update the time display labels with new values."""
@@ -554,12 +679,15 @@ class SaveEditor:
             "Environment Time": "EnvTime"
         }
         
+        # Import format_game_time from stats_manager if needed or create standalone function
+        from stats_manager import StatsManager
+        
         for display_name, xml_name in mapping.items():
             if display_name in self.time_labels:
                 value = time_info.get(xml_name, "0")
-                formatted_time = self._format_time(value)
+                # Use StatsManager's formatting method
+                formatted_time = StatsManager._format_game_time(None, value)
                 self.time_labels[display_name].config(text=formatted_time)
-
 
 if __name__ == "__main__":
     root = tk.Tk()
