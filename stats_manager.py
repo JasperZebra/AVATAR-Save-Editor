@@ -281,15 +281,17 @@ class StatsManager:
                     ("Recovery Bits", "RecoveryBits"),
                 ],
                 "Faction Settings": [
-                    ("Na'vi Cost Reduction", "NaviCostReduction"),
-                    ("RDA Cost Reduction", "CorpCostReduction"),
-                    ("EPs", "EPs"),        
-                    ("newEPs", "newEPs") 
+                    ("Player0 EPs", "EPs"),        
+                    ("Player0 newEPs", "newEPs"),
+                    ("Player1 EPs", "EPs_Player1"),  # Added for Player1
+                    ("Player1 newEPs", "newEPs_Player1")  # Added for Player1
                 ],
                 "Gameplay Settings": [
                     ("Entity Scanning", "bEntityScanningEnabled", {"0": "No", "1": "Yes"}),
                     ("First Person Mode", "FirstPersonMode", {"0": "No", "1": "Yes"}),
-                    ("Rumble Enabled", "RumbleEnabled", {"0": "No", "1": "Yes"})
+                    ("Rumble Enabled", "RumbleEnabled", {"0": "No", "1": "Yes"}),
+                    ("Na'vi Cost Reduction", "NaviCostReduction"),
+                    ("RDA Cost Reduction", "CorpCostReduction")
                 ]
             }
             
@@ -1746,6 +1748,22 @@ class StatsManager:
             if "newEPs" in self.entries:
                 self.entries["newEPs"].delete(0, tk.END)
                 self.entries["newEPs"].insert(0, new_eps_value)
+        
+        # Find Player1 element (added for Player1 support)
+        player1 = metagame.find("Player1")
+        if player1 is not None:
+            # Get EPs and newEPs values for Player1
+            eps_value_p1 = player1.get("EPs", "0")
+            new_eps_value_p1 = player1.get("newEPs", "0")
+            
+            # Update the input fields for Player1
+            if "EPs_Player1" in self.entries:
+                self.entries["EPs_Player1"].delete(0, tk.END)
+                self.entries["EPs_Player1"].insert(0, eps_value_p1)
+                
+            if "newEPs_Player1" in self.entries:
+                self.entries["newEPs_Player1"].delete(0, tk.END)
+                self.entries["newEPs_Player1"].insert(0, new_eps_value_p1)
 
     def _max_out_level(self):
         """Max out the experience based on selected faction"""
@@ -3034,6 +3052,18 @@ class StatsManager:
                 
                 updates["Player0"]["EPs"] = eps_value
                 updates["Player0"]["newEPs"] = new_eps_value
+
+            # Add Player1 values to updates
+            if "EPs_Player1" in self.entries and "newEPs_Player1" in self.entries:
+                eps_value_p1 = self.entries["EPs_Player1"].get()
+                new_eps_value_p1 = self.entries["newEPs_Player1"].get()
+                
+                # Create a Player1 section in the updates if it doesn't exist
+                if "Player1" not in updates:
+                    updates["Player1"] = {}
+                
+                updates["Player1"]["EPs"] = eps_value_p1
+                updates["Player1"]["newEPs"] = new_eps_value_p1
 
             self.logger.debug(f"Stats updates: {updates}")
             return updates             

@@ -541,6 +541,20 @@ class SaveEditor:
                 else:
                     self.logger.warning("Metagame element not found, cannot update Player0")
             
+            # Update Metagame section - specifically Player1 attributes
+            if "Player1" in stats_updates:
+                metagame = root.find("Metagame")
+                if metagame is not None:
+                    player1 = metagame.find("Player1")
+                    if player1 is None:
+                        player1 = ET.SubElement(metagame, "Player1")
+                    
+                    # Update Player1 attributes
+                    for key, value in stats_updates["Player1"].items():
+                        player1.set(key, str(value))
+                else:
+                    self.logger.warning("Metagame element not found, cannot update Player1")
+
             # Update metagame directly with faction and cost values
             if "Metagame" in stats_updates:
                 metagame = root.find("Metagame")
