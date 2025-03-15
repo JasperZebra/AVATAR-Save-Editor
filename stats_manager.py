@@ -1963,7 +1963,7 @@ class StatsManager:
         self._update_loadout_display(profile)
 
         # Preserve faction when changing RDA weapons - explicitly set to "2" (RDA)
-        root = profile.getroot()
+        root = self.main_window.tree.getroot()
         metagame = root.find("Metagame")
         if metagame is not None:
             current = metagame.get("PlayerFaction")
@@ -2297,7 +2297,7 @@ class StatsManager:
         self._update_navi_loadout_display(profile)
 
         # Preserve faction when changing Na'vi weapons - explicitly set to "1" (Na'vi)
-        root = profile.getroot()
+        root = self.main_window.tree.getroot()
         metagame = root.find("Metagame")
         if metagame is not None:
             current = metagame.get("PlayerFaction")
