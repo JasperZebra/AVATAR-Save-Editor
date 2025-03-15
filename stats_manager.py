@@ -48,48 +48,96 @@ class StatsManager:
             "815885611": "Dual Wasp Pistol II",
             "760079057": "Dual Wasp Pistol III",
             "999316102": "Dual Wasp Pistol IV",
+            
+            # DLC Dual Wasp Pistols
+            "3859060838": "DLC WARLOCK Dual Wasp Pistol I",
+            "3904601233": "DLC WARLOCK Dual Wasp Pistol II",
+            "102867538": "DLC WARLOCK Dual Wasp Pistol III", 
+            "749353518": "DLC WARLOCK Dual Wasp Pistol IV",
 
             # Standard Issue Rifle
             "1130814347": "Standard Issue Rifle TERRA I",
             "1306083196": "Standard Issue Rifle EURYS II",
             "3628031700": "Standard Issue Rifle SOLARIS III",
             "1146928137": "Standard Issue Rifle SOLARIS IV",
+            
+            # DLC Standard Issue Rifles
+            "2850329205": "DLC ARGO Standard Issue Rifle I",
+            "2807789186": "DLC ARGO Standard Issue Rifle II",
+            "2194670470": "DLC ARGO Standard Issue Rifle III",
+            "324172685": "DLC ARGO Standard Issue Rifle IV",
 
-            # Combat Shotgun PHALANX
+            # Combat Shotgun
             "2313824646": "Combat Shotgun PHALANX I",
             "2270547313": "Combat Shotgun PHALANX II",
             "2789519003": "Combat Shotgun PHALANX III",
             "1919695864": "Combat Shotgun PHALANX IV",
+            
+            # DLC Combat Shotguns
+            "2664450350": "DLC SIGNET Combat Shotgun I",
+            "2423238105": "DLC SIGNET Combat Shotgun II",
+            "2120138529": "DLC SIGNET Combat Shotgun III",
+            "4289908838": "DLC SIGNET Combat Shotgun IV",
 
             # Assault Rifle
             "2397981034": "Assault Rifle TERRA I",
             "2152836509": "Assault Rifle EURYS II",
             "268371112": "Assault Rifle SOLARIS III",
             "466145020": "Assault Rifle SOLARIS IV",
+            
+            # DLC Assault Rifles
+            "3655372526": "DLC BARRO Assault Rifle I",
+            "3613354521": "DLC BARRO Assault Rifle II",
+            "3850194262": "DLC BARRO Assault Rifle III",
+            "2109370248": "DLC BARRO Assault Rifle IV",
 
-            # BANISHER M60 Machine Gun
+            # M60 Machine Gun
             "85991974": "BANISHER M60 Machine Gun I",
             "195020497": "BANISHER M60 Machine Gun II",
             "1881065336": "BANISHER M60 Machine Gun III",
             "1796958374": "BANISHER M60 Machine Gun IV",
+            
+            # DLC Machine Guns
+            "2015914953": "DLC STELLAR M60 Machine Gun I",
+            "1989644094": "DLC STELLAR M60 Machine Gun II",
+            "1087779032": "DLC STELLAR M60 Machine Gun III",
+            "1691104809": "DLC STELLAR M60 Machine Gun IV",
 
-            # Grenade Launcher M222
+            # Grenade Launcher
             "94681171": "Grenade Launcher M222 - I",
             "186342564": "Grenade Launcher M222 - II",
             "1349633617": "Grenade Launcher M222 - III",
             "4018216358": "Grenade Launcher M222 - IV",
+            
+            # DLC Grenade Launchers
+            "2157668310": "DLC CRUSHER Grenade Launcher I",
+            "2384757537": "DLC CRUSHER Grenade Launcher II",
+            "3441856033": "DLC CRUSHER Grenade Launcher III",
+            "3043901684": "DLC CRUSHER Grenade Launcher IV",
 
             # Flamethrower
             "2529862352": "Flamethrower VESUPYRE I",
             "2557822503": "Flamethrower STERILATOR II",
             "609450705": "Flamethrower BUSHBOSS III",
             "2288255787": "Flamethrower BUSHBOSS IV",
+            
+            # DLC Flamethrowers
+            "3250873684": "DLC BUDDY Flamethrower I",
+            "3480977827": "DLC BUDDY Flamethrower II",
+            "3469816623": "DLC BUDDY Flamethrower III",
+            "3994460767": "DLC BUDDY Flamethrower IV",
 
-            # Nail Gun HAMMER
+            # Nail Gun
             "2548581230": "Nail Gun HAMMER I",
             "2572658585": "Nail Gun HAMMER II",
             "143378107": "Nail Gun HAMMER III",
             "1911864170": "Nail Gun HAMMER IV",
+            
+            # DLC Nail Guns
+            "2161255366": "DLC DENT Nail Gun I",
+            "2389559089": "DLC DENT Nail Gun II",
+            "3499218689": "DLC DENT Nail Gun III",
+            "4230631668": "DLC DENT Nail Gun IV",
 
             # RDA Ammo
             "4029490973": "Rifle Ammo",
@@ -144,78 +192,191 @@ class StatsManager:
             "3574042272": "Viper Torso",
             "1417888964": "Viper Legs",
 
-            # Default RDA Aromor Set
+            # DLC BRASHER I Armor Set
+            "3005472419": "DLC BRASHER I Head",
+            "730661330": "DLC BRASHER I Torso",
+            "3718956374": "DLC BRASHER I Legs",
+
+            # DLC MISHETICA I Armor Set
+            "1563279247": "DLC MISHETICA I Head",
+            "3313721598": "DLC MISHETICA I Torso",
+            "866428026": "DLC MISHETICA I Legs",
+
+            # DLC BRASHER IV Armor Set
+            "3064631211": "DLC BRASHER II Head",
+            "2822640242": "DLC BRASHER II Torso",
+            "2398239326": "DLC BRASHER II Legs",
+            
+            # DLC BRASHER IV Armor Set
+            "3818917462": "DLC BRASHER IV Head",
+            "1993326532": "DLC BRASHER IV Torso",
+            "1675050996": "DLC BRASHER IV Legs",
+
+            # DLC MISHETICA II Armor Set
+            "4103047382": "DLC MISHETICA II Head",
+            "3927643407": "DLC MISHETICA II Torso",
+            "3436657955": "DLC MISHETICA II Legs",
+
+            # DLC MISHETICA IV Armor Set
+            "1950293887": "DLC MISHETICA IV Head",
+            "3780161261": "DLC MISHETICA IV Torso", 
+            "4098371293": "DLC MISHETICA IV Legs",
+
+            # Default RDA Armor Set
             "433486271": "Default RDA Head",
 
             #############################################
 
-            # Na'vi Weapons
-            "1304439874": "Staff",
-            "1132447925": "Na'vi Bow",  
-            "172062103": "Great Bow",   
-            "982090295": "War Bow",      
-            "1048019290": "Hunter Bow",  
-            "2092736556": "Na'vi Spear", 
-            "535013914": "Battle Staff", 
-            "1662469074": "Poison Dart", 
-            "1839769381": "Stinger",     
-            "2986118748": "Spirit Staff",
-            "2813685095": "War Club",    
 
-            # Additional Na'vi weapons/items from XML
-            "3400058396": "Unknown Na'vi Item 1",
-            "371977402": "Unknown Na'vi Item 2",
-            "1519513878": "Unknown Na'vi Item 3",
-            "2232927470": "Unknown Na'vi Item 4",
-            "1865419077": "Unknown Na'vi Item 5",
-            "958613249": "Unknown Na'vi Item 6",
-            "2948460035": "Unknown Na'vi Item 7",
-            "985254384": "Unknown Na'vi Item 8",
-            "386149755": "Unknown Na'vi Item 9",
-            "216177023": "Unknown Na'vi Item 10",
-            "3960574385": "Unknown Na'vi Item 11",
-            "2070955956": "Unknown Na'vi Item 12",
-            "1711646853": "Unknown Na'vi Item 13",
-            "2024863229": "Unknown Na'vi Item 14",
-            "240531571": "Unknown Na'vi Item 15",
-            "921966990": "Unknown Na'vi Item 16",
-            "25166328": "Unknown Na'vi Item 17",
-            "3724948480": "Unknown Na'vi Item 18",
-            "874641835": "Unknown Na'vi Item 19",
-            "3932154789": "Unknown Na'vi Item 20",
-            "884530381": "Unknown Na'vi Item 21",
-            "3480671099": "Unknown Na'vi Item 22",
+
+            # Na'vi Weapons
+
+            # Dual Blade
+            "2740507591": "Ikranä Syal Dual Blade I",
+            "2917611312": "'Angtsìkä Zawng Dual Blade II",
+            "2813685095": "Palulukanä Srew Dual Blade III",
+            "2948460035": "Torukä Way Dual Blade IV",
+            
+            # DLC Dual Blade
+            "2285146948": "DLC Tanhì Dual Blade I",
+            "2257287091": "DLC Tanhì Dual Blade II",
+            "3543126973": "DLC Tanhì Dual Blade III",
+            "2007498681": "DLC Tanhì Dual Balde IV",
+            
+            # Crossbow
+            "1662469074": "Taronyu Crossbow I", 
+            "1839769381": "Tsamsiyu Crossbow II",
+            "3400058396": "Kyktan Crossbow III",
+            "1514231420": "Nawm Crossbow IV",
+
+            # DLC Crossbow
+            "3138212456": "DLC PXI Crossbow I",
+            "2486913109": "DLC PXI Crossbow II", 
+            "2589205711": "DLC PXI Crossbow III",
+            "1886472672": "DLC PXI Crossbow IV",
+
+            # M30 Machine Gun
+            "1304439874": "AVR-M30 Machine Gun I",
+            "1132447925": "AVR-M30 Machine Gun II",
+            "982090295": "AVR-M30 Machine Gun III",
+            "958613249": "AVR-M30 Machine Gun IV",
+
+            # ELITE M30 Machine Gun
+            "1048019290": "ELITE AVR-M30 II",
+            "172062103": "ELITE AVR-M30 III",
+            "921966990": "ELITE AVR-M30 IV",   
+
+            # Club
+            "4093397293": "Taronyu Club I",
+            "4249071066": "Tsamsiyu Club II",
+            "3879387803": "Eyktan Club III",
+            "240531571": "Nawm Club IV",
+
+            # DLC Axe
+            "1958996617": "DLC Ikran Axe 'Eko",
+            "2689671946": "DLC Ikran Axe Kurakx",
+            "1639187137": "DLC Ikran Axe Tsmukan",
+            "2934884349": "DLC Ikran Axe 'Ampi",
+            
+            # Fighting Staff
+            "2255793432": "Ikranä Zawng Fighting Staff I",
+            "2295024111": "Pa'liä Tìtxur Fighting Staff II",
+            "2986118748": "Palulukanä Tìtakuk Fighting Staff III",
+            "3960574385": "Torukä Tirea Fighting Staff IV",
+            
+            # DLC Fighting Staff
+            "1828119782": "DLC Hufwe Fighting Staff I",
+            "1648951313": "DLC Hufwe Fighting Staff II",
+            "3943944974": "DLC Hufwe Fighting Staff III",
+            "3139393077": "DLC Hufwe Fighting Staff IV",
+
+            # Bow
+            "291262189": "DLC Taronyu Tsko Bow I",
+            "371977402": "Tsko Nawm Bow IV",
+            "2092736556": "Tsko Kyktan Bow III", 
+            "535013914": "Tasmsiyu Tsko Bow II",
+
+            # DLC Bow
+            "1817446146": "DLC RAWKE Bow I",
+            "1659626485": "DLC RAWKE Bow II",
+            "1282693004": "DLC RAWKE Bow III",
+            "435991093": "DLC RAWKE Bow IV",
 
             # Na'vi Ammo
             "1042656528": "Arrow Ammo",  
             "435601722": "Spear Ammo",   
             "3069972540": "Poison Ammo", 
 
-           #############################################
+            #############################################
 
-            # Na'vi Armor
-            "753645081": "Na'vi Light Armor",
-            "236713729": "Na'vi Medium Armor",
-            "2228061969": "Na'vi Heavy Armor",
+            # Na'vi Armor   
+            
+            
+            # RDA-Issue Avatar Gear
+            "236713729": "RDA-Issue Avatar Head",
+            "2228061969": "RDA-Issue Avatar Torso",
+            "753645081": "RDA-Issue Avatar Legs",
 
-            "3363478556": "Hunter Armor",    
-            "1118628876": "Warrior Armor",   
-            "3934969092": "Elite Armor", 
+            # NAWM Armor III
+            "3363478556": "NAWM Head",  
+            "1118628876": "NAWM Torso",   
+            "3934969092": "NAWM Legs",
 
-            "291262189": "Spirit Stone",     
-            "2255793432": "Healing Herb",    
-            "2740507591": "War Paint",    
+            # EYKTAN Armor Set
+            "84098544": "EYKTAN Head",
+            "3666151432": "EYKTAN Torso",
+            "815973795": "EYKTAN Legs",
 
-            "3529616870": "Stealth Cloak",   
-            "1641566717": "Hunter's Mark",   
-            "540413008": "Sacred Totem",   
+            # KARYU Armor Set
+            "2070955956": "KARYU Head",
+            "1711646853": "KARYU Torso",
+            "2024863229": "KARYU Legs",
 
-            "4093397293": "Spirit Charm",    
-            "2295024111": "War Horn",        
-            "2917611312": "Sacred Feathers", 
+            # NAWMA EYKTAN Armor Set
+            "1519513878": "NAWMA EYKTAN Head",
+            "2232927470": "NAWMA EYKTAN Torso",
+            "1865419077": "NAWMA EYKTAN Legs",
 
-            "4249071066": "Hunter's Eye",    
-            "3879387803": "Battle Paint",        
+            # NAWMA TARONYU Armor Set
+            "3932154789": "NAWMA TARONYU Head",
+            "884530381": "NAWMA TARONYU Torso",
+            "3480671099": "NAWMA TARONYU Legs",
+
+            # NAWMA TSAMSIYU Armor Set
+            "25166328": "NAWMA TSAMSIYU Head",
+            "3724948480": "NAWMA TSAMSIYU Torso",
+            "874641835": "NAWMA TSAMSIYU Legs",
+
+            # TIREA Armor Set
+            "985254384": "TIREA Head",
+            "386149755": "TIREA Torso",
+            "216177023": "TIREA Legs",
+
+            # 'AWVEA TSAMSIYU Armor Set   
+            "3529616870": "'AWVEA TSAMSIYU Head",   
+            "1641566717": "'AWVEA TSAMSIYU Torso",   
+            "540413008": "'AWVEA TSAMSIYU Legs", 
+
+            # TSTEU II Armor Set 
+            "1336514870": "DLC TSTEU II Head",
+            "904822394": "DLC TSTEU II Torso",
+            "848846039": "DLC TSTEU II Legs",
+
+            # TSTEU IV Armor Set 
+            "1500118218": "DLC TSTEU IV Head",
+            "1960056897": "DLC TSTSU IV Torso",
+            "1865591877": "DLC TSTEU IV legs",   
+
+            # TARONYU II Armor Set
+            "3240533717": "DLC TARONYU II Head",
+            "3143727513": "DLC TARONYU II Torso",
+            "3155647284": "DLC TARONYU II Legs", 
+
+            # TARONYU IV Armor Set
+            "1753343575": "DLC TARONYU IV Head",
+            "1161560796": "DLC TARONYU IV Torso",
+            "1591391960": "DLC TARONYU IV Legs",              
+                        
         }
 
     def _get_item_name(self, item_id: str) -> str:
@@ -229,10 +390,63 @@ class StatsManager:
             
         text = f"{weapon_info['name']}"
         
+        # List of infinite ammo weapon IDs
+        infinite_ammo_ids = [
+            # Standard Dual Wasp Pistols
+            "1042188764",  # Dual Wasp Pistol I
+            "815885611",   # Dual Wasp Pistol II
+            "760079057",   # Dual Wasp Pistol III
+            "999316102",   # Dual Wasp Pistol IV
+            
+            # DLC Dual Wasp Pistols
+            "3859060838",  # DLC WARLOCK Dual Wasp Pistol I
+            "3904601233",  # DLC WARLOCK Dual Wasp Pistol II
+            "102867538",   # DLC WARLOCK Dual Wasp Pistol III
+            "749353518",   # DLC WARLOCK Dual Wasp Pistol IV
+        ]
+        
+        # List of melee weapon IDs
+        melee_weapon_ids = [
+            # Fighting Staffs
+            "3960574385",   # Torukä Tirea Fighting Staff IV
+            "2986118748",   # Palulukanä Tìtakuk Fighting Staff III
+            "2295024111",   # Pa'liä Tìtxur Fighting Staff II
+            "2255793432",   # Ikranä Zawng Fighting Staff I
+            
+            # DLC Hufwe Fighting Staffs
+            "1648951313",   # DLC Hufwe Fighting Staff II
+            "3943944974",   # DLC Hufwe Fighting Staff III
+            "3139393077",   # DLC Hufwe Fighting Staff IV
+            
+            # Dual Blades
+            "2948460035",  # Torukä Way Dual Blade IV
+            "2813685095",  # Palulukanä Srew Dual Blade III
+            "2917611312",  # 'Angtsìkä Zawng Dual Blade II
+            "2740507591",  # Ikranä Syal Dual Blade I
+            
+            # DLC Tanhì Dual Blade
+            "2285146948",  # DLC Tanhì Dual Blade I
+            "2257287091",  # DLC Tanhì Dual Blade II
+            "3543126973",  # DLC Tanhì Dual Blade III
+            "2007498681",  # DLC Tanhì Dual Blade IV
+            
+            # Clubs
+            "240531571",   # Nawm Club IV
+            "3879387803",  # Eyktan Club III
+            "4249071066",  # Tsamsiyu Club II
+            "4093397293",  # Taronyu Club I
+            
+            # DLC Ikran Axes
+            "2934884349",  # DLC Ikran Axe 'Ampi
+            "2689671946",  # DLC Ikran Axe Kurakx
+            "1639187137",  # DLC Ikran Axe Tsmukan
+            "1958996617",  # DLC Ikran Axe 'Eko
+        ]
+        
         # Special cases - update to match new names
-        if weapon_info['id'] == "1042188764":  # Dual Wasp Pistol I
+        if weapon_info['id'] in infinite_ammo_ids or "wasp pistol" in weapon_info['name'].lower():
             text += " (∞)"
-        elif weapon_info['id'] in ["1304439874", "2813685095"]:  # Staff and War Club
+        elif weapon_info['id'] in melee_weapon_ids or "club" in weapon_info['name'].lower() or "blade" in weapon_info['name'].lower() or "axe" in weapon_info['name'].lower() or "staff" in weapon_info['name'].lower():
             text += " (Melee)"
         else:
             # For all other weapons, show ammo count if they have ammo
@@ -559,94 +773,299 @@ class StatsManager:
         return entry
 
     def _create_weapon_dropdown(self, parent_frame, slot_name, slot_index, is_navi=False, x=0, y=0):
-            """Create a dropdown for weapon selection and an entry for ammo count"""
-            # Create a frame to hold the controls
-            slot_frame = ttk.Frame(parent_frame)
-            slot_frame.place(x=x, y=y, width=535, height=30)  # Use place instead of pack
+        """Create a dropdown for weapon selection and an entry for ammo count"""
+        # Create a frame to hold the controls
+        slot_frame = ttk.Frame(parent_frame)
+        slot_frame.place(x=x, y=y, width=535, height=30)  # Use place instead of pack
+        
+        # Label for the slot
+        ttk.Label(slot_frame, text=f"{slot_name}:").pack(side=tk.LEFT, padx=2)
+        
+        # Create the weapon dropdown
+        all_weapons = {}
+        
+        # Define ammo item IDs to exclude from weapon dropdowns
+        ammo_ids = [
+            # RDA Ammo
+            "4029490973",  # Rifle Ammo
+            "2220072441",  # Shotgun Ammo
+            "3183424835",  # SMG Ammo
+            "3227899887",  # Grenade Ammo
+            "4198025789",  # Rocket Ammo
+            "2442117335",  # LMG Ammo
+            "3819023512",  # Heavy Ammo
             
-            # Label for the slot
-            ttk.Label(slot_frame, text=f"{slot_name}:").pack(side=tk.LEFT, padx=2)
+            # Na'vi Ammo
+            "1042656528",  # Arrow Ammo
+            "435601722",   # Spear Ammo
+            "3069972540"   # Poison Ammo
+        ]
+        
+        # Explicitly define which weapons belong to which faction
+        navi_weapon_ids = [
+            # Dual Blade
+            "2740507591",  # Ikranä Syal Dual Blade I
+            "2917611312",  # 'Angtsìkä Zawng Dual Blade II
+            "2813685095",  # Palulukanä Srew Dual Blade III
+            "2948460035",  # Torukä Way Dual Blade IV
             
-            # Create the weapon dropdown
-            all_weapons = {}
+            # DLC Dual Blade
+            "2285146948",  # DLC Tanhì Dual Blade I
+            "2257287091",  # DLC Tanhì Dual Blade II
+            "3543126973",  # DLC Tanhì Dual Blade III
+            "2007498681",  # DLC Tanhì Dual Balde IV
             
-            # Add RDA and Na'vi weapons
-            for item_id, item_name in self.item_mappings.items():
-                # Add only weapons (filter out armor and other items)
-                if any(weapon_keyword in item_name.lower() for weapon_keyword in 
-                    ["pistol", "rifle", "shotgun", "machine gun", "launcher", "thrower", "nail gun", "bow", "staff", "spear", "club", "dart"]):
-                    all_weapons[item_id] = f"[RDA] {item_name}" if any(rda_keyword in item_name.lower() for rda_keyword in 
-                                        ["pistol", "rifle", "shotgun", "machine gun", "launcher", "thrower", "nail gun"]) else f"[Na'vi] {item_name}"
+            # Crossbow
+            "1662469074",  # Taronyu Crossbow I
+            "1839769381",  # Tsamsiyu Crossbow II
+            "3400058396",  # Kyktan Crossbow III
+            "1514231420",  # Nawm Crossbow IV
             
-            # Create the dropdown with weapon names
-            combo = ttk.Combobox(slot_frame, values=list(all_weapons.values()), width=34, state="readonly")
-            combo.pack(side=tk.LEFT, padx=2)
-            combo.set("-Empty-")
-            block_combobox_mousewheel(combo)
+            # DLC Crossbow
+            "3138212456",  # DLC PXI Crossbow I
+            "2486913109",  # DLC PXI Crossbow II
+            "2589205711",  # DLC PXI Crossbow III
+            "1886472672",  # DLC PXI Crossbow IV
+
+            # M30 Machine Guns
+            "1304439874",  # AVR-M30 Machine Gun I
+            "1132447925",  # AVR-M30 Machine Gun II
+            "982090295",   # AVR-M30 Machine Gun III
+            "958613249",   # AVR-M30 Machine Gun IV
+
+            # ELITE M30 Machine Guns
+            "1048019290",  # ELITE AVR-M30 II
+            "172062103",   # ELITE AVR-M30 III
+            "921966990",   # ELITE AVR-M30 IV
             
-            # Create a frame for ammo control
-            ammo_frame = ttk.Frame(slot_frame)
-            ammo_frame.pack(side=tk.LEFT, padx=2)
+            # Club
+            "4093397293",  # Taronyu Club I
+            "4249071066",  # Tsamsiyu Club II
+            "3879387803",  # Eyktan Club III
+            "240531571",   # Nawm Club IV
             
-            # Label and entry for ammo - use a regular entry that can be disabled later if needed
-            ttk.Label(ammo_frame, text="Ammo:").pack(side=tk.LEFT)
-            ammo_entry = ttk.Entry(ammo_frame, width=8)
-            ammo_entry.insert(0, "0")
-            ammo_entry.pack(side=tk.LEFT, padx=2)
+            # DLC Axe
+            "1958996617",  # DLC Ikran Axe 'Eko
+            "2689671946",  # DLC Ikran Axe Kurakx
+            "1639187137",  # DLC Ikran Axe Tsmukan
+            "2934884349",  # DLC Ikran Axe 'Ampi
             
-            # Add infinite ammo checkbox
-            infinite_var = tk.BooleanVar()
-            infinite_check = ttk.Checkbutton(
-                ammo_frame, 
-                text="∞", 
-                variable=infinite_var,
-                style="TCheckbutton"
-            )
-            infinite_check.pack(side=tk.LEFT, padx=2)
+            # Fighting Staff
+            "2255793432",  # Ikranä Zawng Fighting Staff I
+            "2295024111",  # Pa'liä Tìtxur Fighting Staff II
+            "2986118748",  # Palulukanä Tìtakuk Fighting Staff III
+            "3960574385",  # Torukä Tirea Fighting Staff IV
             
-            # Add clip size control - CHANGED: Using a label instead of an entry
-            clip_frame = ttk.Frame(slot_frame)
-            clip_frame.pack(side=tk.LEFT, padx=5)
+            # DLC Fighting Staff
+            "1828119782",  # DLC Hufwe Fighting Staff I
+            "1648951313",  # DLC Hufwe Fighting Staff II
+            "3943944974",  # DLC Hufwe Fighting Staff III
+            "3139393077",  # DLC Hufwe Fighting Staff IV
             
-            ttk.Label(clip_frame, text="Clip:").pack(side=tk.LEFT)
+            # Bow
+            "371977402",   # Tsko Nawm Bow IV
+            "2092736556",  # Tsko Kyktan Bow III
+            "535013914",   # Tasmsiyu Tsko Bow II
+            "291262189",   # DLC Taronyu Tsko Bow I
             
-            # Use a label instead of entry for clip size
-            clip_label = ttk.Label(clip_frame, text="0", width=5)
-            clip_label.pack(side=tk.LEFT, padx=2)
+            # DLC Bow
+            "1817446146",  # DLC RAWKE Bow I
+            "1659626485",  # DLC RAWKE Bow II
+            "1282693004",  # DLC RAWKE Bow III
+            "435991093",   # DLC RAWKE Bow IV 
+        ]
+        
+        # Explicitly define RDA weapon IDs
+        rda_weapon_ids = [
+            # Dual Wasp Pistol
+            "1042188764",  # Dual Wasp Pistol I
+            "815885611",   # Dual Wasp Pistol II
+            "760079057",   # Dual Wasp Pistol III
+            "999316102",   # Dual Wasp Pistol IV
             
-            # Create slot data
-            weapon_slot_data = {
-                "dropdown": combo,
-                "ammo_entry": ammo_entry,
-                "clip_entry": clip_label,  # Now this is a label, not an entry
-                "infinite_var": infinite_var,
-                "infinite_check": infinite_check,
-                "all_weapons": all_weapons  # Store mapping of IDs to names
-            }
+            # DLC Dual Wasp Pistols
+            "3859060838",  # DLC WARLOCK Dual Wasp Pistol I
+            "3904601233",  # DLC WARLOCK Dual Wasp Pistol II
+            "102867538",   # DLC WARLOCK Dual Wasp Pistol III
+            "749353518",   # DLC WARLOCK Dual Wasp Pistol IV
+
+            # Standard Issue Rifle
+            "1130814347",  # Standard Issue Rifle TERRA I
+            "1306083196",  # Standard Issue Rifle EURYS II
+            "3628031700",  # Standard Issue Rifle SOLARIS III
+            "1146928137",  # Standard Issue Rifle SOLARIS IV
             
-            # Choose the right list to modify
-            weapons_array = self.navi_weapon_slots if is_navi else self.weapon_slots
+            # DLC Standard Issue Rifles
+            "2850329205",  # DLC ARGO Standard Issue Rifle I
+            "2807789186",  # DLC ARGO Standard Issue Rifle II
+            "2194670470",  # DLC ARGO Standard Issue Rifle III
+            "324172685",   # DLC ARGO Standard Issue Rifle IV
+
+            # Combat Shotgun
+            "2313824646",  # Combat Shotgun PHALANX I
+            "2270547313",  # Combat Shotgun PHALANX II
+            "2789519003",  # Combat Shotgun PHALANX III
+            "1919695864",  # Combat Shotgun PHALANX IV
             
-            # Ensure the list has enough elements
-            while len(weapons_array) <= slot_index:
-                weapons_array.append(None)
+            # DLC Combat Shotguns
+            "2664450350",  # DLC SIGNET Combat Shotgun I
+            "2423238105",  # DLC SIGNET Combat Shotgun II
+            "2120138529",  # DLC SIGNET Combat Shotgun III
+            "4289908838",  # DLC SIGNET Combat Shotgun IV
+
+            # Assault Rifle
+            "2397981034",  # Assault Rifle TERRA I
+            "2152836509",  # Assault Rifle EURYS II
+            "268371112",   # Assault Rifle SOLARIS III
+            "466145020",   # Assault Rifle SOLARIS IV
             
-            # Now we can safely assign to the index
-            weapons_array[slot_index] = weapon_slot_data
+            # DLC Assault Rifles
+            "3655372526",  # DLC BARRO Assault Rifle I
+            "3613354521",  # DLC BARRO Assault Rifle II
+            "3850194262",  # DLC BARRO Assault Rifle III
+            "2109370248",  # DLC BARRO Assault Rifle IV
+
+            # M60 Machine Gun
+            "85991974",    # BANISHER M60 Machine Gun I
+            "195020497",   # BANISHER M60 Machine Gun II
+            "1881065336",  # BANISHER M60 Machine Gun III
+            "1796958374",  # BANISHER M60 Machine Gun IV
             
-            # Bind events - use the appropriate event handler
-            if is_navi:
-                combo.bind('<<ComboboxSelected>>', lambda e, idx=slot_index: self._on_navi_weapon_selected(e, idx))
-            else:
-                combo.bind('<<ComboboxSelected>>', lambda e, idx=slot_index: self._on_weapon_selected(e, idx))
+            # DLC Machine Guns
+            "2015914953",  # DLC STELLAR M60 Machine Gun I
+            "1989644094",  # DLC STELLAR M60 Machine Gun II
+            "1087779032",  # DLC STELLAR M60 Machine Gun III
+            "1691104809",  # DLC STELLAR M60 Machine Gun IV
+
+            # Grenade Launcher
+            "94681171",    # Grenade Launcher M222 - I
+            "186342564",   # Grenade Launcher M222 - II
+            "1349633617",  # Grenade Launcher M222 - III
+            "4018216358",  # Grenade Launcher M222 - IV
             
-            # Bind the infinite ammo checkbox
-            infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_index, navi=is_navi: 
-                            self._toggle_infinite_ammo(e, idx, navi))
+            # DLC Grenade Launchers
+            "2157668310",  # DLC CRUSHER Grenade Launcher I
+            "2384757537",  # DLC CRUSHER Grenade Launcher II
+            "3441856033",  # DLC CRUSHER Grenade Launcher III
+            "3043901684",  # DLC CRUSHER Grenade Launcher IV
+
+            # Flamethrower
+            "2529862352",  # Flamethrower VESUPYRE I
+            "2557822503",  # Flamethrower STERILATOR II
+            "609450705",   # Flamethrower BUSHBOSS III
+            "2288255787",  # Flamethrower BUSHBOSS IV
             
-            # No need for bindings on the clip label since it's read-only now
+            # DLC Flamethrowers
+            "3250873684",  # DLC BUDDY Flamethrower I
+            "3480977827",  # DLC BUDDY Flamethrower II
+            "3469816623",  # DLC BUDDY Flamethrower III
+            "3994460767",  # DLC BUDDY Flamethrower IV
+
+            # Nail Gun
+            "2548581230",  # Nail Gun HAMMER I
+            "2572658585",  # Nail Gun HAMMER II
+            "143378107",   # Nail Gun HAMMER III
+            "1911864170",  # Nail Gun HAMMER IV
             
-            return weapon_slot_data
+            # DLC Nail Guns
+            "2161255366",  # DLC DENT Nail Gun I
+            "2389559089",  # DLC DENT Nail Gun II
+            "3499218689",  # DLC DENT Nail Gun III
+            "4230631668",  # DLC DENT Nail Gun IV
+        ]
+        
+        # Add weapons purely based on explicit faction lists
+        if is_navi:
+            # For Na'vi dropdown, add all explicit Na'vi weapons
+            for item_id in navi_weapon_ids:
+                if item_id in self.item_mappings and item_id not in ammo_ids:
+                    all_weapons[item_id] = self.item_mappings[item_id]
+        else:
+            # For RDA dropdown, add all explicit RDA weapons
+            for item_id in rda_weapon_ids:
+                if item_id in self.item_mappings and item_id not in ammo_ids:
+                    all_weapons[item_id] = self.item_mappings[item_id]
+        
+        # Debug output showing what weapons are included
+        faction_name = "Na'vi" if is_navi else "RDA"
+        print(f"\n=== {faction_name} WEAPONS DROPDOWN CONTENTS ===")
+        for weapon_id, weapon_name in all_weapons.items():
+            print(f"  {weapon_id}: {weapon_name}")
+        print(f"Total {faction_name} weapons: {len(all_weapons)}")
+        
+        # Create the dropdown with weapon names
+        combo = ttk.Combobox(slot_frame, values=list(all_weapons.values()), width=34, state="readonly")
+        combo.pack(side=tk.LEFT, padx=2)
+        combo.set("-Empty-")
+        block_combobox_mousewheel(combo)
+        
+        # Create a frame for ammo control
+        ammo_frame = ttk.Frame(slot_frame)
+        ammo_frame.pack(side=tk.LEFT, padx=2)
+        
+        # Label and entry for ammo - use a regular entry that can be disabled later if needed
+        ttk.Label(ammo_frame, text="Ammo:").pack(side=tk.LEFT)
+        ammo_entry = ttk.Entry(ammo_frame, width=8)
+        ammo_entry.insert(0, "0")
+        ammo_entry.pack(side=tk.LEFT, padx=2)
+        
+        # Add infinite ammo checkbox
+        infinite_var = tk.BooleanVar()
+        # Use the ttk.Checkbutton's takefocus option to prevent keyboard focus
+        infinite_check = ttk.Checkbutton(
+            ammo_frame, 
+            text="∞", 
+            variable=infinite_var,
+            style="TCheckbutton",
+            takefocus=0  # Prevent keyboard focus
+        )
+        infinite_check.pack(side=tk.LEFT, padx=2)
+        
+        # Add clip size control - CHANGED: Using a label instead of an entry
+        clip_frame = ttk.Frame(slot_frame)
+        clip_frame.pack(side=tk.LEFT, padx=5)
+        
+        ttk.Label(clip_frame, text="Clip:").pack(side=tk.LEFT)
+        
+        # Use a label instead of entry for clip size
+        clip_label = ttk.Label(clip_frame, text="0", width=5)
+        clip_label.pack(side=tk.LEFT, padx=2)
+        
+        # Create slot data
+        weapon_slot_data = {
+            "dropdown": combo,
+            "ammo_entry": ammo_entry,
+            "clip_entry": clip_label,  # Now this is a label, not an entry
+            "infinite_var": infinite_var,
+            "infinite_check": infinite_check,
+            "all_weapons": all_weapons  # Store mapping of IDs to names
+        }
+        
+        # Choose the right list to modify
+        weapons_array = self.navi_weapon_slots if is_navi else self.weapon_slots
+        
+        # Ensure the list has enough elements
+        while len(weapons_array) <= slot_index:
+            weapons_array.append(None)
+        
+        # Now we can safely assign to the index
+        weapons_array[slot_index] = weapon_slot_data
+        
+        # Bind events - use the appropriate event handler
+        if is_navi:
+            combo.bind('<<ComboboxSelected>>', lambda e, idx=slot_index: self._on_navi_weapon_selected(e, idx))
+        else:
+            combo.bind('<<ComboboxSelected>>', lambda e, idx=slot_index: self._on_weapon_selected(e, idx))
+        
+        # Bind the infinite ammo checkbox
+        infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_index, navi=is_navi: 
+                        self._toggle_infinite_ammo(e, idx, navi))
+        
+        # Bind the ammo entry for updating ammo value
+        ammo_entry.bind('<KeyRelease>', lambda e, idx=slot_index, navi=is_navi: 
+                    self._update_ammo_value(e, idx, navi))
+        
+        return weapon_slot_data
 
     # Also add a method to programmatically update entry values
     def _update_entry_value(self, entry, value):
@@ -802,21 +1221,33 @@ class StatsManager:
             weapon_name = slot_data["dropdown"].get()
             if weapon_name == "-Empty-":
                 return
-                
+            
             # Find weapon ID from name
             weapon_id = None
             for id, name in slot_data["all_weapons"].items():
                 if name == weapon_name:
                     weapon_id = id
                     break
-                    
+            
             if weapon_id is None:
                 return
-                
-            # Get the infinite ammo state (note: need to get the new value after toggle)
+            
+            # NEW CODE: Check if this is a melee or inherently infinite weapon
+            is_melee = any(melee_kw in weapon_name.lower() for melee_kw in 
+                        ["club", "blade", "axe", "staff", "spear", "knife", "sword"])
+            
+            is_inherent_infinite = any(pistol_term in weapon_name.lower() for pistol_term in ["wasp pistol"])
+            
+            # If it's a special weapon that should have fixed ammo settings, block the toggle
+            if is_melee or is_inherent_infinite:
+                # Reset checkbox state back to what it was (checked for these weapons)
+                slot_data["infinite_var"].set(True)
+                return
+            
+            # For regular weapons, proceed with the toggle as before
             # We need to wait a moment for the checkbox to update
             self.parent.after(50, lambda: self._apply_infinite_ammo(slot_index, is_navi, weapon_id))
-                
+            
         except Exception as e:
             self.logger.error(f"Error toggling infinite ammo: {str(e)}")
 
@@ -1331,7 +1762,7 @@ class StatsManager:
                     if weapon_id in self.item_mappings:
                         item_name = self.item_mappings[weapon_id]
                         if any(weapon_keyword in item_name.lower() for weapon_keyword in 
-                            ["bow", "staff", "spear", "club", "dart"]):
+                            ["bow", "staff", "spear", "club", "blade", "crossbow", "axe"]):
                             # Set the correct ammo type
                             correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
                             current_ammo_type = poss.get("crc_AmmoType", "")
@@ -1358,7 +1789,7 @@ class StatsManager:
         metagame = root.find("Metagame")
         
         if metagame is not None:
-            # Always set the faction to the specified value (usually Na'vi/1)
+            # Always set the faction to the specified value
             current = metagame.get("PlayerFaction")
             if current != faction_value:
                 print(f"DEBUG: Fixing faction reset. Changed from {current} to {faction_value}")
@@ -1392,31 +1823,11 @@ class StatsManager:
         if self.main_window.tree is not None:
             profile = self.main_window.tree.getroot().find("PlayerProfile")
             if profile is not None:
-                # Determine if it's an RDA or Na'vi weapon by the prefix
-                if "[RDA]" in selected_weapon:
-                    # Add RDA weapon to Na'vi inventory
-                    self._update_navi_weapon(profile, slot_index, weapon_id)
-                else:
-                    # Add Na'vi weapon to Na'vi inventory
-                    self._update_navi_weapon(profile, slot_index, weapon_id)
+                # Update Na'vi weapon
+                self._update_navi_weapon(profile, slot_index, weapon_id)
                     
         # Mark as unsaved
         self.main_window.unsaved_label.config(text="Unsaved Changes")
-
-        if "[RDA]" in selected_weapon:
-            # Ensure faction stays as Na'vi after equipping RDA weapon
-            root = profile.getroot()
-            metagame = root.find("Metagame")
-            if metagame is not None and metagame.get("PlayerFaction") != "1":
-                # Force Na'vi faction if it was changed
-                metagame.set("PlayerFaction", "1")
-                print("DEBUG: Restored Na'vi faction that was changed during RDA weapon equip")
-                
-                # Also update the UI dropdown to match
-                if "PlayerFaction" in self.entries:
-                    self.entries["PlayerFaction"].set("Na'vi")
-
-        self._preserve_faction(profile, "1")
 
     def _on_weapon_selected(self, event, slot_index):
         """Handle the selection of a weapon from the RDA dropdown"""
@@ -1446,8 +1857,6 @@ class StatsManager:
                     
         # Mark as unsaved
         self.main_window.unsaved_label.config(text="Unsaved Changes")
-
-        self._preserve_faction(profile, "2")
 
     def _update_rda_weapon(self, profile, slot_index, weapon_id):
         """Update RDA weapon in the XML structure"""
@@ -1553,7 +1962,55 @@ class StatsManager:
         # Update the display
         self._update_loadout_display(profile)
 
-        self._preserve_faction(profile, "2")
+        # Preserve faction when changing RDA weapons - explicitly set to "2" (RDA)
+        root = profile.getroot()
+        metagame = root.find("Metagame")
+        if metagame is not None:
+            current = metagame.get("PlayerFaction")
+            if current != "2":  # If it's not already RDA
+                metagame.set("PlayerFaction", "2")
+                # Also update the UI dropdown to match
+                if "PlayerFaction" in self.entries:
+                    self.entries["PlayerFaction"].set("RDA")
+
+        # Preserve faction
+        self._preserve_faction(profile, "2")  # 2 for RDA
+
+    def _preserve_player_eps(self, profile):
+        """Preserve Player0 and Player1 EP values"""
+        root = profile.getroot()
+        metagame = root.find("Metagame")
+        
+        if metagame is not None:
+            # Check and preserve Player0 EPs
+            player0 = metagame.find("Player0")
+            if player0 is not None:
+                eps = player0.get("EPs", "0")
+                new_eps = player0.get("newEPs", "0")
+                
+                # Update UI
+                if "EPs" in self.entries and eps != "":
+                    self.entries["EPs"].delete(0, tk.END)
+                    self.entries["EPs"].insert(0, eps)
+                
+                if "newEPs" in self.entries and new_eps != "":
+                    self.entries["newEPs"].delete(0, tk.END)
+                    self.entries["newEPs"].insert(0, new_eps)
+            
+            # Check and preserve Player1 EPs
+            player1 = metagame.find("Player1")
+            if player1 is not None:
+                eps_p1 = player1.get("EPs", "0")
+                new_eps_p1 = player1.get("newEPs", "0")
+                
+                # Update UI
+                if "EPs_Player1" in self.entries and eps_p1 != "":
+                    self.entries["EPs_Player1"].delete(0, tk.END)
+                    self.entries["EPs_Player1"].insert(0, eps_p1)
+                
+                if "newEPs_Player1" in self.entries and new_eps_p1 != "":
+                    self.entries["newEPs_Player1"].delete(0, tk.END)
+                    self.entries["newEPs_Player1"].insert(0, new_eps_p1)
 
     def _get_ammo_type_for_weapon(self, weapon_id: str) -> str:
         """Determine the correct ammo type for a given weapon ID"""
@@ -1563,61 +2020,171 @@ class StatsManager:
         # Mapping of weapons to their ammo types
         weapon_ammo_map = {
             # RDA weapons
-            "1042188764": "4294967295",  # Dual Wasp Pistol I - No ammo (infinity)
+            # Dual Wasp Pistol - No ammo (infinity)
+            "1042188764": "4294967295",  # Dual Wasp Pistol I
             "815885611": "4294967295",   # Dual Wasp Pistol II
             "760079057": "4294967295",   # Dual Wasp Pistol III
             "999316102": "4294967295",   # Dual Wasp Pistol IV
             
-            "1130814347": "4029490973",  # Standard Issue Rifle TERRA I - Rifle Ammo
+            # DLC WARLOCK Dual Wasp Pistols - No ammo (infinity)
+            "3859060838": "4294967295",  # DLC WARLOCK Dual Wasp Pistol I
+            "3904601233": "4294967295",  # DLC WARLOCK Dual Wasp Pistol II
+            "102867538": "4294967295",   # DLC WARLOCK Dual Wasp Pistol III
+            "749353518": "4294967295",   # DLC WARLOCK Dual Wasp Pistol IV
+            
+            # Standard Issue Rifle - Rifle Ammo
+            "1130814347": "4029490973",  # Standard Issue Rifle TERRA I
             "1306083196": "4029490973",  # Standard Issue Rifle EURYS II
             "3628031700": "4029490973",  # Standard Issue Rifle SOLARIS III
             "1146928137": "4029490973",  # Standard Issue Rifle SOLARIS IV
             
-            "2313824646": "2220072441",  # Combat Shotgun PHALANX I - Shotgun Ammo
+            # DLC ARGO Standard Issue Rifles - Rifle Ammo
+            "2850329205": "4029490973",  # DLC ARGO Standard Issue Rifle I
+            "2807789186": "4029490973",  # DLC ARGO Standard Issue Rifle II
+            "2194670470": "4029490973",  # DLC ARGO Standard Issue Rifle III
+            "324172685": "4029490973",   # DLC ARGO Standard Issue Rifle IV
+            
+            # Combat Shotgun - Shotgun Ammo
+            "2313824646": "2220072441",  # Combat Shotgun PHALANX I
             "2270547313": "2220072441",  # Combat Shotgun PHALANX II
             "2789519003": "2220072441",  # Combat Shotgun PHALANX III
             "1919695864": "2220072441",  # Combat Shotgun PHALANX IV
             
-            "2397981034": "3183424835",  # Assault Rifle TERRA I - SMG Ammo
+            # DLC SIGNET Combat Shotguns - Shotgun Ammo
+            "2664450350": "2220072441",  # DLC SIGNET Combat Shotgun I
+            "2423238105": "2220072441",  # DLC SIGNET Combat Shotgun II
+            "2120138529": "2220072441",  # DLC SIGNET Combat Shotgun III
+            "4289908838": "2220072441",  # DLC SIGNET Combat Shotgun IV
+            
+            # Assault Rifle - SMG Ammo
+            "2397981034": "3183424835",  # Assault Rifle TERRA I
             "2152836509": "3183424835",  # Assault Rifle EURYS II
             "268371112": "3183424835",   # Assault Rifle SOLARIS III
             "466145020": "3183424835",   # Assault Rifle SOLARIS IV
             
-            "85991974": "3227899887",    # BANISHER M60 Machine Gun I - Grenade Ammo
+            # DLC BARRO Assault Rifles - SMG Ammo
+            "3655372526": "3183424835",  # DLC BARRO Assault Rifle I
+            "3613354521": "3183424835",  # DLC BARRO Assault Rifle II
+            "3850194262": "3183424835",  # DLC BARRO Assault Rifle III
+            "2109370248": "3183424835",  # DLC BARRO Assault Rifle IV
+            
+            # BANISHER M60 Machine Gun - Grenade Ammo
+            "85991974": "3227899887",    # BANISHER M60 Machine Gun I
             "195020497": "3227899887",   # BANISHER M60 Machine Gun II
             "1881065336": "3227899887",  # BANISHER M60 Machine Gun III
             "1796958374": "3227899887",  # BANISHER M60 Machine Gun IV
             
-            "94681171": "4198025789",    # Grenade Launcher M222 - I - Rocket Ammo
+            # DLC STELLAR M60 Machine Guns - Grenade Ammo
+            "2015914953": "3227899887",  # DLC STELLAR M60 Machine Gun I
+            "1989644094": "3227899887",  # DLC STELLAR M60 Machine Gun II
+            "1087779032": "3227899887",  # DLC STELLAR M60 Machine Gun III
+            "1691104809": "3227899887",  # DLC STELLAR M60 Machine Gun IV
+            
+            # Grenade Launcher - Rocket Ammo
+            "94681171": "4198025789",    # Grenade Launcher M222 - I
             "186342564": "4198025789",   # Grenade Launcher M222 - II
             "1349633617": "4198025789",  # Grenade Launcher M222 - III
             "4018216358": "4198025789",  # Grenade Launcher M222 - IV
             
-            "2529862352": "2442117335",  # Flamethrower VESUPYRE I - LMG Ammo
+            # DLC CRUSHER Grenade Launchers - Rocket Ammo
+            "2157668310": "4198025789",  # DLC CRUSHER Grenade Launcher I
+            "2384757537": "4198025789",  # DLC CRUSHER Grenade Launcher II
+            "3441856033": "4198025789",  # DLC CRUSHER Grenade Launcher III
+            "3043901684": "4198025789",  # DLC CRUSHER Grenade Launcher IV
+            
+            # Flamethrower - LMG Ammo
+            "2529862352": "2442117335",  # Flamethrower VESUPYRE I
             "2557822503": "2442117335",  # Flamethrower STERILATOR II
             "609450705": "2442117335",   # Flamethrower BUSHBOSS III
             "2288255787": "2442117335",  # Flamethrower BUSHBOSS IV
             
-            "2548581230": "3819023512",  # Nail Gun HAMMER I - Heavy Ammo
+            # DLC BUDDY Flamethrowers - LMG Ammo
+            "3250873684": "2442117335",  # DLC BUDDY Flamethrower I
+            "3480977827": "2442117335",  # DLC BUDDY Flamethrower II
+            "3469816623": "2442117335",  # DLC BUDDY Flamethrower III
+            "3994460767": "2442117335",  # DLC BUDDY Flamethrower IV
+            
+            # Nail Gun - Heavy Ammo
+            "2548581230": "3819023512",  # Nail Gun HAMMER I
             "2572658585": "3819023512",  # Nail Gun HAMMER II
             "143378107": "3819023512",   # Nail Gun HAMMER III
             "1911864170": "3819023512",  # Nail Gun HAMMER IV
             
-            # Na'vi Weapons (unchanged)
-            "1132447925": "1042656528",  # Na'vi Bow - Arrow Ammo
-            "172062103": "1042656528",   # Great Bow - Arrow Ammo
-            "982090295": "1042656528",   # War Bow - Arrow Ammo
-            "1048019290": "1042656528",  # Hunter Bow - Arrow Ammo
-            "2092736556": "435601722",   # Na'vi Spear - Spear Ammo
-            "535013914": "435601722",    # Battle Staff - Spear Ammo
-            "1662469074": "3069972540",  # Poison Dart - Poison Ammo
-            "1839769381": "3069972540",  # Stinger - Poison Ammo
+            # DLC DENT Nail Guns - Heavy Ammo
+            "2161255366": "3819023512",  # DLC DENT Nail Gun I
+            "2389559089": "3819023512",  # DLC DENT Nail Gun II
+            "3499218689": "3819023512",  # DLC DENT Nail Gun III
+            "4230631668": "3819023512",  # DLC DENT Nail Gun IV
             
-            # Unknown Na'vi items
-            "3400058396": "3069972540",  # Unknown Na'vi Item 1 - Poison Ammo
-            "371977402": "435601722",    # Unknown Na'vi Item 2 - Spear Ammo
-            "958613249": "1042656528",   # Unknown Na'vi Item 6 - Arrow Ammo
-            "921966990": "1042656528",   # Unknown Na'vi Item 16 - Arrow Ammo
+            # Na'vi Weapons
+            # Dual Blade - No ammo (melee)
+            "2948460035": "4294967295",  # Torukä Way Dual Blade IV
+            "2813685095": "4294967295",  # Palulukanä Srew Dual Blade III
+            "2917611312": "4294967295",  # 'Angtsìkä Zawng Dual Blade II
+            "2740507591": "4294967295",  # Ikranä Syal Dual Blade I
+            
+            # DLC Tanhì Dual Blade - No ammo (melee)
+            "2285146948": "4294967295",  # DLC Tanhì Dual Blade I
+            "2257287091": "4294967295",  # DLC Tanhì Dual Blade II
+            "3543126973": "4294967295",  # DLC Tanhì Dual Blade III
+            "2007498681": "4294967295",  # DLC Tanhì Dual Balde IV
+            
+            # Crossbow - Poison Ammo
+            "1514231420": "3069972540",  # Nawm Crossbow IV
+            "3400058396": "3069972540",  # Kyktan Crossbow III
+            "1839769381": "3069972540",  # Tsamsiyu Crossbow II
+            "1662469074": "3069972540",  # Taronyu Crossbow I
+            
+            # DLC PXI Crossbow - Poison Ammo
+            "3138212456": "3069972540",  # DLC PXI Crossbow I
+            "2486913109": "3069972540",  # DLC PXI Crossbow II
+            "2589205711": "3069972540",  # DLC PXI Crossbow III
+            "1886472672": "3069972540",  # DLC PXI Crossbow IV
+            
+            # M30 Machine Guns - Arrow Ammo
+            "921966990": "1042656528",   # ELITE AVR-M30 IV
+            "958613249": "1042656528",   # AVR-M30 Machine Gun IV
+            "172062103": "1042656528",   # ELITE AVR-M30 III
+            "982090295": "1042656528",   # AVR-M30 Machine Gun III
+            "1132447925": "1042656528",  # AVR-M30 Machine Gun II
+            "1048019290": "1042656528",  # ELITE AVR-M30 II
+            "1304439874": "1042656528",  # AVR-M30 Machine Gun I
+            
+            # Club - No ammo (melee)
+            "240531571": "4294967295",   # Nawm Club IV
+            "3879387803": "4294967295",  # Eyktan Club III
+            "4249071066": "4294967295",  # Tsamsiyu Club II
+            "4093397293": "4294967295",  # Taronyu Club I
+            
+            # DLC Ikran Axe - No ammo (melee)
+            "2934884349": "4294967295",  # DLC Ikran Axe 'Ampi
+            "2689671946": "4294967295",  # DLC Ikran Axe Kurakx
+            "1639187137": "4294967295",  # DLC Ikran Axe Tsmukan
+            "1958996617": "4294967295",  # DLC Ikran Axe 'Eko
+            
+            # Fighting Staff - Spear Ammo
+            "3960574385": "435601722",   # Torukä Tirea Fighting Staff IV
+            "2986118748": "435601722",   # Palulukanä Tìtakuk Fighting Staff III
+            "2295024111": "435601722",   # Pa'liä Tìtxur Fighting Staff II
+            "2255793432": "435601722",   # Ikranä Zawng Fighting Staff I
+            
+            # DLC Hufwe Fighting Staff - Spear Ammo
+            "1828119782": "435601722",   # DLC Hufwe Fighting Staff I
+            "1648951313": "435601722",   # DLC Hufwe Fighting Staff II
+            "3943944974": "435601722",   # DLC Hufwe Fighting Staff III
+            "3139393077": "435601722",   # DLC Hufwe Fighting Staff IV
+            
+            # Bow - Arrow Ammo
+            "291262189": "1042656528",   # DLC Taronyu Tsko Bow I
+            "535013914": "1042656528",   # Tasmsiyu Tsko Bow II
+            "2092736556": "1042656528",  # Tsko Kyktan Bow III
+            "371977402": "1042656528",   # Tsko Nawm Bow IV
+            
+            # DLC Bow - Arrow Ammo
+            "1817446146": "1042656528",  # DLC RAWKE Bow I
+            "435991093": "1042656528",   # DLC RAWKE Bow IV
+            "1659626485": "1042656528",  # DLC RAWKE Bow II
+            "1282693004": "1042656528",  # DLC RAWKE Bow III
         }
         
         # Return the appropriate ammo type for the weapon, or default if not found
@@ -1728,6 +2295,17 @@ class StatsManager:
         
         # Update the display
         self._update_navi_loadout_display(profile)
+
+        # Preserve faction when changing Na'vi weapons - explicitly set to "1" (Na'vi)
+        root = profile.getroot()
+        metagame = root.find("Metagame")
+        if metagame is not None:
+            current = metagame.get("PlayerFaction")
+            if current != "1":  # If it's not already Na'vi
+                metagame.set("PlayerFaction", "1")
+                # Also update the UI dropdown to match
+                if "PlayerFaction" in self.entries:
+                    self.entries["PlayerFaction"].set("Navi")
 
         self._preserve_faction(profile, "1")
 
@@ -1887,14 +2465,19 @@ class StatsManager:
                         ammo_type = poss.get("crc_AmmoType", "4294967295")
                         item_name = self._get_item_name(item_id)
                         
+                        # Determine if this is a melee weapon
+                        is_melee = any(melee_kw in item_name.lower() for melee_kw in 
+                                    ["club", "blade", "axe", "staff", "spear", "knife", "sword"])
+                        
                         weapon_info = {
                             "id": item_id,
                             "name": item_name,
-                            "ammo": poss.get("NbInClip", "0"),
-                            "stack": poss.get("NbInStack", "0")
+                            "ammo": "Melee" if is_melee else poss.get("NbInClip", "0"),
+                            "stack": poss.get("NbInStack", "0"),
+                            "is_melee": is_melee
                         }
                         
-                        if ammo_type != "4294967295":  # If not infinite ammo
+                        if ammo_type != "4294967295" and not is_melee:  # If not infinite ammo and not melee
                             total_ammo = "0"
                             for ammo_poss in possessions.findall("Poss"):
                                 if ammo_poss.get("crc_ItemID") == ammo_type:
@@ -1906,8 +2489,14 @@ class StatsManager:
                         # Check if weapon has infinite ammo
                         weapon_info["infinite_ammo"] = (
                             ammo_type == "4294967295" and 
-                            not any(melee_term in item_name.lower() for melee_term in ["staff", "club", "melee"])
+                            not is_melee and
+                            not any(pistol_term in item_name.lower() for pistol_term in ["wasp pistol"])
                         )
+                        
+                        # Special case for Wasp Pistols
+                        if "wasp pistol" in item_name.lower():
+                            weapon_info["infinite_ammo"] = True
+                            weapon_info["ammo"] = "∞"
                         
                         return weapon_info
         return None
@@ -1949,46 +2538,49 @@ class StatsManager:
         """Create mappings for Na'vi armor pieces by type"""
         self.navi_armor_sets = {
             "headwear": {
-                "236713729": "Na'vi Medium Armor",
-                "3529616870": "Stealth Cloak",
-                # Add RDA headwear
-                "433486271": "[RDA] Default RDA Head",
-                "4082430736": "[RDA] Titan Head",
-                "149499402": "[RDA] Militum Head",
-                "1593826001": "[RDA] Kodiak Head",
-                "3527939275": "[RDA] Exotant Head",
-                "403319592": "[RDA] Centauri Head",
-                "3753317026": "[RDA] Hydra Head",
-                "2823901304": "[RDA] Warthog Head",
-                "3980056687": "[RDA] Viper Head"
+                "236713729": "RDA-Issue Avatar Head",
+                "84098544": "EYKTAN Head",
+                "2070955956": "KARYU Head",
+                "1519513878": "NAWMA EYKTAN Head",
+                "3932154789": "NAWMA TARONYU Head",
+                "25166328": "NAWMA TSAMSIYU Head",
+                "985254384": "TIREA Head",
+                "3363478556": "NAWM Head",
+                "3529616870": "'AWVEA TSAMSIYU Head",
+                "1336514870": "DLC TSTEU II Head",
+                "1500118218": "DLC TSTEU IV Head",
+                "3240533717": "DLC TARONYU II Head",
+                "1753343575": "DLC TARONYU IV Head",
             },
             "torso": {
-                "2228061969": "Na'vi Heavy Armor", 
-                "1641566717": "Hunter's Mark",
-                # Add RDA torso armor
-                "-1": "[RDA] Default RDA Torso",
-                "205852157": "[RDA] Titan Torso",
-                "4160278759": "[RDA] Militum Torso",
-                "2716738620": "[RDA] Kodiak Torso",
-                "1193780569": "[RDA] Exotant Torso",
-                "3877361093": "[RDA] Centauri Torso",
-                "1851965193": "[RDA] Hydra Torso",
-                "1981144899": "[RDA] Warthog Torso",
-                "3574042272": "[RDA] Viper Torso"
+                "2228061969": "RDA-Issue Avatar Torso",
+                "3666151432": "EYKTAN Torso",
+                "1711646853": "KARYU Torso",
+                "2232927470": "NAWMA EYKTAN Torso",
+                "884530381": "NAWMA TARONYU Torso",
+                "3724948480": "NAWMA TSAMSIYU Torso",
+                "386149755": "TIREA Torso",
+                "1118628876": "NAWM Torso",
+                "1641566717": "'AWVEA TSAMSIYU Torso",
+                "904822394": "DLC TSTEU II Torso",
+                "1960056897": "DLC TSTSU IV Torso",
+                "3143727513": "DLC TARONYU II Torso",
+                "1161560796": "DLC TARONYU IV Torso",
             },
             "legs": {
-                "753645081": "Na'vi Light Armor",
-                "540413008": "Sacred Totem",
-                # Add RDA leg armor
-                "-1": "[RDA] Default RDA Legs",
-                "1052486966": "[RDA] Titan Legs",
-                "3305533484": "[RDA] Militum Legs",
-                "2467333367": "[RDA] Kodiak Legs",
-                "1379870057": "[RDA] Exotant Legs",
-                "3588584718": "[RDA] Centauri Legs",
-                "2428117146": "[RDA] Hydra Legs",
-                "2056338139": "[RDA] Warthog Legs",
-                "1417888964": "[RDA] Viper Legs"
+                "753645081": "RDA-Issue Avatar Legs",
+                "815973795": "EYKTAN Legs",
+                "2024863229": "KARYU Legs",
+                "1865419077": "NAWMA EYKTAN Legs",
+                "3480671099": "NAWMA TARONYU Legs",
+                "874641835": "NAWMA TSAMSIYU Legs",
+                "216177023": "TIREA Legs",
+                "3934969092": "NAWM Legs",
+                "540413008": "'AWVEA TSAMSIYU Legs",
+                "848846039": "DLC TSTEU II Legs",
+                "1865591877": "DLC TSTEU IV legs",
+                "3155647284": "DLC TARONYU II Legs",
+                "1591391960": "DLC TARONYU IV Legs",
             }
         }
 
@@ -2104,32 +2696,16 @@ class StatsManager:
         if selected_armor == "-Empty-":
             return
         
-        # Check if this is an RDA armor (has [RDA] prefix)
-        is_rda_armor = "[RDA]" in selected_armor
-        
-        # Clean the armor name if it has a faction prefix
-        if is_rda_armor:
-            armor_name = selected_armor.replace("[RDA] ", "")
-            # Get the ID from RDA armor mappings
-            armor_id = None
-            for id, name in self.rda_armor_sets[slot_type].items():
-                if name == armor_name:
-                    armor_id = id
-                    break
-        else:
-            armor_name = selected_armor
+        # Only process Na'vi armors
+        if selected_armor in list(self.navi_armor_sets[slot_type].values()):
             # Get the ID from Na'vi mappings
-            armor_id = self.navi_armor_ids[slot_type].get(armor_name)
-        
-        # Update the XML
-        if self.main_window.tree is not None:
-            profile = self.main_window.tree.getroot().find("PlayerProfile")
-            if profile is not None:
-                if is_rda_armor:
-                    # Adding RDA armor to Na'vi inventory
-                    self._add_rda_armor_to_navi(profile, slot_type, armor_id)
-                else:
-                    # Regular Na'vi armor handling - modify this part to use dynamic indices
+            armor_id = self.navi_armor_ids[slot_type].get(selected_armor)
+            
+            # Update the XML
+            if self.main_window.tree is not None:
+                profile = self.main_window.tree.getroot().find("PlayerProfile")
+                if profile is not None:
+                    # Regular Na'vi armor handling
                     avatar = profile.find("Possessions_Avatar")
                     if avatar is None:
                         return
@@ -2272,33 +2848,6 @@ class StatsManager:
 
         self._preserve_faction(profile, "1")
 
-    def _toggle_infinite_ammo(self, event, slot_index, is_navi=False):
-        """Handle toggling infinite ammo for a weapon"""
-        try:
-            # Get the slot data
-            slot_data = self.navi_weapon_slots[slot_index] if is_navi else self.weapon_slots[slot_index]
-            
-            # Get the current weapon from the dropdown
-            weapon_name = slot_data["dropdown"].get()
-            if weapon_name == "-Empty-":
-                return
-                    
-            # Find weapon ID from name
-            weapon_id = None
-            for id, name in slot_data["all_weapons"].items():
-                if name == weapon_name:
-                    weapon_id = id
-                    break
-                        
-            if weapon_id is None:
-                return
-                    
-            # We need to wait a moment for the checkbox to update
-            self.parent.after(50, lambda: self._apply_infinite_ammo(slot_index, is_navi, weapon_id))
-                    
-        except Exception as e:
-            self.logger.error(f"Error toggling infinite ammo: {str(e)}")
-
     def _update_navi_loadout_display(self, profile: ET.Element) -> None:
         """Update the Na'vi loadout display with current equipment"""
         # Update weapons
@@ -2312,34 +2861,67 @@ class StatsManager:
                     if "dropdown" in self.navi_weapon_slots[slot_num]:
                         weapon_name = main_weapon["name"]
                         dropdown = self.navi_weapon_slots[slot_num]["dropdown"]
-                        dropdown.set(f"[Na'vi] {weapon_name}")
+                        dropdown.set(weapon_name)
                         
                         # Update ammo entry
                         if "ammo_entry" in self.navi_weapon_slots[slot_num]:
                             ammo_entry = self.navi_weapon_slots[slot_num]["ammo_entry"]
-                            
-                            # Update ammo value
                             ammo_entry.delete(0, tk.END)
                             
+                            # For melee weapons, show "Melee" in the ammo entry
+                            if main_weapon.get("is_melee", False):
+                                ammo_entry.insert(0, "Melee")
+                                ammo_entry.configure(state="disabled")
                             # For weapons with infinite ammo, disable the field
-                            if main_weapon.get("infinite_ammo", False):
-                                ammo_entry.insert(0, "999999")
+                            elif main_weapon.get("infinite_ammo", False):
+                                ammo_entry.insert(0, "∞")
                                 ammo_entry.configure(state="disabled")
                             else:
                                 # For normal weapons, keep field enabled
                                 ammo_entry.insert(0, main_weapon.get("total_ammo", "0"))
                                 ammo_entry.configure(state="normal")
                         
-                        # Update clip size label - CHANGED to work with label instead of entry
+                        # Update clip size label
                         if "clip_entry" in self.navi_weapon_slots[slot_num]:
                             clip_label = self.navi_weapon_slots[slot_num]["clip_entry"]
-                            clip_label.config(text=main_weapon["ammo"])
+                            
+                            # For melee weapons, we don't need to show anything in the clip
+                            if main_weapon.get("is_melee", False):
+                                clip_label.config(text="--")
+                            # For infinite ammo weapons, show ∞
+                            elif main_weapon.get("infinite_ammo", False):
+                                clip_label.config(text="∞")
+                            else:
+                                clip_label.config(text=main_weapon.get("ammo", "0"))
                         
                         # Set infinite ammo checkbox based on weapon info
                         if "infinite_var" in self.navi_weapon_slots[slot_num]:
                             infinite_var = self.navi_weapon_slots[slot_num]["infinite_var"]
                             is_infinite = main_weapon.get("infinite_ammo", False)
                             infinite_var.set(is_infinite)
+                            
+                            # NEW CODE: Disable infinite ammo checkbox for melee or inherently infinite weapons
+                            if "infinite_check" in self.navi_weapon_slots[slot_num]:
+                                infinite_check = self.navi_weapon_slots[slot_num]["infinite_check"]
+                                # For melee weapons OR weapons with inherent infinite ammo, disable checkbox
+                                inherent_infinite = main_weapon.get("is_melee", False) or "dual blade" in main_weapon["name"].lower() or "club" in main_weapon["name"].lower() or "staff" in main_weapon["name"].lower() or "axe" in main_weapon["name"].lower()
+                                
+                                # Correctly set and disable checkbox for weapons that should have fixed ammo settings
+                                if inherent_infinite:
+                                    # Configure the checkbox to be disabled but checked for these weapons
+                                    infinite_check.state(['disabled'])
+                                    # Rebind to prevent any clicking for special weapons - this will block all events
+                                    for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
+                                        infinite_check.bind(event_name, lambda e: "break")
+                                else:
+                                    # Regular weapons can have their infinite ammo toggled
+                                    infinite_check.state(['!disabled'])
+                                    # Restore normal binding for regular weapons
+                                    for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
+                                        infinite_check.unbind(event_name)
+                                    # Re-bind the toggle function
+                                    infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_num, navi=True: 
+                                        self._toggle_infinite_ammo(e, idx, navi))
                 else:
                     # Set to empty if no weapon
                     if "dropdown" in self.navi_weapon_slots[slot_num]:
@@ -2352,7 +2934,7 @@ class StatsManager:
                             ammo_entry.insert(0, "0")
                             ammo_entry.configure(state="normal")
                         
-                        # Reset clip label - CHANGED for label
+                        # Reset clip label
                         if "clip_entry" in self.navi_weapon_slots[slot_num]:
                             clip_label = self.navi_weapon_slots[slot_num]["clip_entry"]
                             clip_label.config(text="0")
@@ -2360,6 +2942,17 @@ class StatsManager:
                         # Reset infinite ammo checkbox
                         if "infinite_var" in self.navi_weapon_slots[slot_num]:
                             self.navi_weapon_slots[slot_num]["infinite_var"].set(False)
+                        
+                        # Enable the infinite checkbox since no weapon is selected
+                        if "infinite_check" in self.navi_weapon_slots[slot_num]:
+                            infinite_check = self.navi_weapon_slots[slot_num]["infinite_check"] 
+                            infinite_check.state(['!disabled'])
+                            # Clear any special bindings
+                            for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
+                                infinite_check.unbind(event_name)
+                            # Re-bind the toggle function
+                            infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_num, navi=True: 
+                                self._toggle_infinite_ammo(e, idx, navi))
 
         # Update armor dropdowns
         armor_info = self._get_navi_armor_info(profile)
@@ -2368,7 +2961,7 @@ class StatsManager:
                 dropdown.set(armor_info[slot_type]["name"])
             else:
                 dropdown.set("-Empty-")
-                
+
     def _get_equipped_weapons(self, profile: ET.Element) -> dict:
         weapons_data = {}
         soldier = profile.find("Possessions_Soldier")
@@ -2400,14 +2993,19 @@ class StatsManager:
                         ammo_type = poss.get("crc_AmmoType", "4294967295")
                         item_name = self._get_item_name(item_id)
                         
+                        # Determine if this is a melee weapon
+                        is_melee = any(melee_kw in item_name.lower() for melee_kw in 
+                                    ["club", "blade", "axe", "staff", "spear", "knife", "sword"])
+                        
                         weapon_info = {
                             "id": item_id,
                             "name": item_name,
-                            "ammo": poss.get("NbInClip", "0"),
-                            "stack": poss.get("NbInStack", "0")
+                            "ammo": "Melee" if is_melee else poss.get("NbInClip", "0"),
+                            "stack": poss.get("NbInStack", "0"),
+                            "is_melee": is_melee
                         }
                         
-                        if ammo_type != "4294967295":  # If not infinite ammo
+                        if ammo_type != "4294967295" and not is_melee:  # If not infinite ammo and not melee
                             total_ammo = "0"
                             for ammo_poss in possessions.findall("Poss"):
                                 if ammo_poss.get("crc_ItemID") == ammo_type:
@@ -2419,8 +3017,14 @@ class StatsManager:
                         # Check if weapon has infinite ammo
                         weapon_info["infinite_ammo"] = (
                             ammo_type == "4294967295" and 
-                            not any(melee_term in item_name.lower() for melee_term in ["staff", "club", "melee"])
+                            not is_melee and
+                            not any(pistol_term in item_name.lower() for pistol_term in ["wasp pistol"])
                         )
+                        
+                        # Special case for Wasp Pistols
+                        if "wasp pistol" in item_name.lower():
+                            weapon_info["infinite_ammo"] = True
+                            weapon_info["ammo"] = "∞"
                         
                         return weapon_info
         return None
@@ -2475,9 +3079,12 @@ class StatsManager:
                 "3753317026": "Hydra Head",
                 "2823901304": "Warthog Head",
                 "3980056687": "Viper Head",
-                # Add Na'vi headwear
-                "236713729": "[Na'vi] Na'vi Medium Armor",
-                "3529616870": "[Na'vi] Stealth Cloak"
+                "3005472419": "DLC BRASHER I Head",
+                "3064631211": "DLC BRASHER II Head",
+                "3818917462": "DLC BRASHER IV Head",
+                "1563279247": "DLC MISHETICA I Head",
+                "4103047382": "DLC MISHETICA II Head",
+                "1950293887": "DLC MISHETICA IV Head",    
             },
             "torso": {
                 "-1": "Default RDA Torso",
@@ -2489,9 +3096,12 @@ class StatsManager:
                 "1851965193": "Hydra Torso",
                 "1981144899": "Warthog Torso",
                 "3574042272": "Viper Torso",
-                # Add Na'vi torso armor
-                "2228061969": "[Na'vi] Na'vi Heavy Armor",
-                "1641566717": "[Na'vi] Hunter's Mark"
+                "730661330": "DLC BRASHER I Torso",
+                "2822640242": "DLC BRASHER II Torso",
+                "1993326532": "DLC BRASHER IV Torso",
+                "3313721598": "DLC MISHETICA I Torso",
+                "3927643407": "DLC MISHETICA II Torso",
+                "3780161261": "DLC MISHETICA IV Torso",
             },
             "legs": {
                 "-1": "Default RDA Legs",
@@ -2503,9 +3113,12 @@ class StatsManager:
                 "2428117146": "Hydra Legs",
                 "2056338139": "Warthog Legs",
                 "1417888964": "Viper Legs",
-                # Add Na'vi leg armor
-                "753645081": "[Na'vi] Na'vi Light Armor",
-                "540413008": "[Na'vi] Sacred Totem"
+                "3718956374": "DLC BRASHER I Legs",
+                "2398239326": "DLC BRASHER II Legs",
+                "1675050996": "DLC BRASHER IV Legs",
+                "866428026": "DLC MISHETICA I Legs",
+                "3436657955": "DLC MISHETICA II Legs",
+                "4098371293": "DLC MISHETICA IV Legs",
             }
         }
 
@@ -2571,32 +3184,16 @@ class StatsManager:
         if selected_armor == "-Empty-":
             return
         
-        # Check if this is a Na'vi armor (has [Na'vi] prefix)
-        is_navi_armor = "[Na'vi]" in selected_armor
-        
-        # Clean the armor name if it has a faction prefix
-        if is_navi_armor:
-            armor_name = selected_armor.replace("[Na'vi] ", "")
-            # Get the ID from Na'vi armor mappings
-            armor_id = None
-            for id, name in self.navi_armor_sets[slot_type].items():
-                if name == armor_name:
-                    armor_id = id
-                    break
-        else:
-            armor_name = selected_armor
+        # Only process RDA armors
+        if selected_armor in list(self.rda_armor_sets[slot_type].values()):
             # Get the ID from RDA mappings
-            armor_id = self.rda_armor_ids[slot_type].get(armor_name)
-        
-        # Update the XML
-        if self.main_window.tree is not None:
-            profile = self.main_window.tree.getroot().find("PlayerProfile")
-            if profile is not None:
-                if is_navi_armor:
-                    # Adding Na'vi armor to RDA inventory
-                    self._add_navi_armor_to_rda(profile, slot_type, armor_id)
-                else:
-                    # Regular RDA armor handling - modify this part to use dynamic indices
+            armor_id = self.rda_armor_ids[slot_type].get(selected_armor)
+            
+            # Update the XML
+            if self.main_window.tree is not None:
+                profile = self.main_window.tree.getroot().find("PlayerProfile")
+                if profile is not None:
+                    # Regular RDA armor handling
                     soldier = profile.find("Possessions_Soldier")
                     if soldier is None:
                         return
@@ -2616,7 +3213,7 @@ class StatsManager:
                                 # Update the display
                                 self._update_loadout_display(profile)
                         return
-                    
+                                    
                     # For other armors, find or create the possession
                     possessions = soldier.find("Posessions")
                     if possessions is None:
@@ -2750,34 +3347,69 @@ class StatsManager:
                     if "dropdown" in self.weapon_slots[slot_num]:
                         weapon_name = main_weapon["name"]
                         dropdown = self.weapon_slots[slot_num]["dropdown"]
-                        dropdown.set(f"[RDA] {weapon_name}")
+                        dropdown.set(weapon_name)
                         
                         # Update ammo entry
                         if "ammo_entry" in self.weapon_slots[slot_num]:
                             ammo_entry = self.weapon_slots[slot_num]["ammo_entry"]
-                            
-                            # Update ammo value
                             ammo_entry.delete(0, tk.END)
                             
+                            # For melee weapons, show "Melee" in the ammo entry
+                            if main_weapon.get("is_melee", False):
+                                ammo_entry.insert(0, "Melee")
+                                ammo_entry.configure(state="disabled")
                             # For weapons with infinite ammo, disable the field
-                            if main_weapon.get("infinite_ammo", False):
-                                ammo_entry.insert(0, "999999")
+                            elif main_weapon.get("infinite_ammo", False):
+                                ammo_entry.insert(0, "∞")
                                 ammo_entry.configure(state="disabled")
                             else:
                                 # For normal weapons, keep field enabled
                                 ammo_entry.insert(0, main_weapon.get("total_ammo", "0"))
                                 ammo_entry.configure(state="normal")
                         
-                        # Update clip size label - CHANGED to work with label instead of entry
+                        # Update clip size label
                         if "clip_entry" in self.weapon_slots[slot_num]:
                             clip_label = self.weapon_slots[slot_num]["clip_entry"]
-                            clip_label.config(text=main_weapon["ammo"])
+                            
+                            # For melee weapons, we don't need to show anything in the clip
+                            if main_weapon.get("is_melee", False):
+                                clip_label.config(text="--")
+                            # For infinite ammo weapons, show ∞
+                            elif main_weapon.get("infinite_ammo", False):
+                                clip_label.config(text="∞")
+                            else:
+                                clip_label.config(text=main_weapon.get("ammo", "0"))
                         
                         # Set infinite ammo checkbox based on weapon info
                         if "infinite_var" in self.weapon_slots[slot_num]:
                             infinite_var = self.weapon_slots[slot_num]["infinite_var"]
                             is_infinite = main_weapon.get("infinite_ammo", False)
                             infinite_var.set(is_infinite)
+                            
+                            # NEW CODE: Disable infinite ammo checkbox for melee or inherently infinite weapons
+                            if "infinite_check" in self.weapon_slots[slot_num]:
+                                infinite_check = self.weapon_slots[slot_num]["infinite_check"]
+                                # For melee weapons OR weapons with inherent infinite ammo, disable checkbox
+                                inherent_infinite = main_weapon.get("is_melee", False) or any(
+                                    keyword in main_weapon["name"].lower() for keyword in ["wasp pistol"]
+                                )
+                                
+                                # Correctly set and disable checkbox for weapons that should have fixed ammo settings
+                                if inherent_infinite:
+                                    # Configure the checkbox to be disabled but checked for these weapons
+                                    infinite_check.state(['disabled'])
+                                    # Rebind to prevent any clicking for special weapons
+                                    for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
+                                        infinite_check.bind(event_name, lambda e: "break")
+                                else:
+                                    # Regular weapons can have their infinite ammo toggled
+                                    infinite_check.state(['!disabled'])
+                                    # Restore normal binding for regular weapons
+                                    for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
+                                        infinite_check.unbind(event_name)
+                                    # Re-bind the toggle function
+                                    infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_num, navi=False: 
+                                        self._toggle_infinite_ammo(e, idx, navi))
                 else:
                     # Set to empty if no weapon
                     if "dropdown" in self.weapon_slots[slot_num]:
@@ -2790,7 +3422,7 @@ class StatsManager:
                             ammo_entry.insert(0, "0")
                             ammo_entry.configure(state="normal")
                         
-                        # Reset clip label - CHANGED for label
+                        # Reset clip label
                         if "clip_entry" in self.weapon_slots[slot_num]:
                             clip_label = self.weapon_slots[slot_num]["clip_entry"]
                             clip_label.config(text="0")
@@ -2798,6 +3430,17 @@ class StatsManager:
                         # Reset infinite ammo checkbox
                         if "infinite_var" in self.weapon_slots[slot_num]:
                             self.weapon_slots[slot_num]["infinite_var"].set(False)
+                        
+                        # Enable the infinite checkbox since no weapon is selected
+                        if "infinite_check" in self.weapon_slots[slot_num]:
+                            infinite_check = self.weapon_slots[slot_num]["infinite_check"]
+                            infinite_check.state(['!disabled'])
+                            # Clear any special bindings
+                            for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
+                                infinite_check.unbind(event_name)
+                            # Re-bind the toggle function
+                            infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_num, navi=False: 
+                                self._toggle_infinite_ammo(e, idx, navi))
 
         # Update armor dropdowns
         armor_info = self._get_armor_info(profile)
@@ -3053,6 +3696,13 @@ class StatsManager:
                 updates["Player0"]["EPs"] = eps_value
                 updates["Player0"]["newEPs"] = new_eps_value
 
+            # Make sure the faction value is explicitly set
+            current_faction = self.entries["PlayerFaction"].get()
+            faction_map = {"Undecided": "0", "Na'vi": "1", "Navi": "1", "RDA": "2"}
+            faction_value = faction_map.get(current_faction, "0")
+            updates["Metagame"]["PlayerFaction"] = faction_value
+            print(f"DEBUG: Final faction value in updates: {updates['Metagame']['PlayerFaction']}")
+
             # Add Player1 values to updates
             if "EPs_Player1" in self.entries and "newEPs_Player1" in self.entries:
                 eps_value_p1 = self.entries["EPs_Player1"].get()
@@ -3071,6 +3721,43 @@ class StatsManager:
         except Exception as e:
             self.logger.error(f"Error getting stats updates: {str(e)}")
             raise
+
+    def _ensure_faction_preserved(self):
+        """Make sure faction value is not lost during save"""
+        if self.main_window.tree is not None:
+            root = self.main_window.tree.getroot()
+            metagame = root.find("Metagame")
+            if metagame is not None:
+                # Get current faction from UI
+                faction_widget = self.entries["PlayerFaction"]
+                faction = faction_widget.get()
+                
+                faction_map = {"Undecided": "0", "Na'vi": "1", "Navi": "1", "RDA": "2"}
+                faction_value = faction_map.get(faction, "0")
+                
+                # Force set faction in XML
+                metagame.set("PlayerFaction", faction_value)
+                print(f"DEBUG: Ensuring faction preserved as {faction_value}")
+                
+                # Also make sure Player0 and Player1 EPs are set
+                player0 = metagame.find("Player0")
+                if player0 is not None and "EPs" in self.entries and "newEPs" in self.entries:
+                    eps = self.entries["EPs"].get()
+                    new_eps = self.entries["newEPs"].get()
+                    if eps:
+                        player0.set("EPs", eps)
+                    if new_eps:
+                        player0.set("newEPs", new_eps)
+                        
+                player1 = metagame.find("Player1")
+                if player1 is not None and "EPs_Player1" in self.entries and "newEPs_Player1" in self.entries:
+                    eps_p1 = self.entries["EPs_Player1"].get()
+                    new_eps_p1 = self.entries["newEPs_Player1"].get()
+                    if eps_p1:
+                        player1.set("EPs", eps_p1)
+                    if new_eps_p1:
+                        player1.set("newEPs", new_eps_p1)
+
 
     def _on_faction_selected(self, event):
         try:

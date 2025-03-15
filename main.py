@@ -235,7 +235,7 @@ class SaveEditor:
         self.logger = logging.getLogger('SaveEditor')
         self.logger.debug("Initializing Save Editor")
         self.root = root
-        self.root.title("Avatar: The Game - Xbox 360 Save Editor")
+        self.root.title("Avatar: The Game Save Editor | Version 1.0")
         self.root.geometry("1130x680")
 
         # Set the window icon
@@ -428,7 +428,7 @@ class SaveEditor:
         
         try:
             file_path = filedialog.askopenfilename(
-                filetypes=[("Xbox 360 Save Files", "*.sav")]
+                filetypes=[("Xbox 360 & PC Saves", "*.sav")],
             )
             if not file_path:
                 self.logger.debug("File selection cancelled")
@@ -618,11 +618,24 @@ class SaveEditor:
             except Exception as debug_e:
                 print(f"SAVE_DEBUG ERROR: {str(debug_e)}")
             
+            self.stats_manager._ensure_faction_preserved()
+
             # Save file and update checksum
             self.logger.debug("Saving XML tree to file...")
             XMLHandler.save_xml_tree(self.tree, self.file_path)
             self.logger.debug("XML tree saved successfully")
             
+            # Force update Metagame faction if provided in stats_updates
+            if "Metagame" in stats_updates and "PlayerFaction" in stats_updates["Metagame"]:
+                metagame = root.find("Metagame")
+                if metagame is not None:
+                    metagame.set("PlayerFaction", stats_updates["Metagame"]["PlayerFaction"])
+                    self.logger.debug(f"Explicitly set PlayerFaction to {stats_updates['Metagame']['PlayerFaction']}")
+                else:
+                    # Create Metagame if it doesn't exist
+                    metagame = ET.SubElement(root, "Metagame")
+                    metagame.set("PlayerFaction", stats_updates["Metagame"]["PlayerFaction"])
+
             # Verify checksum after save
             try:
                 with open(self.file_path, 'rb') as f:
