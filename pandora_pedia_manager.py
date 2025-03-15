@@ -52,27 +52,14 @@ class PandoraPediaManager:
 
         ttk.Button(
             button_frame,
-            text="Unlock All Articles",
+            text="Discover All Articles",
             command=self._unlock_all_articles
         ).pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(
-            button_frame,
-            text="Set Selected to Locked",
-            command=lambda: self._set_selected_status("Locked")
-        ).pack(side=tk.LEFT, padx=5)
-
-        ttk.Button(
-            button_frame,
-            text="Set Selected to In Progress",
-            command=lambda: self._set_selected_status("In Progress")
-        ).pack(side=tk.LEFT, padx=5)
-
-        ttk.Button(
-            button_frame,
-            text="Set Selected to Unlocked",
-            command=lambda: self._set_selected_status("Unlocked")
-        ).pack(side=tk.LEFT, padx=5)
+        # Configure tags for color-coding with brighter colors for dark theme
+        self.pandora_pedia_tree.tag_configure('not_discovered', foreground='#FF3333')      # Brighter red
+        self.pandora_pedia_tree.tag_configure('discovered_not_seen', foreground='#FFCC00') # Brighter yellow/gold
+        self.pandora_pedia_tree.tag_configure('discovered_has_seen', foreground='#33FF33') # Brighter green
 
     def load_pandora_pedia(self, tree: ET.ElementTree) -> None:
         self.logger.debug("Loading PandoraPedia")
@@ -80,7 +67,7 @@ class PandoraPediaManager:
             # Clear existing items
             for item in self.pandora_pedia_tree.get_children():
                 self.pandora_pedia_tree.delete(item)
-
+            
             # Find all Article elements in XML
             articles = tree.findall(".//AvatarPandorapediaDB_Status/Article")
             self.logger.debug(f"Found {len(articles)} articles")
@@ -95,11 +82,19 @@ class PandoraPediaManager:
                     
                     # Map eKnown values to status text
                     status_map = {
-                        "0": "Locked",
-                        "1": "In Progress",
-                        "2": "Unlocked"
+                        "0": "Not Discovered",
+                        "1": "Discovered | Not Seen",
+                        "2": "Discovered | Has Seen"
                     }
-                    status = status_map.get(eknown_value, "Locked")
+                    status = status_map.get(eknown_value, "Not Discovered")
+                    
+                    # Map status to tag name (use consistent naming scheme)
+                    tag_map = {
+                        "Not Discovered": "not_discovered",
+                        "Discovered | Not Seen": "discovered_not_seen",
+                        "Discovered | Has Seen": "discovered_has_seen"
+                    }
+                    tag = tag_map.get(status, "not_discovered")
                     
                     # Format the article ID for display
                     formatted_id = f"Article {article_id}"
@@ -108,16 +103,11 @@ class PandoraPediaManager:
                     self.pandora_pedia_tree.insert(
                         "", tk.END,
                         values=(formatted_id, status),
-                        tags=(status.lower(),)
+                        tags=(tag,)
                     )
                     
                 except Exception as e:
                     self.logger.error(f"Error processing article {article_id}: {str(e)}", exc_info=True)
-
-            # Configure tags for color-coding
-            self.pandora_pedia_tree.tag_configure('locked', foreground='#FF0000')      # Bright red
-            self.pandora_pedia_tree.tag_configure('in progress', foreground='#FFA500') # Orange
-            self.pandora_pedia_tree.tag_configure('unlocked', foreground='#00FF00')    # Bright green
 
             self.logger.debug("PandoraPedia loaded successfully")
             
@@ -132,9 +122,9 @@ class PandoraPediaManager:
             
             # Status map for converting display text back to values
             status_to_value = {
-                "Locked": "0",
-                "In Progress": "1",
-                "Unlocked": "2"
+                "Not Discovered": "0",
+                "Discovered | Not Seen": "1",
+                "Discovered | Has Seen": "2"
             }
             
             for item in self.pandora_pedia_tree.get_children():
@@ -144,7 +134,7 @@ class PandoraPediaManager:
                     status = values[1]
                     eknown_value = status_to_value.get(status, "0")
 
-                    self.logger.debug(f"Processing article {article_id} with new status: {status}")
+                    self.logger.debug(f"Processing article {article_id} with new status: {status}, eKnown={eknown_value}")
 
                     # Find and update article in XML
                     article = root.find(f".//AvatarPandorapediaDB_Status/Article[@crc_id='{article_id}']")
@@ -168,20 +158,34 @@ class PandoraPediaManager:
     def _unlock_all_articles(self) -> None:
         self.logger.debug("Unlocking all articles")
         try:
-            # Update all items in the tree to Unlocked
+            # Update only undiscovered articles to "Discovered | Not Seen" (eKnown = 1)
+            # while preserving articles that are already "Discovered | Has Seen" (eKnown = 2)
+            changes_made = False
+            
             for item in self.pandora_pedia_tree.get_children():
                 try:
                     values = list(self.pandora_pedia_tree.item(item)["values"])
-                    values[1] = "Unlocked"
-                    self.pandora_pedia_tree.item(item, values=values, tags=('unlocked',))
-                    self.logger.debug(f"Unlocked article: {values[0]}")
+                    current_status = values[1]
+                    
+                    # Only change status if it's "Not Discovered"
+                    # Don't change if already "Discovered | Has Seen"
+                    if current_status == "Not Discovered":
+                        values[1] = "Discovered | Not Seen"
+                        self.pandora_pedia_tree.item(item, values=values, tags=('discovered_not_seen',))
+                        self.logger.debug(f"Discovered Article: {values[0]}")
+                        changes_made = True
+                    
                 except Exception as e:
                     self.logger.error(f"Error unlocking individual article: {str(e)}", exc_info=True)
                     continue
             
-            self.main_window.unsaved_label.config(text="Unsaved Changes")
-            self.logger.debug("All articles unlocked successfully")
-            messagebox.showinfo("Success", "All articles unlocked!")
+            if changes_made:
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
+                self.logger.debug("All undiscovered articles successfully discovered")
+                messagebox.showinfo("Success", "All articles discovered!")
+            else:
+                self.logger.debug("No changes were needed - all articles already discovered")
+                messagebox.showinfo("Information", "All articles were already discovered!")
             
         except Exception as e:
             self.logger.error(f"Error in unlock all articles: {str(e)}", exc_info=True)
@@ -194,11 +198,19 @@ class PandoraPediaManager:
             messagebox.showwarning("Warning", "Please select at least one article")
             return
 
+        # Map status text to tag name
+        tag_map = {
+            "Not Discovered": "not_discovered",
+            "Discovered | Not Seen": "discovered_not_seen",
+            "Discovered | Has Seen": "discovered_has_seen"
+        }
+        tag = tag_map.get(status, "not_discovered")
+
         try:
             for item in selected_items:
                 values = list(self.pandora_pedia_tree.item(item)["values"])
                 values[1] = status
-                self.pandora_pedia_tree.item(item, values=values, tags=(status.lower(),))
+                self.pandora_pedia_tree.item(item, values=values, tags=(tag,))
 
             self.main_window.unsaved_label.config(text="Unsaved Changes")
             messagebox.showinfo("Success", f"Selected articles set to {status}")
