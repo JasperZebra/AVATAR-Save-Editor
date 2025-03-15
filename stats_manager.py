@@ -748,6 +748,9 @@ class StatsManager:
                 pady=5
             )
 
+            # Add error handling to all comboboxes
+            self._add_error_handling_to_comboboxes()
+
         except Exception as e:
             self.logger.error(f"Error creating stat fields: {str(e)}", exc_info=True)
             raise
@@ -1214,6 +1217,12 @@ class StatsManager:
     def _toggle_infinite_ammo(self, event, slot_index, is_navi=False):
         """Handle toggling infinite ammo for a weapon"""
         try:
+            # Check if save file is loaded
+            if self.main_window.tree is None:
+                self.logger.warning("Attempted to toggle infinite ammo with no save file loaded")
+                messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+                return
+                
             # Get the slot data
             slot_data = self.navi_weapon_slots[slot_index] if is_navi else self.weapon_slots[slot_index]
             
@@ -1250,6 +1259,7 @@ class StatsManager:
             
         except Exception as e:
             self.logger.error(f"Error toggling infinite ammo: {str(e)}")
+            messagebox.showerror("Error", f"Failed to toggle infinite ammo: {str(e)}")
 
     def _apply_infinite_ammo(self, slot_index, is_navi, weapon_id):
         """Apply the infinite ammo setting after checkbox toggle"""
@@ -1612,6 +1622,16 @@ class StatsManager:
     def _update_ammo_value(self, event, slot_index, is_navi=False):
         """Update the ammo value in the XML when changed in the UI"""
         try:
+            # Check if save file is loaded
+            if self.main_window.tree is None:
+                self.logger.warning("Attempted to update ammo value with no save file loaded")
+                messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+                # Reset the entry to its original value
+                ammo_entry = self.navi_weapon_slots[slot_index]["ammo_entry"] if is_navi else self.weapon_slots[slot_index]["ammo_entry"]
+                ammo_entry.delete(0, tk.END)
+                ammo_entry.insert(0, "0")
+                return
+                
             # Get the new ammo value
             ammo_entry = self.navi_weapon_slots[slot_index]["ammo_entry"] if is_navi else self.weapon_slots[slot_index]["ammo_entry"] 
             new_ammo = ammo_entry.get()
@@ -1629,78 +1649,78 @@ class StatsManager:
                 return
                                         
             # Update the XML if valid
-            if self.main_window.tree is not None:
-                profile = self.main_window.tree.getroot().find("PlayerProfile")
-                if profile is not None:
-                    # Find the weapon possession
-                    if is_navi:
-                        avatar = profile.find("Possessions_Avatar")
-                        if avatar is None:
-                            return
-                                
-                        equipped = avatar.find("EquippedWeapons")
-                        if equipped is None:
-                            return
-                                
-                        slots = equipped.findall("Slot")
-                        if slot_index >= len(slots):
-                            return
-                        
-                        poss_idx = slots[slot_index].get("MainHand_PossIdx", "-1")
-                        possessions = avatar.find("Posessions")
-                    else:
-                        soldier = profile.find("Possessions_Soldier")
-                        if soldier is None:
-                            return
-                                
-                        equipped = soldier.find("EquippedWeapons")
-                        if equipped is None:
-                            return
-                                
-                        slots = equipped.findall("Slot")
-                        if slot_index >= len(slots):
-                            return
-                        
-                        poss_idx = slots[slot_index].get("MainHand_PossIdx", "-1")
-                        possessions = soldier.find("Posessions")
-                    
-                    if possessions is None or poss_idx == "-1":
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is not None:
+                # Find the weapon possession
+                if is_navi:
+                    avatar = profile.find("Possessions_Avatar")
+                    if avatar is None:
+                        return
+                            
+                    equipped = avatar.find("EquippedWeapons")
+                    if equipped is None:
+                        return
+                            
+                    slots = equipped.findall("Slot")
+                    if slot_index >= len(slots):
                         return
                     
-                    # Find weapon possession
-                    weapon_poss = None
-                    for poss in possessions.findall("Poss"):
-                        if poss.get("Index") == poss_idx:
-                            weapon_poss = poss
+                    poss_idx = slots[slot_index].get("MainHand_PossIdx", "-1")
+                    possessions = avatar.find("Posessions")
+                else:
+                    soldier = profile.find("Possessions_Soldier")
+                    if soldier is None:
+                        return
+                            
+                    equipped = soldier.find("EquippedWeapons")
+                    if equipped is None:
+                        return
+                            
+                    slots = equipped.findall("Slot")
+                    if slot_index >= len(slots):
+                        return
+                    
+                    poss_idx = slots[slot_index].get("MainHand_PossIdx", "-1")
+                    possessions = soldier.find("Posessions")
+                
+                if possessions is None or poss_idx == "-1":
+                    return
+                
+                # Find weapon possession
+                weapon_poss = None
+                for poss in possessions.findall("Poss"):
+                    if poss.get("Index") == poss_idx:
+                        weapon_poss = poss
+                        break
+                
+                if weapon_poss is None:
+                    return
+                
+                # DIRECT APPROACH: Set both values that could affect ammo
+                weapon_poss.set("NbInClip", str(new_ammo))
+                print(f"AMMO_DEBUG: Set weapon NbInClip to {new_ammo}")
+                
+                # Get the ammo type
+                ammo_type = weapon_poss.get("crc_AmmoType", "4294967295")
+                if ammo_type != "4294967295":
+                    ammo_found = False
+                    for ammo_poss in possessions.findall("Poss"):
+                        if ammo_poss.get("crc_ItemID") == ammo_type:
+                            ammo_poss.set("NbInStack", str(new_ammo))
+                            print(f"AMMO_DEBUG: Set ammo NbInStack to {new_ammo}")
+                            ammo_found = True
                             break
                     
-                    if weapon_poss is None:
-                        return
-                    
-                    # DIRECT APPROACH: Set both values that could affect ammo
-                    weapon_poss.set("NbInClip", str(new_ammo))
-                    print(f"AMMO_DEBUG: Set weapon NbInClip to {new_ammo}")
-                    
-                    # Get the ammo type
-                    ammo_type = weapon_poss.get("crc_AmmoType", "4294967295")
-                    if ammo_type != "4294967295":
-                        ammo_found = False
-                        for ammo_poss in possessions.findall("Poss"):
-                            if ammo_poss.get("crc_ItemID") == ammo_type:
-                                ammo_poss.set("NbInStack", str(new_ammo))
-                                print(f"AMMO_DEBUG: Set ammo NbInStack to {new_ammo}")
-                                ammo_found = True
-                                break
-                        
-                        if not ammo_found:
-                            self._ensure_ammo_exists(possessions, ammo_type, str(new_ammo))
-                            print(f"AMMO_DEBUG: Created new ammo with {new_ammo}")
-                    
-                    # Force immediate save
-                    print("AMMO_DEBUG: Marking file as having unsaved changes")
-                    self.main_window.unsaved_label.config(text="Unsaved Changes")
+                    if not ammo_found:
+                        self._ensure_ammo_exists(possessions, ammo_type, str(new_ammo))
+                        print(f"AMMO_DEBUG: Created new ammo with {new_ammo}")
+                
+                # Force immediate save
+                print("AMMO_DEBUG: Marking file as having unsaved changes")
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
         except Exception as e:
             print(f"AMMO_DEBUG ERROR: {str(e)}")
+            messagebox.showerror("Error", f"Failed to update ammo value: {str(e)}")
 
     def _can_have_infinite_ammo(self, weapon_id):
         """Determine if a weapon can have infinite ammo"""
@@ -1720,12 +1740,14 @@ class StatsManager:
         self.logger.debug("Resetting all weapons to original ammo types")
         
         if self.main_window.tree is None:
-            self.logger.warning("No save file loaded")
+            self.logger.warning("No save file loaded when attempting to reset weapon ammo types")
+            messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
             return
         
         profile = self.main_window.tree.getroot().find("PlayerProfile")
         if profile is None:
-            self.logger.warning("No player profile found")
+            self.logger.warning("No player profile found when attempting to reset weapon ammo types")
+            messagebox.showerror("Error", "No valid player profile found in the loaded save file.")
             return
         
         # Reset RDA weapons
@@ -1802,6 +1824,15 @@ class StatsManager:
 
     def _on_navi_weapon_selected(self, event, slot_index):
         """Handle the selection of a weapon from the Na'vi dropdown"""
+        # Check if save file is loaded
+        if self.main_window.tree is None:
+            self.logger.warning("Attempted to select Na'vi weapon with no save file loaded")
+            messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+            # Reset the combobox to empty
+            combo = event.widget
+            combo.set("-Empty-")
+            return
+            
         combo = event.widget
         selected_weapon = combo.get()
         
@@ -1818,19 +1849,27 @@ class StatsManager:
         
         if weapon_id is None:
             return
-            
+                
         # Update the XML when we have a valid save file
-        if self.main_window.tree is not None:
-            profile = self.main_window.tree.getroot().find("PlayerProfile")
-            if profile is not None:
-                # Update Na'vi weapon
-                self._update_navi_weapon(profile, slot_index, weapon_id)
+        profile = self.main_window.tree.getroot().find("PlayerProfile")
+        if profile is not None:
+            # Update Na'vi weapon
+            self._update_navi_weapon(profile, slot_index, weapon_id)
                     
         # Mark as unsaved
         self.main_window.unsaved_label.config(text="Unsaved Changes")
 
     def _on_weapon_selected(self, event, slot_index):
         """Handle the selection of a weapon from the RDA dropdown"""
+        # Check if save file is loaded
+        if self.main_window.tree is None:
+            self.logger.warning("Attempted to select RDA weapon with no save file loaded")
+            messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+            # Reset the combobox to empty
+            combo = event.widget
+            combo.set("-Empty-")
+            return
+            
         combo = event.widget
         selected_weapon = combo.get()
         
@@ -1847,13 +1886,12 @@ class StatsManager:
         
         if weapon_id is None:
             return
-            
+                
         # Update the XML when we have a valid save file
-        if self.main_window.tree is not None:
-            profile = self.main_window.tree.getroot().find("PlayerProfile")
-            if profile is not None:
-                # Update RDA weapon
-                self._update_rda_weapon(profile, slot_index, weapon_id)
+        profile = self.main_window.tree.getroot().find("PlayerProfile")
+        if profile is not None:
+            # Update RDA weapon
+            self._update_rda_weapon(profile, slot_index, weapon_id)
                     
         # Mark as unsaved
         self.main_window.unsaved_label.config(text="Unsaved Changes")
@@ -2346,6 +2384,12 @@ class StatsManager:
     def _max_out_level(self):
         """Max out the experience based on selected faction"""
         try:
+            # Check if a save file is loaded
+            if self.main_window.tree is None:
+                self.logger.warning("No save file loaded when attempting to max out level")
+                messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+                return
+                
             # Get current faction
             faction_widget = self.entries["PlayerFaction"]
             faction = faction_widget.get()
@@ -2360,14 +2404,28 @@ class StatsManager:
             ep_widget = self.entries["TotalEP"]
             current_ep_text = ep_widget.cget("text") if isinstance(ep_widget, ttk.Label) else ep_widget.get()
             
-            # Extract numeric EP value
-            if "/" in current_ep_text:
-                current_ep = current_ep_text.split("/")[0]
-            else:
-                current_ep = current_ep_text
+            # Validate the current EP text
+            if current_ep_text in ["-", ""]:
+                self.logger.warning("Invalid EP value when attempting to max out level")
+                messagebox.showerror("Error", "Invalid EP value. Please load a valid save file.")
+                return
                 
+            # Extract numeric EP value
+            try:
+                if "/" in current_ep_text:
+                    current_ep = current_ep_text.split("/")[0]
+                else:
+                    current_ep = current_ep_text
+                    
+                # Convert to integer (this will raise ValueError if not a valid number)
+                current_ep = int(current_ep)
+            except ValueError:
+                self.logger.warning(f"Failed to parse EP value: '{current_ep_text}'")
+                messagebox.showerror("Error", "Invalid EP value format. Please load a valid save file.")
+                return
+                    
             # Check if already at max EP
-            if int(current_ep) >= max_ep:
+            if current_ep >= max_ep:
                 messagebox.showinfo("Already Maxed Out", 
                                 f"Your character already has maximum amount EP ({max_ep}) for the {faction} faction.")
                 return
@@ -2391,10 +2449,10 @@ class StatsManager:
             
             # Show success message
             messagebox.showinfo("EP Maxed Out", 
-                            f"Successfully set experience to maximum amout ({max_ep}) for the {faction} faction.")
+                            f"Successfully set experience to maximum amount ({max_ep}) for the {faction} faction.")
             
         except Exception as e:
-            self.logger.error(f"Error maxing out level: {str(e)}")
+            self.logger.error(f"Error maxing out level: {str(e)}", exc_info=True)
             messagebox.showerror("Error", f"Failed to max out level: {str(e)}")
 
     def _name_vec_to_string(self, name_vec: str) -> str:
@@ -2689,6 +2747,15 @@ class StatsManager:
 
     def _on_navi_armor_selected(self, event, slot_type):
         """Handle Na'vi armor selection change"""
+        # Check if save file is loaded
+        if self.main_window.tree is None:
+            self.logger.warning("Attempted to select Na'vi armor with no save file loaded")
+            messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+            # Reset the combobox to empty
+            combo = event.widget
+            combo.set("-Empty-")
+            return
+            
         combo = event.widget
         selected_armor = combo.get()
         
@@ -2702,151 +2769,78 @@ class StatsManager:
             armor_id = self.navi_armor_ids[slot_type].get(selected_armor)
             
             # Update the XML
-            if self.main_window.tree is not None:
-                profile = self.main_window.tree.getroot().find("PlayerProfile")
-                if profile is not None:
-                    # Regular Na'vi armor handling
-                    avatar = profile.find("Possessions_Avatar")
-                    if avatar is None:
-                        return
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is not None:
+                # Regular Na'vi armor handling
+                avatar = profile.find("Possessions_Avatar")
+                if avatar is None:
+                    return
+                
+                # Find posessions element
+                possessions = avatar.find("Posessions")
+                if possessions is None:
+                    return
+                
+                # Check if the armor already exists
+                existing_poss = None
+                for poss in possessions.findall("Poss"):
+                    if poss.get("crc_ItemID") == armor_id:
+                        existing_poss = poss
+                        break
+                
+                if existing_poss is not None:
+                    # Use existing possession
+                    index_str = existing_poss.get("Index")
+                else:
+                    # Create new possession with next available index
+                    existing_indices = [int(poss.get("Index")) for poss in possessions.findall("Poss")]
+                    next_index = 0
+                    while next_index in existing_indices:
+                        next_index += 1
+                    index_str = str(next_index)
                     
-                    # Find posessions element
-                    possessions = avatar.find("Posessions")
-                    if possessions is None:
-                        return
-                    
-                    # Check if the armor already exists
-                    existing_poss = None
+                    # Find the last element to copy its formatting
+                    last_poss = None
                     for poss in possessions.findall("Poss"):
-                        if poss.get("crc_ItemID") == armor_id:
-                            existing_poss = poss
-                            break
+                        last_poss = poss
                     
-                    if existing_poss is not None:
-                        # Use existing possession
-                        index_str = existing_poss.get("Index")
-                    else:
-                        # Create new possession with next available index
-                        existing_indices = [int(poss.get("Index")) for poss in possessions.findall("Poss")]
-                        next_index = 0
-                        while next_index in existing_indices:
-                            next_index += 1
-                        index_str = str(next_index)
-                        
-                        # Find the last element to copy its formatting
-                        last_poss = None
-                        for poss in possessions.findall("Poss"):
-                            last_poss = poss
-                        
-                        # Create new possession
-                        new_poss = ET.SubElement(possessions, "Poss")
-                        new_poss.set("Index", index_str)
-                        new_poss.set("crc_ItemID", armor_id)
-                        new_poss.set("NbInStack", "1")
-                        new_poss.set("NbInClip", "0")
-                        new_poss.set("crc_AmmoType", "4294967295")
-                        new_poss.set("NoveltyState", "2")
-                        
-                        # Copy the tail from the last element to preserve formatting
-                        if last_poss is not None and hasattr(last_poss, 'tail'):
-                            new_poss.tail = last_poss.tail
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", index_str)
+                    new_poss.set("crc_ItemID", armor_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    new_poss.set("crc_AmmoType", "4294967295")
+                    new_poss.set("NoveltyState", "2")
                     
-                    # Find EquippedArmors element
-                    equipped_armors = avatar.find("EquippedArmors")
-                    if equipped_armors is None:
-                        equipped_armors = ET.SubElement(avatar, "EquippedArmors")
-                    
-                    # Slot mapping
-                    slot_mapping = {"headwear": 0, "torso": 1, "legs": 2}
-                    slot_position = slot_mapping[slot_type]
-                    
-                    # Ensure we have enough slots
-                    while len(equipped_armors.findall("Slot")) <= slot_position:
-                        ET.SubElement(equipped_armors, "Slot")
-                    
-                    # Update the appropriate slot
-                    slots = equipped_armors.findall("Slot")
-                    slots[slot_position].set("PossIdx", index_str)
-                    
-                    # Mark changes as unsaved
-                    self.main_window.unsaved_label.config(text="Unsaved Changes")
-                    
-                    # Update the display
-                    self._update_navi_loadout_display(profile)
+                    # Copy the tail from the last element to preserve formatting
+                    if last_poss is not None and hasattr(last_poss, 'tail'):
+                        new_poss.tail = last_poss.tail
+                
+                # Find EquippedArmors element
+                equipped_armors = avatar.find("EquippedArmors")
+                if equipped_armors is None:
+                    equipped_armors = ET.SubElement(avatar, "EquippedArmors")
+                
+                # Slot mapping
+                slot_mapping = {"headwear": 0, "torso": 1, "legs": 2}
+                slot_position = slot_mapping[slot_type]
+                
+                # Ensure we have enough slots
+                while len(equipped_armors.findall("Slot")) <= slot_position:
+                    ET.SubElement(equipped_armors, "Slot")
+                
+                # Update the appropriate slot
+                slots = equipped_armors.findall("Slot")
+                slots[slot_position].set("PossIdx", index_str)
+                
+                # Mark changes as unsaved
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
+                
+                # Update the display
+                self._update_navi_loadout_display(profile)
 
-                    self._preserve_faction(profile, "1")
-
-    def _add_rda_armor_to_navi(self, profile, slot_type, armor_id):
-        """Add RDA armor item to Na'vi inventory"""
-        avatar = profile.find("Possessions_Avatar")
-        if avatar is None:
-            return
-
-        # Find posessions element
-        possessions = avatar.find("Posessions")
-        if possessions is None:
-            return
-
-        # Determine next available index
-        existing_indices = [int(poss.get("Index")) for poss in possessions.findall("Poss")]
-        next_index = 0
-        while next_index in existing_indices:
-            next_index += 1
-        next_index_str = str(next_index)
-        
-        # Find the last element to copy its formatting
-        last_poss = None
-        for poss in possessions.findall("Poss"):
-            last_poss = poss
-        
-        # Create new possession for the RDA armor
-        new_poss = ET.SubElement(possessions, "Poss")
-        new_poss.set("Index", next_index_str)
-        new_poss.set("crc_ItemID", armor_id)
-        new_poss.set("NbInStack", "1")
-        new_poss.set("NbInClip", "0")
-        new_poss.set("crc_AmmoType", "4294967295")  # Armor ammo type
-        new_poss.set("NoveltyState", "2")
-        
-        # Copy the tail from the last element to preserve formatting
-        if last_poss is not None and hasattr(last_poss, 'tail'):
-            new_poss.tail = last_poss.tail
-
-        # Find EquippedArmors element
-        equipped_armors = avatar.find("EquippedArmors")
-        if equipped_armors is None:
-            equipped_armors = ET.SubElement(avatar, "EquippedArmors")
-
-        # Slot mapping
-        slot_mapping = {"headwear": 0, "torso": 1, "legs": 2}
-        slot_position = slot_mapping[slot_type]
-
-        # Ensure we have enough slots
-        while len(equipped_armors.findall("Slot")) <= slot_position:
-            ET.SubElement(equipped_armors, "Slot")
-
-        # Update the appropriate slot
-        slots = equipped_armors.findall("Slot")
-        slots[slot_position].set("PossIdx", next_index_str)
-
-        # Mark changes as unsaved
-        self.main_window.unsaved_label.config(text="Unsaved Changes")
-        
-        # Update the display
-        self._update_navi_loadout_display(profile)
-
-        root = profile.getroot()
-        metagame = root.find("Metagame")
-        if metagame is not None and metagame.get("PlayerFaction") != "1":
-            # Force Na'vi faction if it was changed
-            metagame.set("PlayerFaction", "1")
-            print("DEBUG: Restored Na'vi faction that was changed during RDA item equip")
-            
-            # Also update the UI dropdown to match
-            if "PlayerFaction" in self.entries:
-                self.entries["PlayerFaction"].set("Na'vi")
-
-        self._preserve_faction(profile, "1")
+                self._preserve_faction(profile, "1")
 
     def _update_navi_loadout_display(self, profile: ET.Element) -> None:
         """Update the Na'vi loadout display with current equipment"""
@@ -3177,6 +3171,15 @@ class StatsManager:
 
     def _on_armor_selected(self, event, slot_type):
         """Handle armor selection change"""
+        # Check if save file is loaded
+        if self.main_window.tree is None:
+            self.logger.warning("Attempted to select RDA armor with no save file loaded")
+            messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+            # Reset the combobox to empty
+            combo = event.widget
+            combo.set("-Empty-")
+            return
+            
         combo = event.widget
         selected_armor = combo.get()
         
@@ -3190,72 +3193,15 @@ class StatsManager:
             armor_id = self.rda_armor_ids[slot_type].get(selected_armor)
             
             # Update the XML
-            if self.main_window.tree is not None:
-                profile = self.main_window.tree.getroot().find("PlayerProfile")
-                if profile is not None:
-                    # Regular RDA armor handling
-                    soldier = profile.find("Possessions_Soldier")
-                    if soldier is None:
-                        return
-                    
-                    # For default items with ID "-1", just set the slot and return
-                    if armor_id == "-1":
-                        equipped_armors = soldier.find("EquippedArmors")
-                        if equipped_armors is not None:
-                            slots = equipped_armors.findall("Slot")
-                            slot_mapping = {"headwear": 0, "torso": 1, "legs": 2}
-                            slot_position = slot_mapping[slot_type]
-                            
-                            if 0 <= slot_position < len(slots):
-                                slots[slot_position].set("PossIdx", "-1")
-                                # Mark changes as unsaved
-                                self.main_window.unsaved_label.config(text="Unsaved Changes")
-                                # Update the display
-                                self._update_loadout_display(profile)
-                        return
-                                    
-                    # For other armors, find or create the possession
-                    possessions = soldier.find("Posessions")
-                    if possessions is None:
-                        return
-                    
-                    # Check if the armor already exists
-                    existing_poss = None
-                    for poss in possessions.findall("Poss"):
-                        if poss.get("crc_ItemID") == armor_id:
-                            existing_poss = poss
-                            break
-                    
-                    if existing_poss is not None:
-                        # Use existing possession
-                        index_str = existing_poss.get("Index")
-                    else:
-                        # Create new possession with next available index
-                        existing_indices = [int(poss.get("Index")) for poss in possessions.findall("Poss")]
-                        next_index = 0
-                        while next_index in existing_indices:
-                            next_index += 1
-                        index_str = str(next_index)
-                        
-                        # Find the last element to copy its formatting
-                        last_poss = None
-                        for poss in possessions.findall("Poss"):
-                            last_poss = poss
-                        
-                        # Create new possession
-                        new_poss = ET.SubElement(possessions, "Poss")
-                        new_poss.set("Index", index_str)
-                        new_poss.set("crc_ItemID", armor_id)
-                        new_poss.set("NbInStack", "1")
-                        new_poss.set("NbInClip", "0")
-                        new_poss.set("crc_AmmoType", "4294967295")
-                        new_poss.set("NoveltyState", "2")
-                        
-                        # Copy the tail from the last element to preserve formatting
-                        if last_poss is not None and hasattr(last_poss, 'tail'):
-                            new_poss.tail = last_poss.tail
-                    
-                    # Update the equipped slot
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is not None:
+                # Regular RDA armor handling
+                soldier = profile.find("Possessions_Soldier")
+                if soldier is None:
+                    return
+                
+                # For default items with ID "-1", just set the slot and return
+                if armor_id == "-1":
                     equipped_armors = soldier.find("EquippedArmors")
                     if equipped_armors is not None:
                         slots = equipped_armors.findall("Slot")
@@ -3263,76 +3209,71 @@ class StatsManager:
                         slot_position = slot_mapping[slot_type]
                         
                         if 0 <= slot_position < len(slots):
-                            slots[slot_position].set("PossIdx", index_str)
+                            slots[slot_position].set("PossIdx", "-1")
+                            # Mark changes as unsaved
+                            self.main_window.unsaved_label.config(text="Unsaved Changes")
+                            # Update the display
+                            self._update_loadout_display(profile)
+                    return
+                                
+                # For other armors, find or create the possession
+                possessions = soldier.find("Posessions")
+                if possessions is None:
+                    return
+                
+                # Check if the armor already exists
+                existing_poss = None
+                for poss in possessions.findall("Poss"):
+                    if poss.get("crc_ItemID") == armor_id:
+                        existing_poss = poss
+                        break
+                
+                if existing_poss is not None:
+                    # Use existing possession
+                    index_str = existing_poss.get("Index")
+                else:
+                    # Create new possession with next available index
+                    existing_indices = [int(poss.get("Index")) for poss in possessions.findall("Poss")]
+                    next_index = 0
+                    while next_index in existing_indices:
+                        next_index += 1
+                    index_str = str(next_index)
                     
-                    # Mark changes as unsaved
-                    self.main_window.unsaved_label.config(text="Unsaved Changes")
+                    # Find the last element to copy its formatting
+                    last_poss = None
+                    for poss in possessions.findall("Poss"):
+                        last_poss = poss
                     
-                    # Update the display
-                    self._update_loadout_display(profile)
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", index_str)
+                    new_poss.set("crc_ItemID", armor_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    new_poss.set("crc_AmmoType", "4294967295")
+                    new_poss.set("NoveltyState", "2")
+                    
+                    # Copy the tail from the last element to preserve formatting
+                    if last_poss is not None and hasattr(last_poss, 'tail'):
+                        new_poss.tail = last_poss.tail
+                
+                # Update the equipped slot
+                equipped_armors = soldier.find("EquippedArmors")
+                if equipped_armors is not None:
+                    slots = equipped_armors.findall("Slot")
+                    slot_mapping = {"headwear": 0, "torso": 1, "legs": 2}
+                    slot_position = slot_mapping[slot_type]
+                    
+                    if 0 <= slot_position < len(slots):
+                        slots[slot_position].set("PossIdx", index_str)
+                
+                # Mark changes as unsaved
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
+                
+                # Update the display
+                self._update_loadout_display(profile)
 
-                    self._preserve_faction(profile, "2")
-
-    def _add_navi_armor_to_rda(self, profile, slot_type, armor_id):
-        """Add Na'vi armor item to RDA inventory"""
-        soldier = profile.find("Possessions_Soldier")
-        if soldier is None:
-            return
-
-        # Find posessions element
-        possessions = soldier.find("Posessions")
-        if possessions is None:
-            return
-
-        # Determine next available index
-        existing_indices = [int(poss.get("Index")) for poss in possessions.findall("Poss")]
-        next_index = 0
-        while next_index in existing_indices:
-            next_index += 1
-        next_index_str = str(next_index)
-        
-        # Find the last element to copy its formatting
-        last_poss = None
-        for poss in possessions.findall("Poss"):
-            last_poss = poss
-        
-        # Create new possession for the Na'vi armor
-        new_poss = ET.SubElement(possessions, "Poss")
-        new_poss.set("Index", next_index_str)
-        new_poss.set("crc_ItemID", armor_id)
-        new_poss.set("NbInStack", "1")
-        new_poss.set("NbInClip", "0")
-        new_poss.set("crc_AmmoType", "4294967295")  # Armor ammo type
-        new_poss.set("NoveltyState", "2")
-        
-        # Copy the tail from the last element to preserve formatting
-        if last_poss is not None and hasattr(last_poss, 'tail'):
-            new_poss.tail = last_poss.tail
-
-        # Find EquippedArmors element
-        equipped_armors = soldier.find("EquippedArmors")
-        if equipped_armors is None:
-            equipped_armors = ET.SubElement(soldier, "EquippedArmors")
-
-        # Slot mapping
-        slot_mapping = {"headwear": 0, "torso": 1, "legs": 2}
-        slot_position = slot_mapping[slot_type]
-
-        # Ensure we have enough slots
-        while len(equipped_armors.findall("Slot")) <= slot_position:
-            ET.SubElement(equipped_armors, "Slot")
-
-        # Update the appropriate slot
-        slots = equipped_armors.findall("Slot")
-        slots[slot_position].set("PossIdx", next_index_str)
-
-        # Mark changes as unsaved
-        self.main_window.unsaved_label.config(text="Unsaved Changes")
-        
-        # Update the display
-        self._update_loadout_display(profile)
-
-        self._preserve_faction(profile, "2")
+                self._preserve_faction(profile, "2")
 
     def _update_loadout_display(self, profile: ET.Element) -> None:
         """Update the RDA loadout display with current equipment"""
@@ -3507,9 +3448,76 @@ class StatsManager:
     def _mark_unsaved_changes(self, event=None):
         """Mark the save file as having unsaved changes"""
         try:
+            # Check if a save file is loaded before marking changes
+            if self.main_window.tree is None:
+                self.logger.warning("Attempted to mark changes with no save file loaded")
+                messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+                
+                # Reset the combobox to its previous value if this was triggered by a combobox
+                if event and hasattr(event, 'widget') and isinstance(event.widget, ttk.Combobox):
+                    # We don't know the previous value, so just reset selection
+                    event.widget.selection_clear()
+                    return "break"  # Prevent default handling
+                    
+                return
+                
             self.main_window.unsaved_label.config(text="Unsaved Changes")
         except Exception as e:
             self.logger.error(f"Error marking unsaved changes: {str(e)}", exc_info=True)
+   
+    def _add_error_handling_to_comboboxes(self):
+        """Add error handling to all comboboxes in the UI"""
+        try:
+            # Store original values for each combobox
+            self.original_combobox_values = {}
+            
+            # Define the check function
+            def _check_save_loaded(event):
+                if self.main_window.tree is None:
+                    widget = event.widget
+                    combobox_key = None
+                    
+                    # Find which key this widget belongs to
+                    for key, entry_widget in self.entries.items():
+                        if entry_widget == widget:
+                            combobox_key = key
+                            break
+                    
+                    # Show error message
+                    self.logger.warning(f"Attempted to change setting '{combobox_key}' with no save file loaded")
+                    messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+                    
+                    # Reset to original value if we have it
+                    if combobox_key in self.original_combobox_values:
+                        widget.set(self.original_combobox_values[combobox_key])
+                    else:
+                        # If no original value, just clear selection
+                        widget.set("")
+                    
+                    # Prevent default handling
+                    return "break"
+                
+                # Store the current value as original when a save file is loaded
+                widget = event.widget
+                for key, entry_widget in self.entries.items():
+                    if entry_widget == widget:
+                        self.original_combobox_values[key] = widget.get()
+                        break
+                        
+                return None  # Allow event to continue
+            
+            # Apply to all comboboxes in our entries
+            for key, widget in self.entries.items():
+                if isinstance(widget, ttk.Combobox):
+                    self.logger.debug(f"Adding error handling to combobox: {key}")
+                    # Store initial value
+                    self.original_combobox_values[key] = widget.get()
+                    # Add binding
+                    widget.bind("<<ComboboxSelected>>", _check_save_loaded, add="+")
+                    
+            self.logger.debug("Error handling added to all comboboxes")
+        except Exception as e:
+            self.logger.error(f"Error adding combobox error handling: {str(e)}", exc_info=True)
 
     def load_stats(self, tree: ET.ElementTree) -> None:
         root = tree.getroot()
@@ -3758,9 +3766,16 @@ class StatsManager:
                     if new_eps_p1:
                         player1.set("newEPs", new_eps_p1)
 
-
     def _on_faction_selected(self, event):
         try:
+            # Check if a save file is loaded
+            if self.main_window.tree is None:
+                self.logger.warning("Attempted to change faction with no save file loaded")
+                messagebox.showerror("Error", "No save file loaded. Please load a save file first.")
+                # Reset the combobox
+                self.entries["PlayerFaction"].selection_clear()
+                return
+                
             # Get the selected faction
             selected_faction = self.entries["PlayerFaction"].get()
             
@@ -3787,9 +3802,10 @@ class StatsManager:
                 ep_widget.insert(0, f"{current_ep}/{max_ep} (Max EP)")
             
             # Mark changes as unsaved
-            self._mark_unsaved_changes()
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
         except Exception as e:
             self.logger.error(f"Error in faction selection: {str(e)}")
+            messagebox.showerror("Error", f"Failed to change faction: {str(e)}")
 
     def _update_field_visibility(self, field_key, visible):
         """Show or hide a field based on visibility flag"""
