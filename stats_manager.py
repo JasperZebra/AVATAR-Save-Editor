@@ -225,6 +225,15 @@ class StatsManager:
             # Default RDA Armor Set
             "433486271": "Default RDA Head",
 
+
+            # Unknown RDA Items
+            "3228789267": "Unknown RDA Item 1",
+            "1063425278": "Unknown RDA Item 2",
+            "228340789": "Unknown RDA Item 3",
+            "4001710741": "Unknown RDA Item 4",
+            "294960248": "Unknown RDA Item 5",
+            "594156723": "Unknown RDA Item 6",
+
             #############################################
 
 
@@ -375,7 +384,17 @@ class StatsManager:
             # TARONYU IV Armor Set
             "1753343575": "DLC TARONYU IV Head",
             "1161560796": "DLC TARONYU IV Torso",
-            "1591391960": "DLC TARONYU IV Legs",              
+            "1591391960": "DLC TARONYU IV Legs",  
+
+
+
+            # Unknown Na'vi Items
+            "2008660537": "Unknown Na'vi Item 1",
+            "145354853": "Unknown Na'vi Item 2",
+            "2697550098": "Unknown Na'vi Item 3",
+            "1312065276": "Unknown Na'vi Item 4",
+            "824495264": "Unknown Na'vi Item 5",
+            "2571396567": "Unknown Na'vi Item 6",                
                         
         }
 
@@ -876,6 +895,14 @@ class StatsManager:
             "1659626485",  # DLC RAWKE Bow II
             "1282693004",  # DLC RAWKE Bow III
             "435991093",   # DLC RAWKE Bow IV 
+
+            "2008660537", # "Unknown Na'vi Item 1",
+            "145354853", # "Unknown Na'vi Item 2",
+            "2697550098", # "Unknown Na'vi Item 3",
+            "1312065276", # "Unknown Na'vi Item 4",
+            "824495264", # "Unknown Na'vi Item 5",
+            "2571396567", # "Unknown Na'vi Item 6", 
+
         ]
         
         # Explicitly define RDA weapon IDs
@@ -975,6 +1002,14 @@ class StatsManager:
             "2389559089",  # DLC DENT Nail Gun II
             "3499218689",  # DLC DENT Nail Gun III
             "4230631668",  # DLC DENT Nail Gun IV
+
+            "3228789267", # "Unknown RDA Item 1",
+            "1063425278", # "Unknown RDA Item 2",
+            "228340789", # "Unknown RDA Item 3",
+            "4001710741", # "Unknown RDA Item 4",
+            "294960248", # "Unknown RDA Item 5",
+            "594156723", # "Unknown RDA Item 6",
+
         ]
         
         # Add weapons purely based on explicit faction lists
