@@ -5,7 +5,7 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 ## Selection Screen
 - Xbox 360 save
 
-- PC save file (DOES NOT WORK, yet hehe)
+- PC save file **(DOES NOT WORK, yet hehe)**
 
 ## Player Stats
 - Displays player stats and character information
