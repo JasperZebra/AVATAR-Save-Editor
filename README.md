@@ -2,6 +2,11 @@
 
 A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version of the game, featuring a graphical user interface for modifying game saves.
 
+## Selection Screen
+- Xbox 360 save
+
+- PC save file (DOES NOT WORK, yet hehe)
+
 ## Player Stats
 - Displays player stats and character information
   - Character's face
@@ -40,12 +45,13 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 - Section navigation
 
 # Screenshots
-![Screenshot 2025-03-09 211351](https://github.com/user-attachments/assets/3a72c8a9-508c-4c29-9eba-32cb0741f0aa)
-![Screenshot 2025-03-09 211409](https://github.com/user-attachments/assets/a01bde8c-ad49-4c76-8220-5ab087ec3c68)
-![Screenshot 2025-03-09 211421](https://github.com/user-attachments/assets/c32e94f1-6e18-4ed7-8f61-5c523f4a94a9)
-![Screenshot 2025-03-09 211452](https://github.com/user-attachments/assets/e8a5f045-c012-43bc-b1a5-50c66d60e671)
-![Screenshot 2025-03-09 211504](https://github.com/user-attachments/assets/bfeb0d39-71bd-494c-893a-f6c015439a6b)
-![Screenshot 2025-03-09 212336](https://github.com/user-attachments/assets/37252903-457d-456f-b840-be46c9f00ef4)
+![Screenshot 2025-03-20 170958](https://github.com/user-attachments/assets/3fd042a9-2088-4747-90f4-ae0525329aa3)
+![Screenshot 2025-03-20 171019](https://github.com/user-attachments/assets/a259f108-ddcf-4043-bff6-be3c074281bd)
+![Screenshot 2025-03-20 171030](https://github.com/user-attachments/assets/4a007b29-6268-419a-a09a-d3bfa0b70417)
+![Screenshot 2025-03-20 171040](https://github.com/user-attachments/assets/38f87556-758c-4a93-b189-6dfe56bac1e5)
+![Screenshot 2025-03-20 171111](https://github.com/user-attachments/assets/3a6ce92c-4b89-41a2-8319-8f39134fce79)
+![Screenshot 2025-03-20 171124](https://github.com/user-attachments/assets/cbc9c9cb-0b58-4c94-9834-d75c704c9fa7)
+![Screenshot 2025-03-20 171144](https://github.com/user-attachments/assets/dde6bf94-a1e0-4c0a-88f6-02aedba47a68)
 
 
 ## Safety Features
