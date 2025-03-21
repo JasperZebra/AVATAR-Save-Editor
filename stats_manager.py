@@ -1886,141 +1886,96 @@ class StatsManager:
             if self.main_window.tree is not None:
                 profile = self.main_window.tree.getroot().find("PlayerProfile")
                 if profile is not None:
-                    if is_navi:
-                        # Find the Na'vi weapon we're updating
-                        avatar = profile.find("Possessions_Avatar")
-                        if avatar is None:
-                            self.logger.error("Possessions_Avatar not found")
-                            return
-                                    
-                        equipped = avatar.find("EquippedWeapons")
-                        if equipped is None:
-                            self.logger.error("EquippedWeapons not found")
-                            return
-                                    
-                        slots = equipped.findall("Slot")
-                        if slot_index >= len(slots):
-                            self.logger.error(f"Slot index {slot_index} out of range")
-                            return
-                                    
-                        # Get the possession index
-                        poss_idx = slots[slot_index].get("MainHand_PossIdx", "-1")
-                        if poss_idx == "-1":
-                            self.logger.error("No weapon equipped in this slot")
-                            return
-                                    
-                        # Find the possession
-                        possessions = avatar.find("Posessions")
-                        if possessions is None:
-                            self.logger.error("Posessions not found")
-                            return
+                    possessions_element = "Possessions_Avatar" if is_navi else "Possessions_Soldier"
+                    possession_container = profile.find(possessions_element)
+                    if possession_container is None:
+                        self.logger.error(f"{possessions_element} not found")
+                        return
                             
-                        # Get the weapon possession
-                        weapon_poss = None
-                        for poss in possessions.findall("Poss"):
-                            if poss.get("Index") == poss_idx:
-                                weapon_poss = poss
-                                break
+                    equipped = possession_container.find("EquippedWeapons")
+                    if equipped is None:
+                        self.logger.error("EquippedWeapons not found")
+                        return
                             
-                        if weapon_poss is None:
-                            self.logger.error("Weapon possession not found")
-                            return
-                                
-                        # Get the ammo type but DO NOT CHANGE IT
-                        ammo_type = weapon_poss.get("crc_AmmoType", "4294967295")
-                        
-                        # If toggling infinite ammo, ONLY set the clip size
-                        if infinite_enabled:
-                            self.logger.debug("Setting NbInClip to 999999 (NOT changing ammo type)")
-                            weapon_poss.set("NbInClip", "999999")
-                        else:
-                            # Reset clip to a reasonable value
-                            weapon_poss.set("NbInClip", "100")
+                    slots = equipped.findall("Slot")
+                    if slot_index >= len(slots):
+                        self.logger.error(f"Slot index {slot_index} out of range")
+                        return
                             
-                        # Update ammo item if it exists (but don't create if not found)
-                        if ammo_type != "4294967295":
-                            for ammo_poss in possessions.findall("Poss"):
-                                if ammo_poss.get("crc_ItemID") == ammo_type:
-                                    if infinite_enabled:
-                                        ammo_poss.set("NbInStack", "999999")
-                                    else:
-                                        ammo_poss.set("NbInStack", "100")
-                                    break
-                    else:
-                        # Handle RDA weapon
-                        soldier = profile.find("Possessions_Soldier")
-                        if soldier is None:
-                            self.logger.error("Possessions_Soldier not found")
-                            return
-                                    
-                        equipped = soldier.find("EquippedWeapons")
-                        if equipped is None:
-                            self.logger.error("EquippedWeapons not found")
-                            return
-                                    
-                        slots = equipped.findall("Slot")
-                        if slot_index >= len(slots):
-                            self.logger.error(f"Slot index {slot_index} out of range")
-                            return
-                                    
-                        # Get the possession index
-                        poss_idx = slots[slot_index].get("MainHand_PossIdx", "-1")
-                        if poss_idx == "-1":
-                            self.logger.error("No weapon equipped in this slot")
-                            return
-                                    
-                        # Find the possession
-                        possessions = soldier.find("Posessions")
-                        if possessions is None:
-                            self.logger.error("Posessions not found")
-                            return
+                    # Get the possession index
+                    poss_idx = slots[slot_index].get("MainHand_PossIdx", "-1")
+                    if poss_idx == "-1":
+                        self.logger.error("No weapon equipped in this slot")
+                        return
                             
-                        # Get the weapon possession
-                        weapon_poss = None
-                        for poss in possessions.findall("Poss"):
-                            if poss.get("Index") == poss_idx:
-                                weapon_poss = poss
-                                break
-                            
-                        if weapon_poss is None:
-                            self.logger.error("Weapon possession not found")
-                            return
-                                
-                        # Get the ammo type but DO NOT CHANGE IT
-                        ammo_type = weapon_poss.get("crc_AmmoType", "4294967295")
-                        
-                        # If toggling infinite ammo, ONLY set the clip size
-                        if infinite_enabled:
-                            self.logger.debug("Setting NbInClip to 999999 (NOT changing ammo type)")
-                            weapon_poss.set("NbInClip", "999999")
-                        else:
-                            # Reset clip to a reasonable value
-                            weapon_poss.set("NbInClip", "100")
-                            
-                        # Update ammo item if it exists (but don't create if not found)
-                        if ammo_type != "4294967295":
-                            for ammo_poss in possessions.findall("Poss"):
-                                if ammo_poss.get("crc_ItemID") == ammo_type:
-                                    if infinite_enabled:
-                                        ammo_poss.set("NbInStack", "999999")
-                                    else:
-                                        ammo_poss.set("NbInStack", "100")
-                                    break
+                    # Find the possession
+                    possessions = possession_container.find("Posessions")
+                    if possessions is None:
+                        self.logger.error("Posessions not found")
+                        return
                     
-                    # Update ammo entry state
+                    # Get the weapon possession
+                    weapon_poss = None
+                    for poss in possessions.findall("Poss"):
+                        if poss.get("Index") == poss_idx:
+                            weapon_poss = poss
+                            break
+                    
+                    if weapon_poss is None:
+                        self.logger.error("Weapon possession not found")
+                        return
+                        
+                    # Get the current ammo type
+                    current_ammo_type = weapon_poss.get("crc_AmmoType", "4294967295")
+                    
+                    # THE KEY CHANGE: Actually change the ammo type for proper infinite ammo
+                    if infinite_enabled:
+                        # Change to infinite ammo type
+                        weapon_poss.set("crc_AmmoType", "4294967295")
+                        self.logger.debug(f"Changed ammo type to infinite (4294967295)")
+                        
+                        # Set clip size to visually show infinite
+                        weapon_poss.set("NbInClip", "999999")
+                    else:
+                        # Restore the correct ammo type for this weapon
+                        correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
+                        weapon_poss.set("crc_AmmoType", correct_ammo_type)
+                        self.logger.debug(f"Restored proper ammo type: {correct_ammo_type}")
+                        
+                        # Reset clip to a higher value (500 instead of 100)
+                        weapon_poss.set("NbInClip", "500")
+                        
+                    # Update ammo item if it exists (but don't create if not found)
+                    ammo_type_to_update = current_ammo_type if not infinite_enabled else self._get_ammo_type_for_weapon(weapon_id)
+                    if ammo_type_to_update != "4294967295":
+                        ammo_found = False
+                        for ammo_poss in possessions.findall("Poss"):
+                            if ammo_poss.get("crc_ItemID") == ammo_type_to_update:
+                                if infinite_enabled:
+                                    ammo_poss.set("NbInStack", "999999")
+                                else:
+                                    ammo_poss.set("NbInStack", "500")  # Increased from 100 to 500
+                                ammo_found = True
+                                break
+                        
+                        # Create ammo if not found and disabling infinite
+                        if not ammo_found and not infinite_enabled:
+                            self._ensure_ammo_exists(possessions, ammo_type_to_update, "500")  # Increased from 100 to 500
+                    
+                    # Update ammo entry state in UI
                     ammo_entry = slot_data["ammo_entry"]
                     if infinite_enabled:
-                        # Set ammo to 999999 and DISABLE the field
+                        # Set ammo to infinity and DISABLE the field
                         ammo_entry.delete(0, tk.END)
-                        ammo_entry.insert(0, "999999")
+                        ammo_entry.insert(0, "∞")
                         ammo_entry.configure(state="disabled")
-                        self.logger.debug("Set UI ammo field to 999999 and disabled")
+                        self.logger.debug("Set UI ammo field to ∞ and disabled")
                     else:
-                        # Set ammo to 100 and keep field NORMAL (enabled)
+                        # Set ammo to 500 and keep field NORMAL (enabled)
                         ammo_entry.delete(0, tk.END)
-                        ammo_entry.insert(0, "100")
+                        ammo_entry.insert(0, "500")  # Increased from 100 to 500
                         ammo_entry.configure(state="normal")
-                        self.logger.debug("Set UI ammo field to 100 and enabled")
+                        self.logger.debug("Set UI ammo field to 500 and enabled")
                     
                     # Mark as unsaved
                     self.main_window.unsaved_label.config(text="Unsaved Changes")
@@ -2361,49 +2316,111 @@ class StatsManager:
             messagebox.showerror("Error", "No valid player profile found in the loaded save file.")
             return
         
+        weapons_changed = 0
+        ammo_updated = 0
+        
         # Reset RDA weapons
         soldier = profile.find("Possessions_Soldier")
         if soldier is not None:
             possessions = soldier.find("Posessions")
             if possessions is not None:
-                # Reset each weapon to its correct ammo type
+                # First, reset each weapon to its correct ammo type
                 for poss in possessions.findall("Poss"):
                     weapon_id = poss.get("crc_ItemID")
                     # Only process actual weapons
                     if weapon_id in self.item_mappings:
                         item_name = self.item_mappings[weapon_id]
-                        if any(weapon_keyword in item_name.lower() for weapon_keyword in 
-                            ["pistol", "rifle", "shotgun", "machine gun", "launcher", "thrower", "nail gun"]):
-                            # Set the correct ammo type
-                            correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
-                            current_ammo_type = poss.get("crc_AmmoType", "")
-                            
-                            # Only update if needed
-                            if current_ammo_type != correct_ammo_type:
-                                poss.set("crc_AmmoType", correct_ammo_type)
-                                self.logger.debug(f"Reset RDA weapon {item_name} to ammo type {correct_ammo_type}")
+                        
+                        # Get the correct ammo type for this weapon directly
+                        correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
+                        current_ammo_type = poss.get("crc_AmmoType", "")
+                        
+                        # Check if we need to update the ammo type
+                        ammo_type_changed = current_ammo_type != correct_ammo_type
+                        if ammo_type_changed:
+                            poss.set("crc_AmmoType", correct_ammo_type)
+                            self.logger.debug(f"Reset weapon {item_name} from ammo type {current_ammo_type} to {correct_ammo_type}")
+                        
+                        # Always reset clip sizes
+                        if correct_ammo_type == "4294967295":  # Infinite ammo
+                            if poss.get("NbInClip") != "999999":
+                                poss.set("NbInClip", "999999")
+                                weapons_changed += 1
+                        else:  # Regular ammo
+                            # Get default clip size for this weapon type
+                            default_clip_size = self._get_default_clip_size(weapon_id)
+                            current_clip = poss.get("NbInClip", "0")
+                            if current_clip != default_clip_size:
+                                poss.set("NbInClip", default_clip_size)
+                                weapons_changed += 1
+                        
+                        # Count changes
+                        if ammo_type_changed and weapons_changed == 0:
+                            weapons_changed += 1
+                
+                # Now update all ammo items to have 500 ammo
+                for poss in possessions.findall("Poss"):
+                    item_id = poss.get("crc_ItemID")
+                    # Check if this is an ammo item
+                    if item_id in ["4029490973", "2220072441", "3183424835", "3227899887", 
+                                "4198025789", "2442117335", "3819023512"]:
+                        # Set ammo to 500
+                        current_ammo = poss.get("NbInStack", "0")
+                        if current_ammo != "500":
+                            poss.set("NbInStack", "500")
+                            ammo_updated += 1
+                            self.logger.debug(f"Updated ammo item {item_id} to 500 rounds")
         
         # Reset Na'vi weapons
         avatar = profile.find("Possessions_Avatar")
         if avatar is not None:
             possessions = avatar.find("Posessions")
             if possessions is not None:
-                # Reset each weapon to its correct ammo type
+                # First, reset each weapon to its correct ammo type
                 for poss in possessions.findall("Poss"):
                     weapon_id = poss.get("crc_ItemID")
                     # Only process actual weapons
                     if weapon_id in self.item_mappings:
                         item_name = self.item_mappings[weapon_id]
-                        if any(weapon_keyword in item_name.lower() for weapon_keyword in 
-                            ["bow", "staff", "spear", "club", "blade", "crossbow", "axe"]):
-                            # Set the correct ammo type
-                            correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
-                            current_ammo_type = poss.get("crc_AmmoType", "")
-                            
-                            # Only update if needed
-                            if current_ammo_type != correct_ammo_type:
-                                poss.set("crc_AmmoType", correct_ammo_type)
-                                self.logger.debug(f"Reset Na'vi weapon {item_name} to ammo type {correct_ammo_type}")
+                        
+                        # Get the correct ammo type for this weapon directly
+                        correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
+                        current_ammo_type = poss.get("crc_AmmoType", "")
+                        
+                        # Check if we need to update the ammo type
+                        ammo_type_changed = current_ammo_type != correct_ammo_type
+                        if ammo_type_changed:
+                            poss.set("crc_AmmoType", correct_ammo_type)
+                            self.logger.debug(f"Reset weapon {item_name} from ammo type {current_ammo_type} to {correct_ammo_type}")
+                        
+                        # Always reset clip sizes
+                        if correct_ammo_type == "4294967295":  # Infinite ammo
+                            if poss.get("NbInClip") != "999999":
+                                poss.set("NbInClip", "999999")
+                                weapons_changed += 1
+                        else:  # Regular ammo
+                            # Get default clip size for this weapon type
+                            default_clip_size = self._get_default_clip_size(weapon_id)
+                            current_clip = poss.get("NbInClip", "0")
+                            if current_clip != default_clip_size:
+                                poss.set("NbInClip", default_clip_size)
+                                weapons_changed += 1
+                        
+                        # Count changes
+                        if ammo_type_changed and weapons_changed == 0:
+                            weapons_changed += 1
+                
+                # Now update all ammo items to have 500 ammo
+                for poss in possessions.findall("Poss"):
+                    item_id = poss.get("crc_ItemID")
+                    # Check if this is an ammo item
+                    if item_id in ["1042656528", "435601722", "3069972540"]:  # Na'vi ammo types
+                        # Set ammo to 500
+                        current_ammo = poss.get("NbInStack", "0")
+                        if current_ammo != "500":
+                            poss.set("NbInStack", "500")
+                            ammo_updated += 1
+                            self.logger.debug(f"Updated ammo item {item_id} to 500 rounds")
         
         # Update the UI to reflect changes
         self._update_loadout_display(profile)
@@ -2412,9 +2429,18 @@ class StatsManager:
         # Mark as unsaved
         self.main_window.unsaved_label.config(text="Unsaved Changes")
         
-        # Show confirmation
-        messagebox.showinfo("Reset Complete", "All weapons have been reset to their original ammo types.")
-
+        # Show confirmation with more detailed information
+        message = ""
+        if weapons_changed > 0:
+            message += f"{weapons_changed} weapons have been reset to their original ammo types.\n"
+        if ammo_updated > 0:
+            message += f"{ammo_updated} ammo items have been updated to 500 rounds."
+        
+        if message:
+            messagebox.showinfo("Reset Complete", message)
+        else:
+            messagebox.showinfo("Reset Complete", "All weapons and ammo were already correctly configured.")
+                
     def _preserve_faction(self, profile, faction_value="1"):
         """Ensure faction stays preserved (prevents resets to Undecided)"""
         # Look for Metagame directly from the main window's tree
@@ -2432,6 +2458,68 @@ class StatsManager:
                 faction_map = {"0": "Undecided", "1": "Na'vi", "2": "RDA"}
                 if "PlayerFaction" in self.entries:
                     self.entries["PlayerFaction"].set(faction_map.get(faction_value, "Undecided"))
+
+    def _get_default_clip_size(self, weapon_id):
+        """Get the default clip size for a weapon based on its ID"""
+        # Dictionary of weapon IDs mapped to their default clip sizes
+        default_clips = {
+            # RDA Pistols
+            "1042188764": "16",  # Dual Wasp Pistol I
+            "815885611": "16",   # Dual Wasp Pistol II
+            "760079057": "24",   # Dual Wasp Pistol III
+            "999316102": "32",   # Dual Wasp Pistol IV
+            
+            # RDA Rifles
+            "1130814347": "16",  # Standard Issue Rifle TERRA I
+            "1306083196": "24",  # Standard Issue Rifle EURYS II
+            "3628031700": "32",  # Standard Issue Rifle SOLARIS III
+            "1146928137": "48",  # Standard Issue Rifle SOLARIS IV
+            
+            # RDA Shotguns
+            "2313824646": "4",   # Combat Shotgun PHALANX I
+            "2270547313": "8",   # Combat Shotgun PHALANX II
+            "2789519003": "12",  # Combat Shotgun PHALANX III
+            "1919695864": "16",  # Combat Shotgun PHALANX IV
+            
+            # RDA Assault Rifles
+            "2397981034": "50",  # Assault Rifle TERRA I
+            "2152836509": "75",  # Assault Rifle EURYS II
+            "268371112": "100",  # Assault Rifle SOLARIS III
+            "466145020": "150",  # Assault Rifle SOLARIS IV
+            
+            # RDA Machine Guns
+            "85991974": "50",    # BANISHER M60 Machine Gun I
+            "195020497": "50",   # BANISHER M60 Machine Gun II
+            "1881065336": "50",  # BANISHER M60 Machine Gun III
+            "1796958374": "50",  # BANISHER M60 Machine Gun IV
+            
+            # RDA Grenade Launchers
+            "94681171": "5",     # Grenade Launcher M222 - I
+            "186342564": "10",   # Grenade Launcher M222 - II
+            "1349633617": "15",  # Grenade Launcher M222 - III
+            "4018216358": "20",  # Grenade Launcher M222 - IV
+            
+            # Na'vi Bows
+            "291262189": "10",   # Bow I
+            "535013914": "10",   # Bow II
+            "2092736556": "10",  # Bow III
+            "371977402": "10",   # Bow IV
+            
+            # Na'vi Crossbows
+            "1662469074": "10",  # Crossbow I
+            "1839769381": "10",  # Crossbow II
+            "3400058396": "10",  # Crossbow III
+            "1514231420": "10",  # Crossbow IV
+            
+            # Na'vi M30 Machine Guns
+            "1304439874": "30",  # M30 Machine Gun I
+            "1132447925": "30",  # M30 Machine Gun II
+            "982090295": "30",   # M30 Machine Gun III
+            "958613249": "30",   # M30 Machine Gun IV
+        }
+        
+        # Return the default clip size or 20 as a fallback
+        return default_clips.get(weapon_id, "20")
 
     def _update_weapon(self, profile, slot_index, weapon_id, is_navi=False):
         """
@@ -2574,35 +2662,26 @@ class StatsManager:
             self._preserve_faction(profile, "2")  # 2 for RDA
         
         return True
-
         
-    def _update_armor(self, profile, slot_type, armor_name, is_navi=False):
+    def _update_armor(self, profile: ET.Element, slot_type, armor_name, is_navi=False):
         """
         Unified method to update armor for both RDA and Na'vi across different save formats.
-        
-        Args:
-            profile (ET.Element): The PlayerProfile element
-            slot_type (str): The armor slot type ("headwear", "torso", or "legs")
-            armor_name (str): The name of the armor to set
-            is_navi (bool): True for Na'vi armor, False for RDA
-        
-        Returns:
-            bool: True if successful, False otherwise
+        Properly handles default RDA armor as a special case.
         """
         self.logger.debug(f"Updating {'Navi' if is_navi else 'RDA'} armor - Slot: {slot_type}, Armor: {armor_name}")
         
-        # Get the armor sets and IDs based on faction
-        armor_sets = self.navi_armor_sets if is_navi else self.rda_armor_sets
-        armor_ids = self.navi_armor_ids if is_navi else self.rda_armor_ids
-        
-        # Handle special case for default RDA armor
-        if not is_navi and armor_name in ["Default RDA Torso", "Default RDA Legs"]:
-            # Set to empty (-1) for default RDA armor
-            armor_id = "-1"
+        # Special handling for default RDA armor
+        is_default_rda_armor = False
+        if not is_navi and (armor_name == "Default RDA Torso" or armor_name == "Default RDA Legs" or armor_name == "-Empty-"):
+            is_default_rda_armor = True
+            armor_id = "-1"  # Special value for default/empty armor
         elif armor_name == "-Empty-":
-            # Handle empty selection
+            # Handle empty selection for Na'vi
             armor_id = "-1"
         else:
+            # Get the armor sets and IDs based on faction
+            armor_ids = self.navi_armor_ids if is_navi else self.rda_armor_ids
+            
             # Get the armor ID from the name
             armor_id = armor_ids[slot_type].get(armor_name)
             if armor_id is None:
@@ -2622,13 +2701,6 @@ class StatsManager:
             equipped_armors = ET.SubElement(faction_elem, "EquippedArmors")
             self.logger.debug(f"Created new EquippedArmors element")
 
-        # Dump existing armor slots for debugging
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f"Current {'Navi' if is_navi else 'RDA'} EquippedArmors before update:")
-            for i, slot in enumerate(equipped_armors.findall("Slot")):
-                idx = slot.get("PossIdx", "-1")
-                self.logger.debug(f"  Slot {i}: PossIdx={idx}")
-
         # Ensure we have all three slots
         slots = equipped_armors.findall("Slot")
         slot_mapping = {"headwear": 0, "torso": 1, "legs": 2}
@@ -2641,12 +2713,13 @@ class StatsManager:
             slots = equipped_armors.findall("Slot")
             self.logger.debug(f"Created new armor Slot at position {len(slots)-1}")
         
-        # For empty selection or default RDA armor, just set to -1 and we're done
-        if armor_name == "-Empty-" or armor_id == "-1":
+        # For default RDA armor or empty selection, just set to -1 and we're done
+        if is_default_rda_armor or armor_name == "-Empty-":
             slots[slot_position].set("PossIdx", "-1")
-            self.logger.debug(f"Set {'Navi' if is_navi else 'RDA'} {slot_type} to empty (-1)")
+            self.logger.debug(f"Set {'Navi' if is_navi else 'RDA'} {slot_type} to empty/default (-1)")
+            return True
         
-        # Find Posessions element or create it
+        # For normal armor pieces - find or create the possession item
         possessions = faction_elem.find("Posessions")
         if possessions is None:
             possessions = ET.SubElement(faction_elem, "Posessions")
@@ -2686,17 +2759,9 @@ class StatsManager:
             if other_poss is not None and hasattr(other_poss, 'tail'):
                 new_poss.tail = other_poss.tail
         
-        # Update the slot reference - CRITICAL FOR PC SAVES
+        # Update the slot reference
         slots[slot_position].set("PossIdx", index_str)
-                
         self.logger.debug(f"Set {slot_type} slot to use item at index {index_str}")
-        
-        # Dump armor slots after update for verification
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f"{'Navi' if is_navi else 'RDA'} EquippedArmors after update:")
-            for i, slot in enumerate(equipped_armors.findall("Slot")):
-                idx = slot.get("PossIdx", "-1")
-                self.logger.debug(f"  Slot {i}: PossIdx={idx}")
         
         return True
 
@@ -3671,7 +3736,7 @@ class StatsManager:
         }
     
     def _on_armor_selected(self, event, slot_type):
-        """Handle armor selection change with direct hex update for PC saves"""
+        """Handle armor selection change with direct update for PC saves"""
         # Check if save file is loaded
         if self.main_window.tree is None:
             self.logger.warning("Attempted to select RDA armor with no save file loaded")
@@ -3684,16 +3749,23 @@ class StatsManager:
         combo = event.widget
         selected_armor = combo.get()
         self.logger.debug(f"Selected RDA armor: {selected_armor}")
-                        
-        # Get the armor ID from the name
-        armor_id = self.rda_armor_ids[slot_type].get(selected_armor)
-        if armor_id is None:
-            self.logger.warning(f"Could not find armor ID for {selected_armor}")
-            messagebox.showerror("Error", f"Could not find armor ID for {selected_armor}")
-            return
         
+        # Get the profile element from the tree
+        profile = self.main_window.tree.getroot().find("PlayerProfile")
+        if profile is None:
+            self.logger.error("No PlayerProfile element found in save file")
+            return
+            
+        # Call the _update_armor method to modify the XML
+        # This will handle all cases including Default RDA Torso/Legs
+        success = self._update_armor(profile, slot_type, selected_armor, is_navi=False)
+        
+        if success:
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+
     def _on_navi_armor_selected(self, event, slot_type):
-        """Handle Na'vi armor selection change with direct hex update for PC saves"""
+        """Handle Na'vi armor selection change with update for PC saves"""
         # Check if save file is loaded
         if self.main_window.tree is None:
             self.logger.warning("Attempted to select Na'vi armor with no save file loaded")
@@ -3707,13 +3779,19 @@ class StatsManager:
         selected_armor = combo.get()
         self.logger.debug(f"Selected Na'vi armor: {selected_armor}")
                 
-        # Get the armor ID from the name
-        armor_id = self.navi_armor_ids[slot_type].get(selected_armor)
-        if armor_id is None:
-            self.logger.warning(f"Could not find armor ID for {selected_armor}")
-            messagebox.showerror("Error", f"Could not find armor ID for {selected_armor}")
+        # Get the profile element from the tree
+        profile = self.main_window.tree.getroot().find("PlayerProfile")
+        if profile is None:
+            self.logger.error("No PlayerProfile element found in save file")
             return
+            
+        # Call the _update_armor method to modify the XML
+        success = self._update_armor(profile, slot_type, selected_armor, is_navi=True)
         
+        if success:
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+
     def _update_loadout_display(self, profile: ET.Element) -> None:
         """Update the RDA loadout display with current equipment"""
         # Update weapons

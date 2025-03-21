@@ -548,6 +548,19 @@ class SaveEditor:
                 for key, value in updates.items():
                     section.set(key, str(value))
             
+            # Process Equipment section specifically for PC version
+            if self.game_version != "xbox":
+                # Find or create Equipment section
+                equipment = profile.find("Equipment")
+                if equipment is None:
+                    equipment = ET.SubElement(profile, "Equipment")
+                
+                # Make sure armor updates from stats_manager are applied
+                if "Equipment" in stats_updates:
+                    for key, value in stats_updates.get("Equipment", {}).items():
+                        self.logger.debug(f"Setting equipment attribute: {key}={value}")
+                        equipment.set(key, str(value))
+                        
             # Update territories, Pandora-pedia entries, and achievements (unchanged)
             try:
                 self.territory_manager.save_territory_changes(self.tree)
@@ -573,9 +586,10 @@ class SaveEditor:
                 self.logger.debug("Saving file using Xbox 360 format handler")
                 XMLHandler.save_xml_tree(self.tree, self.file_path)
             else:
-                # PC save format - direct XML save
-                self.logger.debug("Saving file using PC format handler (direct XML)")
-                PCXMLHandler.save_xml_tree(self.tree, self.file_path)
+                # PC save format - direct XML save, but using XMLHandler for saving
+                # This is the key change - use the Xbox handler's save method but with PC specifics
+                self.logger.debug("Saving file using hybrid XML handler for PC saves")
+                XMLHandler.save_xml_tree(self.tree, self.file_path)  # Use the Xbox handler here
             
             self.logger.debug("XML tree saved successfully")
             

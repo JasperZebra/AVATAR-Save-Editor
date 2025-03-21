@@ -2,7 +2,7 @@ import os
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from io import BytesIO, StringIO
 import logging
 
@@ -17,7 +17,7 @@ class PCXMLHandler:
         return logging.getLogger('PCXMLHandler')
     
     @staticmethod
-    def load_xml_tree(file_path: Path) -> tuple[ET.ElementTree, int, int]:
+    def load_xml_tree(file_path: Path) -> Tuple[ET.ElementTree, int, int]:
         """
         Load XML tree from PC save file, handling potential binary header.
         
@@ -144,23 +144,68 @@ class PCXMLHandler:
                     with open(backup_path, 'wb') as dst:
                         dst.write(original_data)
             
-            # Find the XML section boundaries
+            # Find the XML section boundaries in the original file
             xml_start = -1
-            for marker in [b'<Savegame', b'<SaveGame', b'<savegame', b'<SaveData']:
+            xml_start_marker = None
+            xml_start_markers = [b'<Savegame', b'<SaveGame', b'<savegame', b'<SaveData']
+            
+            for marker in xml_start_markers:
                 pos = original_data.find(marker)
                 if pos != -1:
                     xml_start = pos
-                    logger.debug(f"Found XML start marker at position {xml_start}")
+                    xml_start_marker = marker
+                    logger.debug(f"Found XML start marker '{marker.decode('utf-8')}' at position {xml_start}")
                     break
             
+            # Find the end marker in original file
+            xml_end = -1
+            xml_end_marker = None
+            xml_end_markers = [b'</Savegame>', b'</SaveGame>', b'</savegame>', b'</SaveData>']
+            
+            for marker in xml_end_markers:
+                pos = original_data.rfind(marker)
+                if pos != -1:
+                    xml_end = pos + len(marker)
+                    xml_end_marker = marker
+                    logger.debug(f"Found XML end marker '{marker.decode('utf-8')}' at position {xml_end}")
+                    break
+            
+            # Get the root tag name from the start marker if found
+            root_tag = None
+            if xml_start_marker is not None:
+                root_tag = xml_start_marker.decode('utf-8').strip('<')
+                logger.debug(f"Detected root tag name: {root_tag}")
+            
             # Generate new XML content
+            root = tree.getroot()
+            
+            # Ensure the root tag matches what was found in the original file
+            if root_tag is not None and root.tag != root_tag:
+                logger.debug(f"Changing root tag from '{root.tag}' to '{root_tag}' to match original file")
+                root.tag = root_tag
+            
+            # Generate XML content
             xml_buffer = BytesIO()
             tree.write(xml_buffer, encoding='utf-8', xml_declaration=False)
             new_xml = xml_buffer.getvalue()
             
-            # Check if we need to preserve header
-            if xml_start > 0:
-                # Preserve header by combining binary header with new XML
+            # Check if we need to preserve binary header and footer
+            if xml_start > 0 and xml_end > 0 and xml_end < len(original_data):
+                # Preserve header and footer
+                logger.debug(f"Preserving binary header ({xml_start} bytes) and footer ({len(original_data) - xml_end} bytes)")
+                header = original_data[:xml_start]
+                footer = original_data[xml_end:] if xml_end < len(original_data) else b''
+                
+                # Create output data with preserved header and footer
+                output_data = header + new_xml + footer
+                
+                # Write combined file
+                with open(file_path, 'wb') as f:
+                    f.write(output_data)
+                
+                logger.debug(f"Successfully saved PC save with preserved binary header and footer")
+            elif xml_start > 0:
+                # Preserve header only
                 logger.debug(f"Preserving binary header (first {xml_start} bytes)")
                 header = original_data[:xml_start]
                 
@@ -173,9 +218,11 @@ class PCXMLHandler:
                 
                 logger.debug(f"Successfully saved PC save with preserved binary header")
             else:
-                # No header to preserve, write XML directly
+                # No header or footer to preserve, write XML directly
                 logger.debug("No binary header detected, writing XML directly")
-                tree.write(file_path, encoding='utf-8', xml_declaration=True)
+                with open(file_path, 'wb') as f:
+                    f.write(b'<?xml version="1.0" encoding="utf-8"?>\n')
+                    f.write(new_xml)
                 
             logger.debug("PC save file written successfully")
             
