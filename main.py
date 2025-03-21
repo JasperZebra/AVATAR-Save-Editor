@@ -13,13 +13,16 @@ from xml_viewer import XMLViewerWindow
 from achievements_manager import AchievementsManager
 from navigation_manager import NavigationManager
 from pandora_pedia_manager import PandoraPediaManager
+from version_selector import VersionSelector  
+from pc_xml_handler import PCXMLHandler
+
 
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('save_editor.log'),
+        logging.FileHandler('save_editor.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -37,8 +40,8 @@ def setup_dark_theme(root):
         'background': '#1e1e1e',       # Main background color (darkest grey)
         'foreground': '#ffffff',       # Primary text color (white)
         'selected': '#1e1e1e',         # Background color for selected items
-        'active': '#1e1e1e',           # Highlight color for active elements
-        'border': '#121212',           # Border color (nearly black)
+        'active': '#2a7fff',           # Highlight color for active elements
+        'border': '#2a7fff',           # Border color (nearly black)
         'input_bg': '#2c2c2c',         # Background for input fields (dark grey)
         'button_bg': '#3c3f41',        # Button background color
         'button_pressed': '#1e1e1e',   # Color when button is pressed
@@ -231,10 +234,11 @@ def setup_dark_theme(root):
     return style
 
 class SaveEditor:
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root: tk.Tk, game_version: str = "xbox") -> None:
         self.logger = logging.getLogger('SaveEditor')
         self.logger.debug("Initializing Save Editor")
         self.root = root
+        self.game_version = game_version
         self.root.title("Avatar: The Game Save Editor | Version 1.0")
         self.root.geometry("1130x680")
 
@@ -281,7 +285,7 @@ class SaveEditor:
             
             # Left side buttons
             button_frame = ttk.Frame(file_frame)
-            button_frame.pack(side=tk.LEFT, padx=5)
+            button_frame.pack(side=tk.LEFT, padx=0)
             
             self.load_button = ttk.Button(
                 button_frame, 
@@ -314,14 +318,14 @@ class SaveEditor:
                 text="No file loaded", 
                 wraplength=300
             )
-            self.file_label.pack(side=tk.LEFT, padx=5)
+            self.file_label.pack(side=tk.LEFT, padx=2)
 
             self.unsaved_label = ttk.Label(
                 label_frame,
                 text="",
                 foreground="red"
             )
-            self.unsaved_label.pack(side=tk.LEFT, padx=5)
+            self.unsaved_label.pack(side=tk.LEFT, padx=2)
             
             # Right side frame for time stats and checksum
             right_frame = ttk.Frame(file_frame)
@@ -411,7 +415,8 @@ class SaveEditor:
             raise
         
     def load_save(self) -> None:
-        self.logger.debug("Loading save file")
+        """Load a save file with version-specific handling."""
+        self.logger.debug(f"Loading save file for {self.game_version} version")
         
         # Check for unsaved changes
         if self.unsaved_label.cget("text") == "Unsaved Changes":
@@ -428,7 +433,7 @@ class SaveEditor:
         
         try:
             file_path = filedialog.askopenfilename(
-                filetypes=[("Xbox 360 & PC Saves", "*.sav")],
+                filetypes=[("Save Files", "*.sav")],
             )
             if not file_path:
                 self.logger.debug("File selection cancelled")
@@ -442,24 +447,45 @@ class SaveEditor:
             with open(self.file_path, 'rb') as f:
                 file_data = f.read()
             
-            # Verify checksum
-            is_valid = XMLHandler.verify_checksum(file_data)
+            # Select the appropriate handler based on game version
+            if self.game_version == "xbox":
+                # Xbox 360 version - use original handler
+                self.logger.debug("Using Xbox 360 XML handler")
+                is_valid = XMLHandler.verify_checksum(file_data)
+                self.logger.debug(f"Xbox checksum verification result: {is_valid}")
+                
+                # Load XML using Xbox handler
+                self.tree, self.xml_start, self.original_size = XMLHandler.load_xml_tree(self.file_path)
+            else:
+                # PC version - use PC-specific handler
+                self.logger.debug("Using PC XML handler")
+                # For PC version, we skip checksum verification
+                is_valid = PCXMLHandler.verify_checksum(file_data)
+                self.logger.debug("PC version - skipping checksum verification")
+                
+                # Load XML using PC handler
+                try:
+                    self.logger.debug("Attempting to load with PC handler")
+                    self.tree, self.xml_start, self.original_size = PCXMLHandler.load_xml_tree(self.file_path)
+                    self.logger.debug("PC save file parsed successfully")
+                except Exception as pc_error:
+                    self.logger.error(f"Failed to parse PC save file: {str(pc_error)}", exc_info=True)
+                    # Fallback to Xbox loading method if PC parsing fails
+                    self.logger.debug("Attempting fallback to Xbox loading method")
+                    self.tree, self.xml_start, self.original_size = XMLHandler.load_xml_tree(self.file_path)
+            
+            # Update checksum verification display
             self.checksum_label.config(
                 text=f"Checksum: {'Valid' if is_valid else 'Invalid'}", 
                 foreground="dark green" if is_valid else "red"
             )
-
-            self.logger.debug("Loading XML tree from file")
-            self.tree, self.xml_start, self.original_size = XMLHandler.load_xml_tree(self.file_path)
             
-            self.logger.debug("Loading data into managers")
+            # Load data into managers
             self.stats_manager.load_stats(self.tree)
             self.territory_manager.load_territory_data(self.tree)
             self.achievements_manager.load_achievements(self.tree)
             self.navigation_manager.load_navigation_data(self.tree)
             self.pandora_pedia_manager.load_pandora_pedia(self.tree)
-
-
 
             self.save_button.config(state="normal")
             self.unsaved_label.config(text="")
@@ -471,13 +497,21 @@ class SaveEditor:
             messagebox.showerror("Error", f"Failed to load save file: {str(e)}")
 
     def save_changes(self) -> None:
-        self.logger.debug("Starting save changes operation")
+        """Save changes to file with version-specific handling."""
+        self.logger.debug(f"Starting save changes operation for {self.game_version} version")
         if not self.tree or not self.file_path:
             self.logger.warning("Attempted to save with no file loaded")
             messagebox.showerror("Error", "No save file loaded!")
             return
                     
-        try:
+        try:            
+            # Create a backup regardless of version
+            backup_path = self.file_path.with_suffix(self.file_path.suffix + ".backup")
+            if not backup_path.exists():
+                with open(self.file_path, 'rb') as src, open(backup_path, 'wb') as dst:
+                    dst.write(src.read())
+                self.logger.debug(f"Created backup at {backup_path}")
+            
             # Ensure the root element exists
             root = self.tree.getroot()
             if root is None:
@@ -494,7 +528,7 @@ class SaveEditor:
             
             # Debug print for faction value
             if "Metagame" in stats_updates and "PlayerFaction" in stats_updates["Metagame"]:
-                print(f"DEBUG: Faction value from stats_updates: {stats_updates['Metagame']['PlayerFaction']}")
+                self.logger.debug(f"Faction value from stats_updates: {stats_updates['Metagame']['PlayerFaction']}")
             
             # Update sections with fallback creation
             sections = {
@@ -514,147 +548,40 @@ class SaveEditor:
                 for key, value in updates.items():
                     section.set(key, str(value))
             
-            # Handle RecoveryBits separately
-            if "PlayerInfo" in stats_updates:
-                recovery_bits = stats_updates["PlayerInfo"].get("RecoveryBits")
-                if recovery_bits is not None:
-                    # Look for existing Possessions_Recovery element
-                    recovery = profile.find("Possessions_Recovery")
-                    if recovery is None:
-                        # If not found, create a new Possessions_Recovery element
-                        recovery = ET.SubElement(profile, "Possessions_Recovery")
-                    
-                    # Set the RecoveryBits attribute
-                    recovery.set("RecoveryBits", str(recovery_bits))
-
-            # Update Metagame section - specifically Player0 attributes
-            if "Player0" in stats_updates:
-                metagame = root.find("Metagame")
-                if metagame is not None:
-                    player0 = metagame.find("Player0")
-                    if player0 is None:
-                        player0 = ET.SubElement(metagame, "Player0")
-                    
-                    # Update Player0 attributes
-                    for key, value in stats_updates["Player0"].items():
-                        player0.set(key, str(value))
-                else:
-                    self.logger.warning("Metagame element not found, cannot update Player0")
-            
-            # Update Metagame section - specifically Player1 attributes
-            if "Player1" in stats_updates:
-                metagame = root.find("Metagame")
-                if metagame is not None:
-                    player1 = metagame.find("Player1")
-                    if player1 is None:
-                        player1 = ET.SubElement(metagame, "Player1")
-                    
-                    # Update Player1 attributes
-                    for key, value in stats_updates["Player1"].items():
-                        player1.set(key, str(value))
-                else:
-                    self.logger.warning("Metagame element not found, cannot update Player1")
-
-            # Update metagame directly with faction and cost values
-            if "Metagame" in stats_updates:
-                metagame = root.find("Metagame")
-                if metagame is not None:
-                    for key, value in stats_updates["Metagame"].items():
-                        metagame.set(key, str(value))
-                        if key == "PlayerFaction":
-                            self.logger.debug(f"Updated PlayerFaction to {value}")
-                else:
-                    # Create metagame if it doesn't exist
-                    metagame = ET.SubElement(root, "Metagame")
-                    for key, value in stats_updates["Metagame"].items():
-                        metagame.set(key, str(value))
-                        
-                if metagame is not None:
-                    print(f"DEBUG: Faction value after applying updates: {metagame.get('PlayerFaction', 'Unknown')}")
-            
-            # Update territories
+            # Update territories, Pandora-pedia entries, and achievements (unchanged)
             try:
                 self.territory_manager.save_territory_changes(self.tree)
             except Exception as territory_error:
                 self.logger.error(f"Error saving territory changes: {str(territory_error)}")
             
-            # Update Pandora-pedia entries
             try:
                 self.pandora_pedia_manager.save_pandora_pedia_changes(self.tree)
             except Exception as pandora_pedia_error:
                 self.logger.error(f"Error saving Pandora-Pedia changes: {str(pandora_pedia_error)}")
             
-            # Update achievements
             try:
                 self.achievements_manager.save_achievement_changes(self.tree)
             except Exception as achievement_error:
                 self.logger.error(f"Error saving achievement changes: {str(achievement_error)}")
-            
-            # AMMO DEBUG: Check weapon ammo values before saving
-            try:
-                print("SAVE_DEBUG: Checking weapon ammo values before saving")
-                root = self.tree.getroot()
-                profile = root.find("PlayerProfile")
-                
-                # Check RDA weapons
-                soldier = profile.find("Possessions_Soldier")
-                if soldier:
-                    possessions = soldier.find("Posessions")
-                    if possessions:
-                        for poss in possessions.findall("Poss"):
-                            clip = poss.get("NbInClip", "?")
-                            if clip not in ["0", "?"] and int(clip) > 100:
-                                print(f"SAVE_DEBUG: Found RDA weapon with clip {clip}")
-                
-                # Check Na'vi weapons
-                avatar = profile.find("Possessions_Avatar")
-                if avatar:
-                    possessions = avatar.find("Posessions")
-                    if possessions:
-                        for poss in possessions.findall("Poss"):
-                            clip = poss.get("NbInClip", "?")
-                            if clip not in ["0", "?"] and int(clip) > 100:
-                                print(f"SAVE_DEBUG: Found Na'vi weapon with clip {clip}")
-            except Exception as debug_e:
-                print(f"SAVE_DEBUG ERROR: {str(debug_e)}")
-            
+                        
+            # Ensure faction is preserved
             self.stats_manager._ensure_faction_preserved()
 
-            # Save file and update checksum
-            self.logger.debug("Saving XML tree to file...")
-            XMLHandler.save_xml_tree(self.tree, self.file_path)
+            # Save file using the appropriate method based on version
+            if self.game_version == "xbox":
+                # Xbox 360 save format - with checksum handling
+                self.logger.debug("Saving file using Xbox 360 format handler")
+                XMLHandler.save_xml_tree(self.tree, self.file_path)
+            else:
+                # PC save format - direct XML save
+                self.logger.debug("Saving file using PC format handler (direct XML)")
+                PCXMLHandler.save_xml_tree(self.tree, self.file_path)
+            
             self.logger.debug("XML tree saved successfully")
             
-            # Force update Metagame faction if provided in stats_updates
-            if "Metagame" in stats_updates and "PlayerFaction" in stats_updates["Metagame"]:
-                metagame = root.find("Metagame")
-                if metagame is not None:
-                    metagame.set("PlayerFaction", stats_updates["Metagame"]["PlayerFaction"])
-                    self.logger.debug(f"Explicitly set PlayerFaction to {stats_updates['Metagame']['PlayerFaction']}")
-                else:
-                    # Create Metagame if it doesn't exist
-                    metagame = ET.SubElement(root, "Metagame")
-                    metagame.set("PlayerFaction", stats_updates["Metagame"]["PlayerFaction"])
-
-            # Verify checksum after save
-            try:
-                with open(self.file_path, 'rb') as f:
-                    file_data = f.read()
-                is_valid = XMLHandler.verify_checksum(file_data)
-                
-                # Update checksum status
-                self.checksum_label.config(
-                    text=f"Checksum: {'Valid' if is_valid else 'Invalid'}", 
-                    foreground="dark green" if is_valid else "red"
-                )
-            except Exception as checksum_error:
-                self.logger.error(f"Checksum verification failed: {str(checksum_error)}")
-                self.checksum_label.config(
-                    text="Checksum: Error", 
-                    foreground="red"
-                )
-            
+            # Set the status to "Unsaved Changes" initially, then clear it if save succeeded
             self.unsaved_label.config(text="")
+            
             self.logger.debug("Changes saved successfully")
             messagebox.showinfo("Success", "Save file modified successfully!\nA backup has been created.")
             
@@ -716,7 +643,35 @@ class SaveEditor:
                 formatted_time = StatsManager._format_game_time(None, value)
                 self.time_labels[display_name].config(text=formatted_time)
 
+
 if __name__ == "__main__":
+    # Create a logger for the main module
+    main_logger = logging.getLogger('Main')
+    
+    # Create the version selector
+    selector = VersionSelector()
+    
+    # Show the selection screen
+    selector.show_selection_screen()
+    
+    # After mainloop exits, get the selected version
+    selected_version = selector.selected_version
+    
+    # Destroy the selector window to be safe
+    try:
+        if selector.root and selector.root.winfo_exists():
+            selector.root.destroy()
+    except:
+        pass
+    
+    # Check if a version was selected (should be handled by _on_window_close, but just in case)
+    if selected_version is None:
+        main_logger.debug("No version selected, exiting program")
+        sys.exit(0)
+    
+    main_logger.debug(f"User selected version: {selected_version}")
+    
+    # Create the main application with the selected version
     root = tk.Tk()
-    app = SaveEditor(root)
+    app = SaveEditor(root, game_version=selected_version)
     root.mainloop()
