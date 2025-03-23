@@ -15,6 +15,13 @@ from navigation_manager import NavigationManager
 from pandora_pedia_manager import PandoraPediaManager
 from version_selector import VersionSelector  
 from pc_xml_handler import PCXMLHandler
+from missions_manager import MissionsManager
+from pins_manager import PinsManager
+from sounds_manager import SoundsManager
+from tutorial_manager import TutorialManager
+from vehicle_manager import VehicleManager
+from skills_manager import SkillsManager
+
 
 
 # Configure logging
@@ -390,23 +397,37 @@ class SaveEditor:
             self.territory_frame = ttk.Frame(self.notebook, padding=10)
             self.achievements_frame = ttk.Frame(self.notebook, padding=10)
             self.navigation_frame = ttk.Frame(self.notebook, padding=10)
-            self.pandora_pedia_frame = ttk.Frame(self.notebook, padding=10)  
-
+            self.pandora_pedia_frame = ttk.Frame(self.notebook, padding=10) 
+            self.missions_frame = ttk.Frame(self.notebook, padding=10) 
+            self.pins_frame = ttk.Frame(self.notebook, padding=10)
+            self.sounds_frame = ttk.Frame(self.notebook, padding=10)
+            self.tutorial_frame = ttk.Frame(self.notebook, padding=10)
+            self.vehicle_frame = ttk.Frame(self.notebook, padding=10)
+            self.skills_frame = ttk.Frame(self.notebook, padding=10)
 
             self.notebook.add(self.stats_frame, text="Player Stats")
             self.notebook.add(self.territory_frame, text="Territory Control")
             self.notebook.add(self.achievements_frame, text="Achievements")
             self.notebook.add(self.navigation_frame, text="Navigation")
-            self.notebook.add(self.pandora_pedia_frame, text="Pandora-Pedia")  
-
+            self.notebook.add(self.pandora_pedia_frame, text="Pandora-Pedia") 
+            self.notebook.add(self.missions_frame, text="Missions") 
+            self.notebook.add(self.pins_frame, text="Map Pins")
+            self.notebook.add(self.sounds_frame, text="Sounds")
+            self.notebook.add(self.tutorial_frame, text="Tutorial Database")
+            self.notebook.add(self.vehicle_frame, text="Vehicle Knowledge")
+            self.notebook.add(self.skills_frame, text="Skills")
 
             self.stats_manager = StatsManager(self.stats_frame, self)
             self.territory_manager = TerritoryManager(self.territory_frame, main_window=self)
             self.achievements_manager = AchievementsManager(self.achievements_frame, self)
             self.navigation_manager = NavigationManager(self.navigation_frame, self)
-            self.pandora_pedia_manager = PandoraPediaManager(self.pandora_pedia_frame, self) 
-
-
+            self.pandora_pedia_manager = PandoraPediaManager(self.pandora_pedia_frame, self)
+            self.missions_manager = MissionsManager(self.missions_frame, self) 
+            self.pins_manager = PinsManager(self.pins_frame, self)
+            self.sounds_manager = SoundsManager(self.sounds_frame, self)
+            self.tutorial_manager = TutorialManager(self.tutorial_frame, self)
+            self.vehicle_manager = VehicleManager(self.vehicle_frame, self)
+            self.skills_manager = SkillsManager(self.skills_frame, self)
 
             self.logger.debug("Notebook and manager instances created successfully")
             
@@ -486,6 +507,12 @@ class SaveEditor:
             self.achievements_manager.load_achievements(self.tree)
             self.navigation_manager.load_navigation_data(self.tree)
             self.pandora_pedia_manager.load_pandora_pedia(self.tree)
+            self.missions_manager.load_missions(self.tree)
+            self.pins_manager.load_pins(self.tree)
+            self.sounds_manager.load_sounds(self.tree)
+            self.tutorial_manager.load_tutorials(self.tree)
+            self.vehicle_manager.load_vehicles(self.tree)
+            self.skills_manager.load_skills(self.tree)
 
             self.save_button.config(state="normal")
             self.unsaved_label.config(text="")
@@ -576,7 +603,37 @@ class SaveEditor:
                 self.achievements_manager.save_achievement_changes(self.tree)
             except Exception as achievement_error:
                 self.logger.error(f"Error saving achievement changes: {str(achievement_error)}")
-                        
+
+            try:
+                self.missions_manager.save_mission_changes(self.tree)
+            except Exception as missions_error:
+                self.logger.error(f"Error saving missions changes: {str(missions_error)}")
+
+            try:
+                self.pins_manager.save_pin_changes(self.tree)
+            except Exception as pins_error:
+                self.logger.error(f"Error saving pins changes: {str(pins_error)}")
+
+            try:
+                self.sounds_manager.save_sound_changes(self.tree)
+            except Exception as sounds_error:
+                self.logger.error(f"Error saving sounds changes: {str(sounds_error)}")
+
+            try:
+                self.tutorial_manager.save_tutorial_changes(self.tree)
+            except Exception as tutorial_error:
+                self.logger.error(f"Error saving tutorial changes: {str(tutorial_error)}")
+
+            try:
+                self.tree = self.vehicle_manager.save_vehicle_changes(self.tree)
+            except Exception as vehicle_error:
+                self.logger.error(f"Error saving vehicle knowledge changes: {str(vehicle_error)}")
+
+            try:
+                self.tree = self.skills_manager.save_skill_changes(self.tree)
+            except Exception as skills_error:
+                self.logger.error(f"Error saving skills data: {str(skills_error)}")
+
             # Ensure faction is preserved
             self.stats_manager._ensure_faction_preserved()
 

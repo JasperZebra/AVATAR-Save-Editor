@@ -2319,6 +2319,11 @@ class StatsManager:
         weapons_changed = 0
         ammo_updated = 0
         
+        # Create lists of weapon IDs to identify weapons correctly
+        rda_weapon_ids = self._get_rda_weapon_ids()
+        navi_weapon_ids = self._get_navi_weapon_ids()
+        weapon_ids = rda_weapon_ids + navi_weapon_ids
+        
         # Reset RDA weapons
         soldier = profile.find("Possessions_Soldier")
         if soldier is not None:
@@ -2327,9 +2332,9 @@ class StatsManager:
                 # First, reset each weapon to its correct ammo type
                 for poss in possessions.findall("Poss"):
                     weapon_id = poss.get("crc_ItemID")
-                    # Only process actual weapons
-                    if weapon_id in self.item_mappings:
-                        item_name = self.item_mappings[weapon_id]
+                    # Only process actual weapons by checking if ID is in weapon_ids list
+                    if weapon_id in weapon_ids:
+                        item_name = self.item_mappings.get(weapon_id, f"Unknown Item ({weapon_id})")
                         
                         # Get the correct ammo type for this weapon directly
                         correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
@@ -2359,11 +2364,11 @@ class StatsManager:
                             weapons_changed += 1
                 
                 # Now update all ammo items to have 500 ammo
+                ammo_ids = self._get_ammo_ids()
                 for poss in possessions.findall("Poss"):
                     item_id = poss.get("crc_ItemID")
                     # Check if this is an ammo item
-                    if item_id in ["4029490973", "2220072441", "3183424835", "3227899887", 
-                                "4198025789", "2442117335", "3819023512"]:
+                    if item_id in ammo_ids:
                         # Set ammo to 500
                         current_ammo = poss.get("NbInStack", "0")
                         if current_ammo != "500":
@@ -2371,7 +2376,7 @@ class StatsManager:
                             ammo_updated += 1
                             self.logger.debug(f"Updated ammo item {item_id} to 500 rounds")
         
-        # Reset Na'vi weapons
+        # Reset Na'vi weapons - similar code with the same weapon ID check
         avatar = profile.find("Possessions_Avatar")
         if avatar is not None:
             possessions = avatar.find("Posessions")
@@ -2380,8 +2385,8 @@ class StatsManager:
                 for poss in possessions.findall("Poss"):
                     weapon_id = poss.get("crc_ItemID")
                     # Only process actual weapons
-                    if weapon_id in self.item_mappings:
-                        item_name = self.item_mappings[weapon_id]
+                    if weapon_id in weapon_ids:
+                        item_name = self.item_mappings.get(weapon_id, f"Unknown Item ({weapon_id})")
                         
                         # Get the correct ammo type for this weapon directly
                         correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
@@ -2411,10 +2416,11 @@ class StatsManager:
                             weapons_changed += 1
                 
                 # Now update all ammo items to have 500 ammo
+                ammo_ids = self._get_ammo_ids()
                 for poss in possessions.findall("Poss"):
                     item_id = poss.get("crc_ItemID")
                     # Check if this is an ammo item
-                    if item_id in ["1042656528", "435601722", "3069972540"]:  # Na'vi ammo types
+                    if item_id in ammo_ids:
                         # Set ammo to 500
                         current_ammo = poss.get("NbInStack", "0")
                         if current_ammo != "500":
@@ -2440,7 +2446,7 @@ class StatsManager:
             messagebox.showinfo("Reset Complete", message)
         else:
             messagebox.showinfo("Reset Complete", "All weapons and ammo were already correctly configured.")
-                
+
     def _preserve_faction(self, profile, faction_value="1"):
         """Ensure faction stays preserved (prevents resets to Undecided)"""
         # Look for Metagame directly from the main window's tree
@@ -2469,11 +2475,23 @@ class StatsManager:
             "760079057": "24",   # Dual Wasp Pistol III
             "999316102": "32",   # Dual Wasp Pistol IV
             
+            # DLC Dual Wasp Pistols
+            "3859060838": "16",  # DLC WARLOCK Dual Wasp Pistol I
+            "3904601233": "16",  # DLC WARLOCK Dual Wasp Pistol II
+            "102867538": "24",   # DLC WARLOCK Dual Wasp Pistol III
+            "749353518": "32",   # DLC WARLOCK Dual Wasp Pistol IV
+            
             # RDA Rifles
             "1130814347": "16",  # Standard Issue Rifle TERRA I
             "1306083196": "24",  # Standard Issue Rifle EURYS II
             "3628031700": "32",  # Standard Issue Rifle SOLARIS III
             "1146928137": "48",  # Standard Issue Rifle SOLARIS IV
+            
+            # DLC Standard Issue Rifles
+            "2850329205": "16",  # DLC ARGO Standard Issue Rifle I
+            "2807789186": "24",  # DLC ARGO Standard Issue Rifle II
+            "2194670470": "32",  # DLC ARGO Standard Issue Rifle III
+            "324172685": "48",   # DLC ARGO Standard Issue Rifle IV
             
             # RDA Shotguns
             "2313824646": "4",   # Combat Shotgun PHALANX I
@@ -2481,17 +2499,35 @@ class StatsManager:
             "2789519003": "12",  # Combat Shotgun PHALANX III
             "1919695864": "16",  # Combat Shotgun PHALANX IV
             
+            # DLC Combat Shotguns
+            "2664450350": "4",   # DLC SIGNET Combat Shotgun I
+            "2423238105": "8",   # DLC SIGNET Combat Shotgun II
+            "2120138529": "12",  # DLC SIGNET Combat Shotgun III
+            "4289908838": "16",  # DLC SIGNET Combat Shotgun IV
+            
             # RDA Assault Rifles
             "2397981034": "50",  # Assault Rifle TERRA I
             "2152836509": "75",  # Assault Rifle EURYS II
             "268371112": "100",  # Assault Rifle SOLARIS III
             "466145020": "150",  # Assault Rifle SOLARIS IV
             
+            # DLC Assault Rifles
+            "3655372526": "50",  # DLC BARRO Assault Rifle I
+            "3613354521": "75",  # DLC BARRO Assault Rifle II
+            "3850194262": "100", # DLC BARRO Assault Rifle III
+            "2109370248": "150", # DLC BARRO Assault Rifle IV
+            
             # RDA Machine Guns
-            "85991974": "50",    # BANISHER M60 Machine Gun I
-            "195020497": "50",   # BANISHER M60 Machine Gun II
-            "1881065336": "50",  # BANISHER M60 Machine Gun III
-            "1796958374": "50",  # BANISHER M60 Machine Gun IV
+            "85991974": "999",    # BANISHER M60 Machine Gun I
+            "195020497": "999",   # BANISHER M60 Machine Gun II
+            "1881065336": "999",  # BANISHER M60 Machine Gun III
+            "1796958374": "999",  # BANISHER M60 Machine Gun IV
+            
+            # DLC Machine Guns
+            "2015914953": "999",  # DLC STELLAR M60 Machine Gun I
+            "1989644094": "999",  # DLC STELLAR M60 Machine Gun II
+            "1087779032": "999",  # DLC STELLAR M60 Machine Gun III
+            "1691104809": "999",  # DLC STELLAR M60 Machine Gun IV
             
             # RDA Grenade Launchers
             "94681171": "5",     # Grenade Launcher M222 - I
@@ -2499,23 +2535,70 @@ class StatsManager:
             "1349633617": "15",  # Grenade Launcher M222 - III
             "4018216358": "20",  # Grenade Launcher M222 - IV
             
+            # DLC Grenade Launchers
+            "2157668310": "5",   # DLC CRUSHER Grenade Launcher I
+            "2384757537": "10",  # DLC CRUSHER Grenade Launcher II
+            "3441856033": "15",  # DLC CRUSHER Grenade Launcher III
+            "3043901684": "20",  # DLC CRUSHER Grenade Launcher IV
+            
+            # Flamethrowers
+            "2529862352": "30",  # Flamethrower VESUPYRE I
+            "2557822503": "40",  # Flamethrower STERILATOR II
+            "609450705": "50",   # Flamethrower BUSHBOSS III
+            "2288255787": "60",  # Flamethrower BUSHBOSS IV
+            
+            # DLC Flamethrowers
+            "3250873684": "30",  # DLC BUDDY Flamethrower I
+            "3480977827": "40",  # DLC BUDDY Flamethrower II
+            "3469816623": "50",  # DLC BUDDY Flamethrower III
+            "3994460767": "60",  # DLC BUDDY Flamethrower IV
+            
+            # Nail Guns
+            "2548581230": "999",  # Nail Gun HAMMER I
+            "2572658585": "999",  # Nail Gun HAMMER II
+            "143378107": "999",   # Nail Gun HAMMER III
+            "1911864170": "999",  # Nail Gun HAMMER IV
+            
+            # DLC Nail Guns
+            "2161255366": "999",  # DLC DENT Nail Gun I
+            "2389559089": "999",  # DLC DENT Nail Gun II
+            "3499218689": "999",  # DLC DENT Nail Gun III
+            "4230631668": "999",  # DLC DENT Nail Gun IV
+            
             # Na'vi Bows
             "291262189": "10",   # Bow I
-            "535013914": "10",   # Bow II
-            "2092736556": "10",  # Bow III
-            "371977402": "10",   # Bow IV
+            "535013914": "15",   # Bow II
+            "2092736556": "20",  # Bow III
+            "371977402": "25",   # Bow IV
+            
+            # DLC Bows
+            "1817446146": "10",  # DLC RAWKE Bow I
+            "1659626485": "15",  # DLC RAWKE Bow II
+            "1282693004": "20",  # DLC RAWKE Bow III
+            "435991093": "25",   # DLC RAWKE Bow IV
             
             # Na'vi Crossbows
             "1662469074": "10",  # Crossbow I
-            "1839769381": "10",  # Crossbow II
-            "3400058396": "10",  # Crossbow III
-            "1514231420": "10",  # Crossbow IV
+            "1839769381": "15",  # Crossbow II
+            "3400058396": "20",  # Crossbow III
+            "1514231420": "25",  # Crossbow IV
+            
+            # DLC Crossbows
+            "3138212456": "10",  # DLC PXI Crossbow I
+            "2486913109": "15",  # DLC PXI Crossbow II
+            "2589205711": "20",  # DLC PXI Crossbow III
+            "1886472672": "25",  # DLC PXI Crossbow IV
             
             # Na'vi M30 Machine Guns
-            "1304439874": "30",  # M30 Machine Gun I
-            "1132447925": "30",  # M30 Machine Gun II
-            "982090295": "30",   # M30 Machine Gun III
-            "958613249": "30",   # M30 Machine Gun IV
+            "1304439874": "999",  # M30 Machine Gun I
+            "1132447925": "999",  # M30 Machine Gun II
+            "982090295": "999",   # M30 Machine Gun III
+            "958613249": "999",   # M30 Machine Gun IV
+            
+            # ELITE M30 Machine Guns
+            "1048019290": "999",  # ELITE AVR-M30 II
+            "172062103": "999",   # ELITE AVR-M30 III
+            "921966990": "999",   # ELITE AVR-M30 IV
         }
         
         # Return the default clip size or 20 as a fallback
