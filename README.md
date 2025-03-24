@@ -37,7 +37,7 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 
 ## Navigation
 - Displays all maps in the game
-- Shows chechkpoint **Visited** or **Unvisited**
+- Shows checkpoint **Visited** or **Unvisited**
 - `Show All Cheeckpoints` button shows all checkpoint in the game
 
 ## Pandora-Pedia
