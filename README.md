@@ -5,7 +5,7 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 ## Selection Screen
 - Xbox 360 save
 
-- PC save file **(DOES NOT WORK, yet hehe)**
+- PC save file **(Mostly working now, just need to find out why the DLC items are not apeearing in the game WITHOUT modifying the `data.pak` file)**
 
 ## Player Stats
 - Displays player stats and character information
@@ -38,6 +38,26 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 - Shows all articles in the game
 - Displays the status for each articles **(Locked, In Progress, and Unlocked)**
 
+## Missions
+- Displays current and completed missions **(Names might be wrong)**
+
+## Map Pins
+- Displays what areas the player has discovered and what challenges or collectibles you've completed in each area. **(Names might be wrong)**
+
+## Sounds
+- Displays the sounds found in the save file **(Names might be wrong)**
+
+## Tutorial Database
+- Displays the tutorials for the game for the player
+
+## Vechicle knowledge
+- Displays the Vechicles the player has been in
+
+## Skills
+- Displays SKills
+
+
+
 ## XML Viewer
 - Direct XML view capability
 - Syntax validation
@@ -46,11 +66,20 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 
 # Screenshots
 ![Screenshot 2025-03-20 170958](https://github.com/user-attachments/assets/3fd042a9-2088-4747-90f4-ae0525329aa3)
-![Screenshot 2025-03-20 171019](https://github.com/user-attachments/assets/a259f108-ddcf-4043-bff6-be3c074281bd)
-![Screenshot 2025-03-20 171030](https://github.com/user-attachments/assets/4a007b29-6268-419a-a09a-d3bfa0b70417)
-![Screenshot 2025-03-20 171040](https://github.com/user-attachments/assets/38f87556-758c-4a93-b189-6dfe56bac1e5)
-![Screenshot 2025-03-20 171111](https://github.com/user-attachments/assets/3a6ce92c-4b89-41a2-8319-8f39134fce79)
-![Screenshot 2025-03-20 171124](https://github.com/user-attachments/assets/cbc9c9cb-0b58-4c94-9834-d75c704c9fa7)
+
+![Screenshot 2025-03-23 172555](https://github.com/user-attachments/assets/62c0bbae-a35d-4512-bd66-591f24ae2bec)
+![Screenshot 2025-03-23 172604](https://github.com/user-attachments/assets/e73682d0-4089-4ab1-9edc-8299a8ab5280)
+![Screenshot 2025-03-23 172615](https://github.com/user-attachments/assets/5d0c0280-2fba-4bac-abd7-46d48643c139)
+![Screenshot 2025-03-23 172636](https://github.com/user-attachments/assets/405364cb-d061-4ea8-afd2-18f9d97d9a8e)
+![Screenshot 2025-03-23 172647](https://github.com/user-attachments/assets/e440c8f9-cb8b-4e73-8638-725f69815a25)
+![Screenshot 2025-03-23 172655](https://github.com/user-attachments/assets/a79bf84d-fd6d-4e8b-8335-4d761cc9d134)
+![Screenshot 2025-03-23 172705](https://github.com/user-attachments/assets/24f083af-7802-4910-9539-421fb5e9186f)
+![Screenshot 2025-03-23 172714](https://github.com/user-attachments/assets/92ac7267-d0ec-4ff3-b57d-648f5233e406)
+![Screenshot 2025-03-23 172722](https://github.com/user-attachments/assets/91f46a17-020f-4cc4-9121-77cff79c6508)
+![Screenshot 2025-03-23 172731](https://github.com/user-attachments/assets/cdfbd5e9-7407-47c7-9e26-5fff24175321)
+![Screenshot 2025-03-23 172739](https://github.com/user-attachments/assets/517853f4-2a7f-4c79-b61e-8e26a1081da7)
+
+
 ![Screenshot 2025-03-20 171144](https://github.com/user-attachments/assets/dde6bf94-a1e0-4c0a-88f6-02aedba47a68)
 
 
