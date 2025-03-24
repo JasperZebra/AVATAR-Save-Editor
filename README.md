@@ -2,6 +2,12 @@
 
 A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version of the game, featuring a graphical user interface for modifying game saves.
 
+## Here's an example of what you can do with this save editor and what was changed:
+  - Changed the player to the Na'vi body in the tutorial area **(Can't do this normally)**
+  - Changed the Head, Chest, and Leg armor pieces to differnet sets **(Armor pieces can't be chnged normally)**
+![Screenshot 2025-03-21 152125](https://github.com/user-attachments/assets/2b9069cd-7a01-4dbf-b847-629bd2a49de9)
+
+
 ## Selection Screen
 - Xbox 360 save
 
