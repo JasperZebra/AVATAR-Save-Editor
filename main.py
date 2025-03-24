@@ -246,7 +246,7 @@ class SaveEditor:
         self.logger.debug("Initializing Save Editor")
         self.root = root
         self.game_version = game_version
-        self.root.title("Avatar: The Game Save Editor | Version 1.1")
+        self.root.title("Avatar: The Game Save Editor | Version 1.6")
         self.root.geometry("1130x680")
 
         # Set the window icon
