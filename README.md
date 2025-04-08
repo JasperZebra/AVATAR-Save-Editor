@@ -8,6 +8,8 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
   - Changed the Head, Chest, and Leg armor pieces to differnet sets **(Armor pieces can't be chnged normally)**
 ![Screenshot 2025-03-21 152125](https://github.com/user-attachments/assets/2b9069cd-7a01-4dbf-b847-629bd2a49de9)
 
+# Video Showcase
+[![YouTube](http://i.ytimg.com/vi/854m2cfOvYA/hqdefault.jpg)](https://www.youtube.com/watch?v=854m2cfOvYA)
 
 ## Selection Screen
 - Xbox 360 save
