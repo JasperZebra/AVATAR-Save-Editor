@@ -21,8 +21,7 @@ from sounds_manager import SoundsManager
 from tutorial_manager import TutorialManager
 from vehicle_manager import VehicleManager
 from skills_manager import SkillsManager
-
-
+from ps3_xml_handler import PS3XMLHandler
 
 # Configure logging
 logging.basicConfig(
@@ -246,8 +245,8 @@ class SaveEditor:
         self.logger.debug("Initializing Save Editor")
         self.root = root
         self.game_version = game_version
-        self.root.title("Avatar: The Game Save Editor | Version 1.6")
-        self.root.geometry("1130x680")
+        self.root.title("Avatar: The Game Save Editor | Version 1.7")  # Updated version
+        self.root.geometry("1130x690")
 
         # Set the window icon
         try:
@@ -269,7 +268,7 @@ class SaveEditor:
         
         self.setup_ui()
         self.logger.debug("Save Editor initialization complete")
-        
+
     def setup_ui(self):
         self.logger.debug("Setting up UI components")
         try:
@@ -300,6 +299,8 @@ class SaveEditor:
                 command=self.load_save
             )
             self.load_button.pack(side=tk.LEFT, padx=5)
+            
+            # Remove Link to Game checkbox since game_memory_handler.py is deleted
             
             self.xml_viewer_button = ttk.Button(
                 button_frame,
@@ -338,19 +339,19 @@ class SaveEditor:
             right_frame = ttk.Frame(file_frame)
             right_frame.pack(side=tk.RIGHT, padx=5)
             
-            # Time stats frame - now horizontal
+            # Time stats frame
             time_stats_frame = ttk.Frame(right_frame)
             time_stats_frame.pack(side=tk.LEFT, padx=(0, 20))
             
-            # Create time stat labels horizontally with smaller font
+            # Create time stat labels with smaller font
             self.time_labels = {}
             time_font = ("", 8)  # Smaller font size
             
-            # Single frame for all time stats
+            # Frame for Game Time, Played Time, and Environment Time (horizontal layout)
             time_row = ttk.Frame(time_stats_frame)
             time_row.pack(fill=tk.X)
             
-            # Add each time stat horizontally
+            # Add Game Time, Played Time, and Environment Time horizontally
             for i, stat in enumerate(["Game Time", "Played Time", "Environment Time"]):
                 if i > 0:  # Add separator except for first item
                     ttk.Label(time_row, text=" | ", font=time_font).pack(side=tk.LEFT)
@@ -370,6 +371,35 @@ class SaveEditor:
         except Exception as e:
             self.logger.error(f"Error creating file section: {str(e)}", exc_info=True)
             raise
+
+    def update_time_display(self, time_info: Dict[str, str]) -> None:
+        """Update the time display labels with new values."""
+        mapping = {
+            "Game Time": "GameTime",
+            "Played Time": "PlayedTime",
+            "Environment Time": "EnvTime"
+        }
+        
+        # Import format_game_time from stats_manager if needed or create standalone function
+        from stats_manager import StatsManager
+        
+        for display_name, xml_name in mapping.items():
+            value = time_info.get(xml_name, "0")
+            
+            if display_name == "Environment Time":
+                try:
+                    seconds = float(value)
+                    self.env_time_seconds = seconds  # Store the original value
+                    
+                    # Update the label using the standard time formatting
+                    formatted_time = StatsManager._format_game_time(None, value)
+                    self.time_labels[display_name].config(text=formatted_time)
+                except Exception as e:
+                    self.logger.error(f"Error updating environment time display: {str(e)}")
+            else:
+                # For other time values, use the existing method
+                formatted_time = StatsManager._format_game_time(None, value)
+                self.time_labels[display_name].config(text=formatted_time)
 
     def open_xml_viewer(self):
         self.logger.debug("Opening XML viewer")
@@ -453,9 +483,14 @@ class SaveEditor:
                 self.save_changes()
         
         try:
-            file_path = filedialog.askopenfilename(
-                filetypes=[("Save Files", "*.sav")],
-            )
+            # Update file type options to include PS3 format
+            filetypes = [("All Save Files", "*.sav SAVEDATA.*")]
+            if self.game_version == "xbox" or self.game_version == "pc":
+                filetypes.append(("Save Files", "*.sav"))
+            if self.game_version == "ps3":
+                filetypes.append(("PS3 Save Files", "SAVEDATA.*"))
+            
+            file_path = filedialog.askopenfilename(filetypes=filetypes)
             if not file_path:
                 self.logger.debug("File selection cancelled")
                 return
@@ -477,7 +512,7 @@ class SaveEditor:
                 
                 # Load XML using Xbox handler
                 self.tree, self.xml_start, self.original_size = XMLHandler.load_xml_tree(self.file_path)
-            else:
+            elif self.game_version == "pc":
                 # PC version - use PC-specific handler
                 self.logger.debug("Using PC XML handler")
                 # For PC version, we skip checksum verification
@@ -494,6 +529,21 @@ class SaveEditor:
                     # Fallback to Xbox loading method if PC parsing fails
                     self.logger.debug("Attempting fallback to Xbox loading method")
                     self.tree, self.xml_start, self.original_size = XMLHandler.load_xml_tree(self.file_path)
+            else:  # PS3 version
+                # PS3 version - use PS3-specific handler
+                self.logger.debug("Using PS3 XML handler")
+                is_valid = PS3XMLHandler.verify_checksum(file_data)
+                self.logger.debug(f"PS3 integrity check result: {is_valid}")
+                
+                # Load XML using PS3 handler
+                try:
+                    self.logger.debug("Attempting to load with PS3 handler")
+                    self.tree, self.xml_start, self.original_size = PS3XMLHandler.load_xml_tree(self.file_path)
+                    self.logger.debug("PS3 save file parsed successfully")
+                except Exception as ps3_error:
+                    self.logger.error(f"Failed to parse PS3 save file: {str(ps3_error)}", exc_info=True)
+                    messagebox.showerror("Error", f"Failed to parse PS3 save file: {str(ps3_error)}")
+                    return
             
             # Update checksum verification display
             self.checksum_label.config(
@@ -557,6 +607,15 @@ class SaveEditor:
             if "Metagame" in stats_updates and "PlayerFaction" in stats_updates["Metagame"]:
                 self.logger.debug(f"Faction value from stats_updates: {stats_updates['Metagame']['PlayerFaction']}")
             
+            # We'll keep the original environment time value from the file
+            time_info = profile.find("TimeInfo")
+            if time_info is not None:
+                env_time_value = time_info.get("EnvTime", "0.0")
+            else:
+                env_time_value = "0.0"
+            
+            self.logger.debug(f"Original environment time value: {env_time_value}")
+            
             # Update sections with fallback creation
             sections = {
                 "BaseInfo": stats_updates.get("BaseInfo", {}),
@@ -564,6 +623,14 @@ class SaveEditor:
                 "OptionsInfo": stats_updates.get("OptionsInfo", {}),
                 "TimeInfo": stats_updates.get("TimeInfo", {})
             }
+            
+            # Add the environment time to the TimeInfo updates
+            if "TimeInfo" not in sections:
+                sections["TimeInfo"] = {}
+                
+            # Only update if we have an original value, don't modify it
+            if env_time_value != "0.0":
+                sections["TimeInfo"]["EnvTime"] = env_time_value
             
             for section_name, updates in sections.items():
                 # Find or create the section
@@ -575,19 +642,13 @@ class SaveEditor:
                 for key, value in updates.items():
                     section.set(key, str(value))
             
-            # Process Equipment section specifically for PC version
-            if self.game_version != "xbox":
-                # Find or create Equipment section
-                equipment = profile.find("Equipment")
-                if equipment is None:
-                    equipment = ET.SubElement(profile, "Equipment")
-                
-                # Make sure armor updates from stats_manager are applied
-                if "Equipment" in stats_updates:
-                    for key, value in stats_updates.get("Equipment", {}).items():
-                        self.logger.debug(f"Setting equipment attribute: {key}={value}")
-                        equipment.set(key, str(value))
-                        
+            # Only update Equipment if it already exists in the original file
+            equipment = profile.find("Equipment")
+            if equipment is not None and "Equipment" in stats_updates:
+                for key, value in stats_updates.get("Equipment", {}).items():
+                    self.logger.debug(f"Setting equipment attribute on existing equipment: {key}={value}")
+                    equipment.set(key, str(value))
+            
             # Update territories, Pandora-pedia entries, and achievements (unchanged)
             try:
                 self.territory_manager.save_territory_changes(self.tree)
@@ -642,11 +703,14 @@ class SaveEditor:
                 # Xbox 360 save format - with checksum handling
                 self.logger.debug("Saving file using Xbox 360 format handler")
                 XMLHandler.save_xml_tree(self.tree, self.file_path)
-            else:
-                # PC save format - direct XML save, but using XMLHandler for saving
-                # This is the key change - use the Xbox handler's save method but with PC specifics
-                self.logger.debug("Saving file using hybrid XML handler for PC saves")
-                XMLHandler.save_xml_tree(self.tree, self.file_path)  # Use the Xbox handler here
+            elif self.game_version == "pc":
+                # PC save format
+                self.logger.debug("Saving file using PC XML handler")
+                PCXMLHandler.save_xml_tree(self.tree, self.file_path)
+            else:  # PS3 version
+                # PS3 save format - requires preserving exact binary header
+                self.logger.debug("Saving file using PS3 XML handler")
+                PS3XMLHandler.save_xml_tree(self.tree, self.file_path)
             
             self.logger.debug("XML tree saved successfully")
             
@@ -694,26 +758,6 @@ class SaveEditor:
         except Exception as e:
             self.logger.error(f"Error during application close: {str(e)}", exc_info=True)
             self.root.destroy()  # Ensure application closes even if there's an error          
-
-
-    def update_time_display(self, time_info: Dict[str, str]) -> None:
-        """Update the time display labels with new values."""
-        mapping = {
-            "Game Time": "GameTime",
-            "Played Time": "PlayedTime",
-            "Environment Time": "EnvTime"
-        }
-        
-        # Import format_game_time from stats_manager if needed or create standalone function
-        from stats_manager import StatsManager
-        
-        for display_name, xml_name in mapping.items():
-            if display_name in self.time_labels:
-                value = time_info.get(xml_name, "0")
-                # Use StatsManager's formatting method
-                formatted_time = StatsManager._format_game_time(None, value)
-                self.time_labels[display_name].config(text=formatted_time)
-
 
 if __name__ == "__main__":
     # Create a logger for the main module

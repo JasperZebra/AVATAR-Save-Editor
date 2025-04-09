@@ -57,9 +57,9 @@ class PandoraPediaManager:
         ).pack(side=tk.LEFT, padx=5)
 
         # Configure tags for color-coding with brighter colors for dark theme
-        self.pandora_pedia_tree.tag_configure('not_discovered', foreground='#FF3333')      # Brighter red
-        self.pandora_pedia_tree.tag_configure('discovered_not_seen', foreground='#FFCC00') # Brighter yellow/gold
-        self.pandora_pedia_tree.tag_configure('discovered_has_seen', foreground='#33FF33') # Brighter green
+        self.pandora_pedia_tree.tag_configure('not_discovered', foreground='#FF0000')      # Brighter red
+        self.pandora_pedia_tree.tag_configure('discovered_not_seen', foreground='#FFA500') # Brighter yellow/gold
+        self.pandora_pedia_tree.tag_configure('discovered_has_seen', foreground='#00FF00') # Brighter green
 
     def load_pandora_pedia(self, tree: ET.ElementTree) -> None:
         self.logger.debug("Loading PandoraPedia")

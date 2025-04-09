@@ -138,8 +138,8 @@ class VehicleManager:
         vehicle_info = {
             # RDA Ground Vehicles
             "2700952790": {
-                "name": "AMP Suit",
-                "type": "RDA Ground Vehicle"
+                "name": "Gator",
+                "type": "RDA Water Vehicle"
             },
             "439556112": {
                 "name": "Swan", 

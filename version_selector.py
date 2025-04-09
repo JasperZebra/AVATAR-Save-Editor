@@ -46,13 +46,14 @@ class VersionSelector:
         )
         title_label.pack(pady=(0, 50))
         
-        # Create frame for the two options
+        # Create frame for the options
         options_frame = ttk.Frame(main_frame)
         options_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Configure grid to have two equal columns
+        # Configure grid to have three equal columns
         options_frame.columnconfigure(0, weight=1)
         options_frame.columnconfigure(1, weight=1)
+        options_frame.columnconfigure(2, weight=1)
         
         # Xbox 360 option
         xbox_frame = self._create_option_frame(
@@ -71,6 +72,15 @@ class VersionSelector:
             lambda: self._on_version_selected("pc")
         )
         pc_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+        
+        # PS3 option
+        ps3_frame = self._create_option_frame(
+            options_frame, 
+            "PS3 Version", 
+            "For PS3 save files\nSAVEDATA.000 format", 
+            lambda: self._on_version_selected("ps3")
+        )
+        ps3_frame.grid(row=0, column=2, padx=10, pady=10, sticky="nsew")
         
         # Center the window on the screen
         self.root.update_idletasks()
@@ -115,7 +125,7 @@ class VersionSelector:
         # Large text label instead of image
         platform_label = ttk.Label(
             content_frame,
-            text=title.split()[0],  # "Xbox" or "PC"
+            text=title.split()[0],  # "Xbox" or "PC" or "PS3"
             font=("", 36, "bold"),
             justify=tk.CENTER
         )

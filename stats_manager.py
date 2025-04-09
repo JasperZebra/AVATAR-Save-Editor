@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import xml.etree.ElementTree as ET
 from typing import Dict, Optional
-from pathlib import Path  # Add this import
+from pathlib import Path  
 from ui_components import LabeledInput, block_combobox_mousewheel
 import os
 from PIL import Image, ImageTk
@@ -768,6 +768,35 @@ class StatsManager:
             padx=12,
             pady=5
         )
+
+    # Add this to your StatsManager class
+    def load_time_info(self, tree):
+        """Load only the time info from the XML tree."""
+        try:
+            root = tree.getroot()
+            profile = root.find("PlayerProfile")
+            if profile is None:
+                return
+                
+            time_info = profile.find("TimeInfo")
+            if time_info is None:
+                return
+                
+            # Get time values
+            time_values = {
+                "GameTime": time_info.get("GameTime", "0"),
+                "PlayedTime": time_info.get("PlayedTime", "0"),
+                "EnvTime": time_info.get("EnvTime", "0")
+            }
+            
+            # Update main window's time display
+            self.main_window.update_time_display({
+                "GameTime": time_values["GameTime"],
+                "PlayedTime": time_values["PlayedTime"],
+                "EnvTime": time_values["EnvTime"]
+            })
+        except Exception as e:
+            self.logger.error(f"Error loading time info: {str(e)}", exc_info=True)
 
     def _remove_duplicate_items(self):
         """Remove duplicate items from both RDA and Na'vi possessions based on crc_ItemID"""
@@ -2470,13 +2499,13 @@ class StatsManager:
         # Dictionary of weapon IDs mapped to their default clip sizes
         default_clips = {
             # RDA Pistols
-            "1042188764": "16",  # Dual Wasp Pistol I
+            "1042188764": "8",  # Dual Wasp Pistol I
             "815885611": "16",   # Dual Wasp Pistol II
             "760079057": "24",   # Dual Wasp Pistol III
             "999316102": "32",   # Dual Wasp Pistol IV
             
             # DLC Dual Wasp Pistols
-            "3859060838": "16",  # DLC WARLOCK Dual Wasp Pistol I
+            "3859060838": "8",  # DLC WARLOCK Dual Wasp Pistol I
             "3904601233": "16",  # DLC WARLOCK Dual Wasp Pistol II
             "102867538": "24",   # DLC WARLOCK Dual Wasp Pistol III
             "749353518": "32",   # DLC WARLOCK Dual Wasp Pistol IV
