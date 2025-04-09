@@ -16,7 +16,7 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 
 - PC save file **(Mostly working now, just need to find out why the DLC items are not apeearing in the game WITHOUT modifying the `data.pak` file)**
 
--PS3 save file **(Does not workv, yet)**
+- PS3 save file **(Does not workv, yet)**
 
 ## Player Stats
 - Displays player stats and character information
