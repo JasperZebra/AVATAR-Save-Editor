@@ -76,19 +76,20 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 - Section navigation
 
 # Screenshots
-![image](https://github.com/user-attachments/assets/ab25d31e-0603-4b78-aa3e-1ddf2c973585)
+![Screenshot 2025-04-09 143553](https://github.com/user-attachments/assets/00c10327-46b8-4f53-9348-2ffd564f6ea6)
 
-![Screenshot 2025-03-23 172555](https://github.com/user-attachments/assets/62c0bbae-a35d-4512-bd66-591f24ae2bec)
-![Screenshot 2025-03-23 172604](https://github.com/user-attachments/assets/e73682d0-4089-4ab1-9edc-8299a8ab5280)
-![Screenshot 2025-03-23 172615](https://github.com/user-attachments/assets/5d0c0280-2fba-4bac-abd7-46d48643c139)
-![Screenshot 2025-03-23 172636](https://github.com/user-attachments/assets/405364cb-d061-4ea8-afd2-18f9d97d9a8e)
-![Screenshot 2025-03-23 172647](https://github.com/user-attachments/assets/e440c8f9-cb8b-4e73-8638-725f69815a25)
-![Screenshot 2025-03-23 172655](https://github.com/user-attachments/assets/a79bf84d-fd6d-4e8b-8335-4d761cc9d134)
-![Screenshot 2025-03-23 172705](https://github.com/user-attachments/assets/24f083af-7802-4910-9539-421fb5e9186f)
-![Screenshot 2025-03-23 172714](https://github.com/user-attachments/assets/92ac7267-d0ec-4ff3-b57d-648f5233e406)
-![Screenshot 2025-03-23 172722](https://github.com/user-attachments/assets/91f46a17-020f-4cc4-9121-77cff79c6508)
-![Screenshot 2025-03-23 172731](https://github.com/user-attachments/assets/cdfbd5e9-7407-47c7-9e26-5fff24175321)
-![Screenshot 2025-03-23 172739](https://github.com/user-attachments/assets/517853f4-2a7f-4c79-b61e-8e26a1081da7)
+![Screenshot 2025-04-09 143630](https://github.com/user-attachments/assets/7f1b8432-64ce-47ac-b46e-33e1e5957b62)
+![Screenshot 2025-04-09 143705](https://github.com/user-attachments/assets/b11a2a3c-b677-4197-8da6-6d7f7d13e29d)
+![Screenshot 2025-04-09 143737](https://github.com/user-attachments/assets/ebc37ab7-e5ee-4c3b-b08c-fc3eeb7a2fff)
+![Screenshot 2025-04-09 143817](https://github.com/user-attachments/assets/000f0bf3-9245-499c-9e28-ef5c80633773)
+![Screenshot 2025-04-09 143833](https://github.com/user-attachments/assets/b787ee3e-ec70-4382-b5bf-22367e18c43c)
+![Screenshot 2025-04-09 143852](https://github.com/user-attachments/assets/9fad75d4-2000-4779-b2c8-b6d0a3647373)
+![Screenshot 2025-04-09 143904](https://github.com/user-attachments/assets/e6ea3686-6400-47fe-b09a-1a757e0c0b94)
+![Screenshot 2025-04-09 143913](https://github.com/user-attachments/assets/5e0f67d6-f58f-4d1d-ae7e-4a64e7e57200)
+![Screenshot 2025-04-09 143924](https://github.com/user-attachments/assets/3140acb0-1a1c-4152-9875-144a0d695b14)
+![Screenshot 2025-04-09 143934](https://github.com/user-attachments/assets/b858892c-d569-4f21-9a5d-140018df0682)
+![Screenshot 2025-04-09 143944](https://github.com/user-attachments/assets/51062f59-3160-4986-9afa-3b624e6a1575)
+
 
 
 ![Screenshot 2025-03-20 171144](https://github.com/user-attachments/assets/dde6bf94-a1e0-4c0a-88f6-02aedba47a68)
