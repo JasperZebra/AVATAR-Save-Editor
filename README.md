@@ -1,10 +1,9 @@
 # Avatar: The Game  - Save Editor (WIP)
 
-A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version of the game, featuring a graphical user interface for modifying game saves.
-![SAVE_EDITOR](https://github.com/user-attachments/assets/4f82e29a-1a45-4a6a-bfb6-afc3872ace1b)
+A Python-based save editor for **Avatar: The Game** for the **Xbox 360** and **PC** versions of the game, featuring a graphical user interface for modifying game saves.
 
 ## Here's an example of what you can do with this save editor and what was changed:
-  - Changed the player to the Na'vi body in the tutorial area **(Can't do this normally)**
+  - Changed the player pawn to the Na'vi body in the tutorial area **(Can't do this normally)**
   - Changed the Head, Chest, and Leg armor pieces to differnet sets **(Armor pieces can't be chnged normally)**
 ![Screenshot 2025-03-21 152125](https://github.com/user-attachments/assets/2b9069cd-7a01-4dbf-b847-629bd2a49de9)
 
@@ -12,18 +11,17 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** version
 [![YouTube](http://i.ytimg.com/vi/854m2cfOvYA/hqdefault.jpg)](https://www.youtube.com/watch?v=854m2cfOvYA)
 
 ## Selection Screen
-- Xbox 360 save files **(Works 100)**
+- Xbox 360 save files **(100% supported)**
 
-- PC save file **(Mostly working now, just need to find out why the DLC items are not apeearing in the game WITHOUT modifying the `data.pak` file)**
+- PC save file **(100% supported, will be releasing a modified `patch.pak` file that'll make the DLC items stay even after quitting the game)**
 
-- PS3 save file **(Does not workv, yet)**
+- PS3 save file **(Coming soon!)**
 
 ## Player Stats
 - Displays player stats and character information
   - Character's face
   - Name
   - Location coordinates
-  - Current level
   - Faction alignment **(Na'vi/RDA)**
   - Game time tracking
   - Loadout display for **RDA** and **Na'vi**
