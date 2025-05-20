@@ -10,10 +10,23 @@ class PinsManager:
         self.logger.debug("Initializing PinsManager")
         self.parent = parent
         self.main_window = main_window
+        self.pins_data = {}  # Store pins data for modification
         self.setup_ui()
 
     def setup_ui(self) -> None:
-        # Create Pins Treeview - make it fill the entire parent space
+        # Create button frame at the top
+        button_frame = ttk.Frame(self.parent)
+        button_frame.pack(fill=tk.X, padx=10, pady=(10, 0))
+        
+        # Add "Unlock All Pins" button
+        self.unlock_all_button = ttk.Button(
+            button_frame, 
+            text="Unlock All Pins (Set to Status 1)", 
+            command=self.unlock_all_pins
+        )
+        self.unlock_all_button.pack(side=tk.LEFT, padx=5)
+        
+        # Create Pins Treeview - make it fill the remaining parent space
         tree_frame = ttk.Frame(self.parent)
         tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -59,9 +72,19 @@ class PinsManager:
                 self.pins_tree.delete(item)
             
             # Find all pin elements in XML
+            self.pins_data = {}  # Reset pins data
             pins = tree.findall(".//AvatarPinDB_Status/Pin")
             
             self.logger.debug(f"Found {len(pins)} pins")
+            
+            # Store reference to the parent element for later use
+            self.pin_container = None
+            if pins:
+                # Find the parent element that contains the pins
+                root = tree.getroot()
+                pin_container = root.find(".//AvatarPinDB_Status")
+                if pin_container is not None:
+                    self.pin_container = pin_container
             
             # Sort pins by ID for consistent display
             pins_sorted = sorted(pins, key=lambda x: x.get("crc_id", "0"))
@@ -72,18 +95,24 @@ class PinsManager:
                     pin_id = pin.get("crc_id", "")
                     unlocked = pin.get("eUnlocked", "0")
                     
+                    # Store the pin element reference
+                    self.pins_data[pin_id] = {
+                        'element': pin,
+                        'unlocked': unlocked
+                    }
+                    
                     # Get the pin location name
                     location_name = self._get_location_name(pin_id)
                     
                     # Get status text
-                    status = "Unlocked" if unlocked == "2" else "Locked"
+                    status = "Unlocked" if unlocked == "1" else "Locked"
                     
                     # Count completion counters
                     counters = len(pin.findall("CompletionCounter"))
                     counters_text = f"{counters}" if counters > 0 else "None"
                     
                     # Determine tag based on unlocked status
-                    tag = "unlocked" if unlocked == "2" else "locked"
+                    tag = "unlocked" if unlocked == "1" else "locked"
                     
                     self.pins_tree.insert("", tk.END, values=(
                         pin_id,
@@ -95,16 +124,82 @@ class PinsManager:
                 except Exception as e:
                     self.logger.error(f"Error processing pin {pin_id}: {str(e)}", exc_info=True)
 
+            # Enable/disable unlock button based on if there are any locked pins
+            self._update_button_state()
+            
             self.logger.debug("Pins loaded successfully")
             
         except Exception as e:
             self.logger.error(f"Error loading pins: {str(e)}", exc_info=True)
             raise
 
+    def unlock_all_pins(self) -> None:
+        """Set all pins to unlocked status (eUnlocked=1)"""
+        self.logger.debug("Unlocking all pins")
+        try:
+            if not self.pins_data:
+                messagebox.showinfo("Info", "No pins data loaded")
+                return
+                
+            # Track if any changes were made
+            changes_made = False
+            
+            # Update all pins to unlocked status
+            for pin_id, pin_info in self.pins_data.items():
+                pin_element = pin_info['element']
+                current_status = pin_info['unlocked']
+                
+                # Only update if it's not already unlocked
+                if current_status != "1":
+                    pin_element.set("eUnlocked", "1")
+                    pin_info['unlocked'] = "1"
+                    changes_made = True
+            
+            # If changes were made, mark as unsaved and update the tree view
+            if changes_made:
+                # Update the tree view to show all pins as unlocked
+                for item in self.pins_tree.get_children():
+                    self.pins_tree.item(item, tags=('unlocked',))
+                    # Update the status column (which is at index 2)
+                    values = list(self.pins_tree.item(item, 'values'))
+                    values[2] = "Unlocked"
+                    self.pins_tree.item(item, values=values)
+                
+                # Mark changes as unsaved
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
+                
+                # Update button state
+                self._update_button_state()
+                
+                messagebox.showinfo("Success", "All pins have been unlocked")
+            else:
+                messagebox.showinfo("Info", "All pins are already unlocked")
+        
+        except Exception as e:
+            self.logger.error(f"Error unlocking pins: {str(e)}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to unlock pins: {str(e)}")
+
     def save_pin_changes(self, tree: ET.ElementTree) -> ET.ElementTree:
-        self.logger.debug("Pins are view-only, no changes to save")
-        # Since this is just a view-only tab, simply return the tree unchanged
+        self.logger.debug("Saving pin changes")
+        # Pin changes are already applied to the elements in the XML tree
+        # No additional work needed here as the changes were made directly
         return tree
+    
+    def _update_button_state(self):
+        """Update the enable/disable state of the unlock button"""
+        all_unlocked = True
+        
+        # Check if all pins are already unlocked
+        for pin_info in self.pins_data.values():
+            if pin_info['unlocked'] != "1":
+                all_unlocked = False
+                break
+        
+        # Disable button if all pins are already unlocked
+        if all_unlocked:
+            self.unlock_all_button.config(state="disabled")
+        else:
+            self.unlock_all_button.config(state="normal")
     
     def _get_location_name(self, pin_id):
         """Convert pin ID to human-readable location name"""
