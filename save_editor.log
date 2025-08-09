@@ -1,0 +1,27 @@
+2025-08-08 20:17:37,500 - VersionSelector - DEBUG - Showing modern version selection screen
+2025-08-08 20:17:37,741 - VersionSelector - DEBUG - Application icon set successfully from path: icon\avatar_icon.ico
+2025-08-08 20:17:37,798 - PIL.PngImagePlugin - DEBUG - STREAM b'IHDR' 16 13
+2025-08-08 20:17:37,798 - PIL.PngImagePlugin - DEBUG - STREAM b'tEXt' 41 63
+2025-08-08 20:17:37,798 - PIL.PngImagePlugin - DEBUG - STREAM b'tEXt' 116 7
+2025-08-08 20:17:37,799 - PIL.PngImagePlugin - DEBUG - STREAM b'tEXt' 135 12
+2025-08-08 20:17:37,799 - PIL.PngImagePlugin - DEBUG - STREAM b'IDAT' 159 8192
+2025-08-08 20:17:37,916 - VersionSelector - DEBUG - Background image loaded successfully from: Background\version_selector_background.png
+2025-08-08 20:17:40,156 - VersionSelector - DEBUG - Selected version: pc
+2025-08-08 20:17:40,156 - VersionSelector - DEBUG - Platform selected: PC
+2025-08-08 20:17:40,699 - Main - DEBUG - Starting Save Editor for pc
+2025-08-08 20:17:40,866 - SaveEditor - DEBUG - Initializing Save Editor application
+2025-08-08 20:17:40,883 - SaveEditor - DEBUG - Icon set: icon\avatar_icon.ico
+2025-08-08 20:17:40,928 - StatsManager - DEBUG - Initializing Modern StatsManager
+2025-08-08 20:17:41,364 - TerritoryManager - DEBUG - Initializing Modern TerritoryManager
+2025-08-08 20:17:41,566 - AchievementsManager - DEBUG - Initializing Modern AchievementsManager
+2025-08-08 20:17:41,728 - MapsManager - DEBUG - Initializing Modern MapsManager
+2025-08-08 20:17:41,846 - CheckpointsManager - DEBUG - Initializing Modern CheckpointsManager
+2025-08-08 20:17:41,942 - PandoraPediaManager - DEBUG - Initializing Modern PandoraPediaManager
+2025-08-08 20:17:42,078 - MissionsManager - DEBUG - Initializing Modern MissionsManager
+2025-08-08 20:17:42,148 - PinsManager - DEBUG - Initializing Modern PinsManager
+2025-08-08 20:17:42,225 - SoundsManager - DEBUG - Initializing Modern SoundsManager
+2025-08-08 20:17:42,346 - TutorialManager - DEBUG - Initializing Modern TutorialManager
+2025-08-08 20:17:42,412 - VehicleManager - DEBUG - Initializing Modern VehicleManager
+2025-08-08 20:17:42,478 - SkillsManager - DEBUG - Initializing Modern SkillsManager
+2025-08-08 20:17:42,514 - SaveEditor - DEBUG - Created 12 tabs with managers
+2025-08-08 20:17:42,515 - SaveEditor - DEBUG - Application initialization completed

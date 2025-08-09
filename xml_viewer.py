@@ -1,10 +1,12 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, font
+from tkinter import ttk, font
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from io import StringIO
 import os
 import logging
+from custom_messagebox import MessageBoxManager, show_info, show_error, show_warning, ask_question, ask_ok_cancel, show_success
+
 
 class XMLViewerWindow:
     def __init__(self, parent, xml_text=None):
@@ -12,7 +14,7 @@ class XMLViewerWindow:
         self.logger.debug("Initializing XML Viewer Window")
         self.window = tk.Toplevel(parent)
         self.window.title("XML Viewer")
-        self.window.geometry("1200x700")
+        self.window.geometry("1400x900")
         
         # Set the window icon to match the main application
         try:
