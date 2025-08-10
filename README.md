@@ -80,6 +80,9 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** and **P
 - Section navigation
 
 # Screenshots
+<img width="1403" height="835" alt="Screenshot 2025-08-09 235319" src="https://github.com/user-attachments/assets/ad9b7f52-6761-4f8b-9f92-ee38934118bd" />
+
+
 
 <img width="1802" height="1131" alt="Screenshot 2025-08-09 111942" src="https://github.com/user-attachments/assets/1ed52c69-acc8-4266-a760-a494d99c10ee" />
 <img width="1802" height="1133" alt="Screenshot 2025-08-09 111954" src="https://github.com/user-attachments/assets/4264f905-d42f-4dd3-ad39-1788b175f5be" />
