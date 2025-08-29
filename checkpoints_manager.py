@@ -86,42 +86,6 @@ class CheckpointsManager:
         
         ttk.Label(self.journey_display, text="Checkpoints Visited", font=('Segoe UI', 10)).pack()
         
-        # === STATISTICS SECTION ===
-        stats_frame = ttk.LabelFrame(sidebar_frame, text="📊 Statistics", padding=15)
-        stats_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        # Create statistics with modern layout
-        self.create_stat_item(stats_frame, "📍", "Total Checkpoints", "0", "total_checkpoints_label")
-        self.create_stat_item(stats_frame, "🗺️", "Unique Locations", "0", "unique_locations_label")
-        self.create_stat_item(stats_frame, "🎯", "Tutorial Points", "0", "tutorial_checkpoints_label")
-        self.create_stat_item(stats_frame, "🏞️", "Exploration Points", "0", "exploration_checkpoints_label")
-        
-        # === FILTER SECTION ===
-        filter_frame = ttk.LabelFrame(sidebar_frame, text="🔍 Filters", padding=15)
-        filter_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
-        
-        filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
-                                   values=["All Checkpoints", "🎯 Tutorial Areas", "🏞️ Exploration Areas", 
-                                          "🏭 RDA Facilities", "🌿 Natural Areas", "🗺️ Major Locations"],
-                                   state="readonly", font=('Segoe UI', 9))
-        filter_combo.set("All Checkpoints")
-        filter_combo.pack(fill=tk.X)
-        filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
-        
-        # === LOCATION BREAKDOWN ===
-        breakdown_frame = ttk.LabelFrame(sidebar_frame, text="🏷️ Location Summary", padding=15)
-        breakdown_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Location breakdown list
-        self.location_listbox = tk.Listbox(breakdown_frame, height=10, font=('Segoe UI', 9))
-        location_scrollbar = ttk.Scrollbar(breakdown_frame, orient="vertical", command=self.location_listbox.yview)
-        self.location_listbox.configure(yscrollcommand=location_scrollbar.set)
-        
-        self.location_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        location_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)
@@ -328,25 +292,6 @@ class CheckpointsManager:
             category_counts[category] = category_counts.get(category, 0) + 1
             location_counts[location] = location_counts.get(location, 0) + 1
         
-        # Update statistics
-        self.total_checkpoints_label.config(text=str(total_checkpoints))
-        self.unique_locations_label.config(text=str(len(location_counts)))
-        self.tutorial_checkpoints_label.config(text=str(category_counts.get("Tutorial", 0)))
-        self.exploration_checkpoints_label.config(text=str(category_counts.get("Exploration", 0)))
-        
-        # Update location breakdown
-        self._update_location_breakdown(location_counts)
-
-    def _update_location_breakdown(self, location_counts):
-        """Update the location breakdown listbox"""
-        self.location_listbox.delete(0, tk.END)
-        
-        # Sort locations by checkpoint count (descending)
-        sorted_locations = sorted(location_counts.items(), key=lambda x: x[1], reverse=True)
-        
-        for location, count in sorted_locations:
-            self.location_listbox.insert(tk.END, f"{location}: {count} checkpoint{'s' if count != 1 else ''}")
-
     def _apply_filter(self, event=None):
         """Apply search and filter to the checkpoints list"""
         filter_value = self.filter_var.get()

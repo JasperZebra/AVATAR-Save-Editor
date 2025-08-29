@@ -113,18 +113,6 @@ class TutorialManager:
         filter_combo.pack(fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
         
-        # === CATEGORY BREAKDOWN ===
-        category_frame = ttk.LabelFrame(sidebar_frame, text="📚 Category Progress", padding=15)
-        category_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Category progress list
-        self.category_listbox = tk.Listbox(category_frame, height=8, font=('Segoe UI', 9))
-        cat_scrollbar = ttk.Scrollbar(category_frame, orient="vertical", command=self.category_listbox.yview)
-        self.category_listbox.configure(yscrollcommand=cat_scrollbar.set)
-        
-        self.category_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        cat_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)
@@ -329,33 +317,6 @@ class TutorialManager:
         self.completed_tutorials_label.config(text=str(completed_count))
         self.remaining_tutorials_label.config(text=str(remaining_count))
         
-        # Update category breakdown
-        self._update_category_breakdown()
-
-    def _update_category_breakdown(self):
-        """Update the category breakdown listbox"""
-        self.category_listbox.delete(0, tk.END)
-        
-        # Count by category
-        category_counts = {}
-        for tutorial_data in self.tutorial_data.values():
-            category = tutorial_data['category']
-            if category not in category_counts:
-                category_counts[category] = {'total': 0, 'completed': 0}
-            
-            category_counts[category]['total'] += 1
-            if tutorial_data['completed']:
-                category_counts[category]['completed'] += 1
-        
-        # Add to listbox
-        for category in sorted(category_counts.keys()):
-            counts = category_counts[category]
-            completed = counts['completed']
-            total = counts['total']
-            pct = (completed / total * 100) if total > 0 else 0
-            
-            self.category_listbox.insert(tk.END, f"{category}: {completed}/{total} ({pct:.0f}%)")
-
     def _apply_filter(self, event=None):
         """Apply search and filter to the tutorial list"""
         filter_value = self.filter_var.get()
@@ -390,14 +351,6 @@ class TutorialManager:
         if filter_value == "✅ Completed Only" and not is_completed:
             return False
         elif filter_value == "⏳ Not Completed" and is_completed:
-            return False
-        elif filter_value == "🎮 Basic Controls" and category != "Basic Controls":
-            return False
-        elif filter_value == "⚔️ Combat" and category != "Combat":
-            return False
-        elif filter_value == "🎯 Skills & Abilities" and category != "Skills & Abilities":
-            return False
-        elif filter_value == "🌿 Environment" and category != "Environment":
             return False
         
         # Apply search

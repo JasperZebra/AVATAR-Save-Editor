@@ -249,7 +249,6 @@ class AchievementsManager:
         # Create statistics with modern layout
         self.create_stat_item(stats_frame, "🏆", "Total Achievements", "0", "total_achievements_label")
         self.create_stat_item(stats_frame, "✅", "Completed", "0", "completed_achievements_label")
-        self.create_stat_item(stats_frame, "🔄", "In Progress", "0", "in_progress_achievements_label")
         self.create_stat_item(stats_frame, "⏸️", "Not Started", "0", "not_started_achievements_label")
         
         # === FILTER SECTION ===
@@ -260,26 +259,12 @@ class AchievementsManager:
         
         # UPDATED: Fixed filter options to match new categories
         filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
-                                values=["All Achievements", "✅ Completed", "🔄 In Progress", "⏸️ Not Started",
-                                        "📖 Story", "🏁 Completion", "⚔️ Combat", "👥 Multiplayer", 
-                                        "📈 Progression", "📚 Collection", "🎯 Skills", "🛠️ Debug"],
+                                values=["All Achievements", "✅ Completed", "⏸️ Not Started"],
                                 state="readonly", font=('Segoe UI', 9))
         filter_combo.set("All Achievements")
         filter_combo.pack(fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
         
-        # === CATEGORY BREAKDOWN ===
-        breakdown_frame = ttk.LabelFrame(sidebar_frame, text="📋 Category Progress", padding=15)
-        breakdown_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Category progress list
-        self.category_listbox = tk.Listbox(breakdown_frame, height=8, font=('Segoe UI', 9))
-        cat_scrollbar = ttk.Scrollbar(breakdown_frame, orient="vertical", command=self.category_listbox.yview)
-        self.category_listbox.configure(yscrollcommand=cat_scrollbar.set)
-        
-        self.category_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        cat_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)
@@ -496,39 +481,6 @@ class AchievementsManager:
         self.completion_percentage.config(text=f"{completion_pct:.0f}%")
         self.progress_bar['value'] = completion_pct
         
-        # Update statistics
-        self.total_achievements_label.config(text=str(total_achievements))
-        self.completed_achievements_label.config(text=str(completed_count))
-        self.in_progress_achievements_label.config(text=str(in_progress_count))
-        self.not_started_achievements_label.config(text=str(not_started_count))
-        
-        # Update category breakdown
-        self._update_category_breakdown()
-
-    def _update_category_breakdown(self):
-        """Update the category breakdown listbox"""
-        self.category_listbox.delete(0, tk.END)
-        
-        # Count by category
-        category_stats = {}
-        for achievement_data in self.achievement_data_dict.values():
-            category = achievement_data['category']
-            if category not in category_stats:
-                category_stats[category] = {'total': 0, 'completed': 0}
-            
-            category_stats[category]['total'] += 1
-            if achievement_data['current'] >= achievement_data['max']:
-                category_stats[category]['completed'] += 1
-        
-        # Add to listbox
-        for category in sorted(category_stats.keys()):
-            stats = category_stats[category]
-            completed = stats['completed']
-            total = stats['total']
-            pct = (completed / total * 100) if total > 0 else 0
-            
-            self.category_listbox.insert(tk.END, f"{category}: {completed}/{total} ({pct:.0f}%)")
-
     def _apply_filter(self, event=None):
         """Apply search and filter to the achievements list"""
         filter_value = self.filter_var.get()

@@ -85,45 +85,7 @@ class MapsManager:
         self.map_count.pack()
         
         ttk.Label(self.exploration_display, text="Regions Available", font=('Segoe UI', 10)).pack()
-        
-        # === STATISTICS SECTION ===
-        stats_frame = ttk.LabelFrame(sidebar_frame, text="📊 Region Statistics", padding=15)
-        stats_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        # Create statistics with modern layout
-        self.create_stat_item(stats_frame, "🗺️", "Total Regions", "0", "total_maps_label")
-        self.create_stat_item(stats_frame, "🌿", "Natural Areas", "0", "natural_areas_label")
-        self.create_stat_item(stats_frame, "🏭", "RDA Territories", "0", "rda_areas_label")
-        self.create_stat_item(stats_frame, "🏛️", "Ancient Sites", "0", "ancient_sites_label")
-        self.create_stat_item(stats_frame, "⚔️", "Combat Zones", "0", "combat_zones_label")
-        
-        # === FILTER SECTION ===
-        filter_frame = ttk.LabelFrame(sidebar_frame, text="🔍 Region Filters", padding=15)
-        filter_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
-        
-        filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
-                                   values=["All Regions", "🌿 Natural Areas", "🏭 RDA Territories", 
-                                          "🏛️ Ancient Sites", "⚔️ Combat Zones", "🎓 Tutorial Areas",
-                                          "💧 Water Regions", "🏔️ Mountain Areas"],
-                                   state="readonly", font=('Segoe UI', 9))
-        filter_combo.set("All Regions")
-        filter_combo.pack(fill=tk.X)
-        filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
-        
-        # === REGION TYPES BREAKDOWN ===
-        breakdown_frame = ttk.LabelFrame(sidebar_frame, text="🏷️ Region Types", padding=15)
-        breakdown_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Region types list
-        self.region_listbox = tk.Listbox(breakdown_frame, height=10, font=('Segoe UI', 9))
-        region_scrollbar = ttk.Scrollbar(breakdown_frame, orient="vertical", command=self.region_listbox.yview)
-        self.region_listbox.configure(yscrollcommand=region_scrollbar.set)
-        
-        self.region_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        region_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
+                        
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)
@@ -355,29 +317,7 @@ class MapsManager:
         for map_data in self.map_data.values():
             region_type = map_data['region_type']
             type_counts[region_type] = type_counts.get(region_type, 0) + 1
-        
-        # Update statistics
-        self.total_maps_label.config(text=str(total_maps))
-        self.natural_areas_label.config(text=str(type_counts.get("Natural Area", 0)))
-        self.rda_areas_label.config(text=str(type_counts.get("RDA Territory", 0)))
-        self.ancient_sites_label.config(text=str(type_counts.get("Ancient Site", 0)))
-        self.combat_zones_label.config(text=str(type_counts.get("Combat Zone", 0)))
-        
-        # Update region breakdown
-        self._update_region_breakdown(type_counts)
-
-    def _update_region_breakdown(self, type_counts):
-        """Update the region breakdown listbox"""
-        self.region_listbox.delete(0, tk.END)
-        
-        # Sort by count (descending)
-        sorted_types = sorted(type_counts.items(), key=lambda x: x[1], reverse=True)
-        
-        for region_type, count in sorted_types:
-            total = len(self.map_data)
-            pct = (count / total * 100) if total > 0 else 0
-            self.region_listbox.insert(tk.END, f"{region_type}: {count} regions ({pct:.1f}%)")
-
+                
     def _apply_filter(self, event=None):
         """Apply search and filter to the maps list"""
         filter_value = self.filter_var.get()

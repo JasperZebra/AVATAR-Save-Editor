@@ -5,7 +5,7 @@ Version: 2.0
 
 A modern, feature-rich save editor for Avatar: The Game across multiple platforms.
 """
-
+from datetime import datetime
 import os
 import sys
 import tkinter as tk
@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import xml.etree.ElementTree as ET
 import logging
+import configparser
 from dataclasses import dataclass
 from custom_messagebox import MessageBoxManager, show_info, show_error, show_warning, ask_question, ask_ok_cancel, show_success
-
 
 # Import handlers and managers
 from xml_handler import XMLHandler
@@ -39,15 +39,117 @@ from tutorial_manager import TutorialManager
 from vehicle_manager import VehicleManager
 from skills_manager import SkillsManager
 
+import configparser
+import os
+from dataclasses import dataclass
 
 @dataclass
 class SaveEditorConfig:
     """Configuration settings for the Save Editor"""
-    app_title: str = "Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.0"
-    window_geometry: str = "1800x1100"
+    app_title: str = "Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.1"
+    window_geometry: str = "1400x900"  # Changed from "1800x1100"
+    min_window_size: tuple = (1400, 900)  # Changed from (1200, 800)
     icon_path: str = os.path.join("icon", "avatar_icon.ico")
     backup_suffix: str = ".backup"
-
+    
+    # Logging configuration
+    enable_file_logging: bool = False
+    enable_console_logging: bool = False
+    log_level: str = "INFO"
+    
+    # Backup configuration
+    max_backups_per_character: int = 10  # Keep only last 10 backups per character
+    backup_root_folder: str = "Save Backups"
+    
+    @classmethod
+    def load_from_file(cls, config_file: str = "settings.ini"):
+        """Load configuration from INI file, create default if doesn't exist"""
+        config = cls()  # Start with defaults
+        
+        if os.path.exists(config_file):
+            try:
+                parser = configparser.ConfigParser()
+                parser.read(config_file)
+                
+                # Load logging settings
+                if 'Logging' in parser:
+                    logging_section = parser['Logging']
+                    config.enable_file_logging = logging_section.getboolean('enable_file_logging', config.enable_file_logging)
+                    config.enable_console_logging = logging_section.getboolean('enable_console_logging', config.enable_console_logging)
+                    config.log_level = logging_section.get('log_level', config.log_level)
+                
+                # Load window settings
+                if 'Window' in parser:
+                    window_section = parser['Window']
+                    config.window_geometry = window_section.get('geometry', config.window_geometry)
+                    
+                    # Parse min_window_size
+                    min_size_str = window_section.get('min_size', '1400,900')
+                    try:
+                        width, height = map(int, min_size_str.split(','))
+                        config.min_window_size = (width, height)
+                    except ValueError:
+                        pass  # Keep default if parsing fails
+                
+                # Load backup settings
+                if 'Backup' in parser:
+                    backup_section = parser['Backup']
+                    config.max_backups_per_character = backup_section.getint('max_backups_per_character', config.max_backups_per_character)
+                    config.backup_root_folder = backup_section.get('backup_root_folder', config.backup_root_folder)
+                    config.backup_suffix = backup_section.get('backup_suffix', config.backup_suffix)
+                        
+                print(f"Loaded configuration from {config_file}")
+                        
+            except Exception as e:
+                print(f"Warning: Could not load config file {config_file}: {e}")
+        else:
+            # Create default config file
+            config.save_to_file(config_file)
+            print(f"Created default config file: {config_file}")
+        
+        return config
+    
+    def save_to_file(self, config_file: str = "settings.ini"):
+        """Save current configuration to INI file"""
+        parser = configparser.ConfigParser()
+        
+        # Logging section
+        parser.add_section('Logging')
+        parser.set('Logging', 'enable_file_logging', str(self.enable_file_logging))
+        parser.set('Logging', 'enable_console_logging', str(self.enable_console_logging))
+        parser.set('Logging', 'log_level', self.log_level)
+        
+        # Window section
+        parser.add_section('Window')
+        parser.set('Window', 'geometry', self.window_geometry)
+        parser.set('Window', 'min_size', f"{self.min_window_size[0]},{self.min_window_size[1]}")
+        
+        # Backup section
+        parser.add_section('Backup')
+        parser.set('Backup', 'max_backups_per_character', str(self.max_backups_per_character))
+        parser.set('Backup', 'backup_root_folder', self.backup_root_folder)
+        parser.set('Backup', 'backup_suffix', self.backup_suffix)
+        
+        # Add comments at the top
+        with open(config_file, 'w') as f:
+            f.write("# Avatar Save Editor Configuration\n")
+            f.write("# Edit these settings to customize the application\n")
+            f.write("# \n")
+            f.write("# Logging options:\n")
+            f.write("#   enable_file_logging: True/False - Creates save_editor.log file\n")
+            f.write("#   enable_console_logging: True/False - Shows logs in console\n")
+            f.write("#   log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL\n")
+            f.write("# \n")
+            f.write("# Window options:\n")
+            f.write("#   geometry: WIDTHxHEIGHT - Default window size\n")
+            f.write("#   min_size: WIDTH,HEIGHT - Minimum window size\n")
+            f.write("# \n")
+            f.write("# Backup options:\n")
+            f.write("#   max_backups_per_character: Number - How many backups to keep per character\n")
+            f.write("#   backup_root_folder: String - Main folder name for all backups\n")
+            f.write("#   backup_suffix: String - File extension for simple backups\n")
+            f.write("\n")
+            parser.write(f)
 
 class ThemeManager:
     """Manages the dark theme styling for the application"""
@@ -138,7 +240,7 @@ class FileOperations:
             'pc': PCXMLHandler, 
             'ps3': PS3XMLHandler
         }
-    
+     
     def get_file_types(self) -> list:
         """Get appropriate file types for file dialog"""
         base_types = [("All Save Files", "*.sav SAVEDATA.*")]
@@ -175,9 +277,9 @@ class FileOperations:
 class SaveEditor:
     """Main Save Editor application class"""
     
-    def __init__(self, root: tk.Tk, game_version: str = "xbox"):
+    def __init__(self, root: tk.Tk, game_version: str = "xbox", config: SaveEditorConfig = None):
         self.logger = logging.getLogger('SaveEditor')
-        self.config = SaveEditorConfig()
+        self.config = config if config is not None else SaveEditorConfig()
         
         # Core properties
         self.root = root
@@ -216,6 +318,13 @@ class SaveEditor:
         self.root.title(self.config.app_title)
         self.root.geometry(self.config.window_geometry)
         
+        # Set minimum window size (width, height)
+        # This prevents users from making the window too small
+        self.root.minsize(1800, 1100)  # Adjust these values as needed
+        
+        # Optional: Set maximum size if you want to limit how large it can get
+        # self.root.maxsize(2400, 1600)  # Uncomment and adjust if needed
+        
         # Set application icon
         try:
             if os.path.exists(self.config.icon_path):
@@ -223,7 +332,7 @@ class SaveEditor:
                 self.logger.debug(f"Icon set: {self.config.icon_path}")
         except Exception as e:
             self.logger.warning(f"Failed to set icon: {e}")
-    
+
     def _setup_theme(self):
         """Setup application theme"""
         self.style = ThemeManager.setup_dark_theme(self.root)
@@ -425,8 +534,6 @@ class SaveEditor:
                 
         except (ValueError, TypeError):
             return time_str  # Return original if conversion fails
-        
-    
     
     def _update_checksum_display(self, is_valid: bool):
         """Update checksum verification display"""
@@ -577,12 +684,146 @@ class SaveEditor:
             self.root.destroy()    
     
     def _create_backup(self):
-        """Create backup of original file"""
-        backup_path = self.file_path.with_suffix(self.file_path.suffix + self.config.backup_suffix)
-        if not backup_path.exists():
+        """Create organized backup with character name and timestamp folders"""
+        try:
+            # Get character name from the save file
+            character_name = self._get_character_name()
+            
+            # Create timestamp for this save
+            timestamp = datetime.now().strftime("%m-%d-%Y_%I-%M-%S_%p")
+            
+            # Create the backup directory structure
+            # Save Backups/CharacterName/12-19-2024_02-30-45_PM/
+            backup_root = Path("Save Backups")
+            character_folder = backup_root / character_name
+            timestamp_folder = character_folder / timestamp
+            
+            # Create all directories if they don't exist
+            timestamp_folder.mkdir(parents=True, exist_ok=True)
+            
+            # Create the backup file path
+            backup_file_path = timestamp_folder / self.file_path.name
+            
+            # Copy the current save file to the backup location
+            with open(self.file_path, 'rb') as src, open(backup_file_path, 'wb') as dst:
+                dst.write(src.read())
+            
+            self.logger.debug(f"Backup created: {backup_file_path}")
+            
+            # Optional: Clean up old backups (keep only last N backups)
+            self._cleanup_old_backups(character_folder)
+            
+        except Exception as e:
+            self.logger.error(f"Error creating backup: {e}")
+            # Fallback to simple backup if organized backup fails
+            self._create_simple_backup()
+
+    def _get_character_name(self):
+        """Extract character name from the loaded save file"""
+        try:
+            if not self.tree:
+                return "Unknown"
+            
+            # Look for character name in the XML
+            root = self.tree.getroot()
+            profile = root.find("PlayerProfile")
+            
+            if profile is not None:
+                base_info = profile.find("BaseInfo")
+                if base_info is not None:
+                    name_vec = base_info.get("namevec", "")
+                    if name_vec:
+                        # Convert name vector to readable string
+                        character_name = self._name_vec_to_string(name_vec)
+                        if character_name:
+                            # Clean the name for use as folder name
+                            return self._sanitize_folder_name(character_name)
+            
+            # Fallback: use save file name without extension
+            return self.file_path.stem
+            
+        except Exception as e:
+            self.logger.error(f"Error getting character name: {e}")
+            return "Unknown"
+
+    def _name_vec_to_string(self, name_vec):
+        """Convert name vector to readable string (same as in stats_manager)"""
+        try:
+            if not name_vec or not name_vec.startswith("Count("):
+                return ""
+            
+            parts = name_vec.split(") ")
+            if len(parts) < 2:
+                return ""
+            
+            values = parts[1].rstrip(";").split(";")
+            name = "".join(chr(int(val)) for val in values if val)
+            return name
+        except Exception as e:
+            self.logger.error(f"Error converting name vector: {str(e)}")
+            return ""
+
+    def _sanitize_folder_name(self, name):
+        """Clean character name for use as folder name"""
+        # Remove or replace invalid characters for folder names
+        invalid_chars = '<>:"/\\|?*'
+        sanitized = name
+        
+        for char in invalid_chars:
+            sanitized = sanitized.replace(char, '_')
+        
+        # Remove leading/trailing spaces and dots
+        sanitized = sanitized.strip(' .')
+        
+        # Ensure it's not empty
+        if not sanitized:
+            sanitized = "Unknown"
+        
+        # Limit length to avoid filesystem issues
+        if len(sanitized) > 50:
+            sanitized = sanitized[:50]
+        
+        return sanitized
+
+    def _cleanup_old_backups(self, character_folder, max_backups=10):
+        """Keep only the most recent N backups for a character"""
+        try:
+            if not character_folder.exists():
+                return
+            
+            # Get all timestamp folders
+            timestamp_folders = [f for f in character_folder.iterdir() if f.is_dir()]
+            
+            # Sort by modification time (newest first)
+            timestamp_folders.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+            
+            # Remove oldest backups if we have more than max_backups
+            if len(timestamp_folders) > max_backups:
+                folders_to_delete = timestamp_folders[max_backups:]
+                
+                for folder in folders_to_delete:
+                    try:
+                        # Remove all files in the folder
+                        for file in folder.iterdir():
+                            file.unlink()
+                        # Remove the folder
+                        folder.rmdir()
+                        self.logger.debug(f"Cleaned up old backup: {folder}")
+                    except Exception as e:
+                        self.logger.warning(f"Could not remove old backup {folder}: {e}")
+                        
+        except Exception as e:
+            self.logger.error(f"Error during backup cleanup: {e}")
+
+    def _create_simple_backup(self):
+        """Fallback simple backup method"""
+        try:
+            backup_path = self.file_path.with_suffix(self.file_path.suffix + self.config.backup_suffix)
             with open(self.file_path, 'rb') as src, open(backup_path, 'wb') as dst:
                 dst.write(src.read())
-            self.logger.debug(f"Backup created: {backup_path}")
+            self.logger.debug(f"Simple backup created: {backup_path}")
+        except Exception as e:
+            self.logger.error(f"Error creating simple backup: {e}")
     
     def _process_manager_updates(self):
         """Process updates from all managers"""
@@ -631,6 +872,18 @@ class SaveEditor:
             if profile is None:
                 profile = ET.SubElement(root, "PlayerProfile")
             
+            # UPDATE PlayerProfile attributes (like crc_LastLoadedPin)
+            if "PlayerProfile" in stats_updates and stats_updates["PlayerProfile"]:
+                for key, value in stats_updates["PlayerProfile"].items():
+                    if value is None:
+                        # Remove the attribute
+                        if key in profile.attrib:
+                            del profile.attrib[key]
+                            self.logger.debug(f"Removed PlayerProfile.{key}")
+                    else:
+                        profile.set(key, str(value))
+                        self.logger.debug(f"Updated PlayerProfile.{key} = {value}")
+            
             # Update profile sections
             profile_sections = ["BaseInfo", "XpInfo", "OptionsInfo", "TimeInfo"]
             for section_name in profile_sections:
@@ -677,23 +930,51 @@ class SaveEditor:
             self.logger.debug("Stats updates applied successfully")
             
         except Exception as e:
-            self.logger.error(f"Error applying stats updates: {e}", exc_info=True)    
+            self.logger.error(f"Error applying stats updates: {e}", exc_info=True)
 
-def setup_logging():
-    """Configure application logging"""
+def setup_logging(config: SaveEditorConfig):
+    """Configure application logging based on config settings"""
+    handlers = []
+    
+    # Add file handler if enabled
+    if config.enable_file_logging:
+        file_handler = logging.FileHandler('save_editor.log', encoding='utf-8')
+        handlers.append(file_handler)
+    
+    # Add console handler if enabled
+    if config.enable_console_logging:
+        console_handler = logging.StreamHandler()
+        handlers.append(console_handler)
+    
+    # If no handlers are enabled, add a null handler to prevent errors
+    if not handlers:
+        handlers.append(logging.NullHandler())
+    
+    # Convert log level string to logging constant
+    log_level = getattr(logging, config.log_level.upper(), logging.INFO)
+    
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=log_level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler('save_editor.log', encoding='utf-8'),
-            logging.StreamHandler()
-        ]
+        handlers=handlers,
+        force=True  # Override any existing logging configuration
     )
 
 
 def main():
     """Main application entry point"""
-    setup_logging()
+    # CRITICAL: Make application DPI-aware for Windows scaling
+    try:
+        from ctypes import windll
+        windll.shcore.SetProcessDpiAwareness(1)
+    except:
+        pass  # Ignore if not on Windows or if ctypes unavailable
+    
+    # Load configuration from file first
+    config = SaveEditorConfig.load_from_file()
+    
+    # Setup logging with config
+    setup_logging(config)
     main_logger = logging.getLogger('Main')
     
     try:
@@ -718,7 +999,7 @@ def main():
         
         # Create and run main application
         root = tk.Tk()
-        app = SaveEditor(root, game_version=selected_version)
+        app = SaveEditor(root, game_version=selected_version, config=config)
         root.mainloop()
         
     except Exception as e:
@@ -728,6 +1009,6 @@ def main():
                 show_error("Critical Error", f"Application encountered a critical error:\n{e}")
             except:
                 pass
-
+            
 if __name__ == "__main__":
     main()

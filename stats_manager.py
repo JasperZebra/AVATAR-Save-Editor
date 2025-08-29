@@ -25,6 +25,16 @@ class StatsManager:
         self.armor_dropdowns = {}
         self.navi_armor_dropdowns = {}
 
+        self._create_coordinate_mappings()
+
+        self._create_last_loaded_pin_mappings()
+
+        self.rda_skill_slots = []
+        self.navi_skill_slots = []
+        
+        # Create skill mappings
+        self._create_skill_mappings()
+
         # Create item mappings FIRST
         self._create_item_mappings()
         
@@ -122,10 +132,19 @@ class StatsManager:
         self.create_compact_field_item(left_col, "Gender", "isfemale", {"0": "Male", "1": "Female"}, readonly=True)
         self.create_compact_field_item(left_col, "Face", "face", self.face_values, readonly=True)
         
+        location_options = {"-1": "-No Location Set-"}
+        location_options.update(self.last_loaded_pin_mappings)
+        self.create_compact_field_item(left_col, "Current Location", "crc_LastLoadedPin", 
+                            location_options)
+        
         # Right column fields (editable - these should be comboboxes)
         print("DEBUG: Creating Side field with options:", {"4": "Undecided", "1": "Na'vi", "2": "RDA"})
-        self.create_compact_field_item(right_col, "Side", "side", {"4": "Undecided", "1": "Na'vi", "2": "RDA"})
-        
+
+        self.create_compact_field_item(right_col, "Player Faction", "PlayerFaction", 
+                            {"0": "Undecided", "1": "Na'vi", "2": "RDA"})
+
+        self.create_compact_field_item(right_col, "Side", "side", {"4": "Undecided", "1": "Na'vi", "2": "RDA"})        
+
         print("DEBUG: Creating Pawn field with options:", {"1": "Na'vi", "2": "RDA"})
         self.create_compact_field_item(right_col, "Pawn", "pawn", {"1": "Na'vi", "2": "RDA"})
         
@@ -142,14 +161,271 @@ class StatsManager:
         self.face_image_label = ttk.Label(preview_frame, text="No Image", width=15)
         self.face_image_label.pack(pady=5)
 
+    def _on_current_location_selected(self, event):
+        """Handle current location selection change"""
+        try:
+            if self.main_window.tree is None:
+                show_error("Error", "No save file loaded. Please load a save file first.")
+                self.entries["crc_LastLoadedPin"].selection_clear()
+                return
+                
+            selected_location = self.entries["crc_LastLoadedPin"].get()
+            
+            # Handle special cases
+            if selected_location == "-No Location Set-":
+                pin_id = None  # Will remove the attribute
+            elif selected_location.startswith("Unknown Location (ID: "):
+                # User selected an unknown location - keep the existing ID
+                pin_id = selected_location.split("ID: ")[1].rstrip(")")
+            else:
+                # Find the pin ID from the selected location name
+                pin_id = None
+                for id, name in self.last_loaded_pin_mappings.items():
+                    if name == selected_location:
+                        pin_id = id
+                        break
+            
+            # Update the XML
+            root = self.main_window.tree.getroot()
+            player_profile = root.find("PlayerProfile")
+
+            if player_profile is not None:
+                # Update PlayerProfile element (this is where it should be)
+                if pin_id is None:
+                    # Remove the attribute entirely
+                    if "crc_LastLoadedPin" in player_profile.attrib:
+                        del player_profile.attrib["crc_LastLoadedPin"]
+                    self.logger.debug("Removed crc_LastLoadedPin from PlayerProfile")
+                else:
+                    player_profile.set("crc_LastLoadedPin", pin_id)
+                    self.logger.debug(f"Updated crc_LastLoadedPin in PlayerProfile to: {pin_id} ({selected_location})")
+            else:
+                self.logger.error("PlayerProfile element not found!")
+
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+        except Exception as e:
+            self.logger.error(f"Error in current location selection: {str(e)}")
+            show_error("Error", f"Failed to change current location: {str(e)}")
+
+    def _create_last_loaded_pin_mappings(self):
+        """Create mappings for last loaded pin IDs to their location names"""
+        self.last_loaded_pin_mappings = {
+            # SP MAPS
+            "3822194552": "HOMETREE",            
+            "1057194188": "VA'ERÄ RAMUNONG",
+            "1172651822": "THE FEBA",
+            "1847852653": "GRAVE'S BOG",
+            "2171723794": "THE HANGING GARDENS",
+            "2292208788": "SWOTULU",
+            "238707229":  "TORUKÄ NA'RìNG",
+            "2587251285": "NEEDLE HILLS",
+            "2752812145": "ECHO CHASM",
+            "2856892107": "KXANìA TAW",
+            "2961077726": "LOST CATHEDRAL",
+            "3409126972": "PLAINS OF GOLIATH (KAOLIÄ TEI)",
+            "355473279":  "BLUE LAGOON",
+            "2943222331": "IKNIMAYA",
+            "615754132":  "HELL'S GATE",
+            "837458676":  "TANTALUS (TA'NATASI)",
+            # MULTIPLAYER
+            "1437051617": "IKNIMAYA - MULTIPLAYER",
+            "902032528":  "NA'RìNG - MULTIPLAYER",
+            "1846881984": "FREYNA TARON - MULTIPLAYER",
+            "2427499480": "NO'ANI TEI - MULTIPLAYER",  
+            "4220570174": "KXANìA TAW - MULTIPLAYER",
+            "4168272830": "VA'ERÄ RAMUNONG - MULTIPLAYER",
+            "408444403":  "UNIL TUKRU - MULTIPLAYER",
+            "3575765971": "VUL NAWM - MULTIPLAYER",
+            "948986278":  "SWOTULU - MULTIPLAYER",
+            "2232107097": "FORT NAVARONE - MULTIPLAYER",
+            "3616200713": "STALKER'S VALLEY - MULTIPLAYER",
+            "2509501782": "HELL'S GATE - MULTIPLAYER",
+            "2169212369": "Dev Room: Animation Creatures",
+            "3975313082": "Dev Room: Orouleau",
+        }
+
+    def _create_coordinate_mappings(self):
+        """Create mappings for coordinates to location names"""
+        self.coordinate_mappings = {
+            # Main Story Locations
+            (-43.4, 138.9): "Bioluminescent_forest",
+            (12.3, 80.9): "Floating_Mountain", 
+            (-1.1, 29.9): "Grotto_Banshee_Rookery",
+            (50.8, -33.1): "Hometree",
+            (38.0, 177.8): "Rainforest",
+            (29.9, -132.4): "Hammerhead",
+            (24.1, 131.4): "Unobtanium_Extraction_Site",
+            (-26.5, 119.9): "Well_Of_Souls",
+            
+            # Flora/Fauna Locations
+            (-20.0, 30.0): "Djamurtiias",
+            (30.8, -7.5): "Lys",
+            (-40.4, 35.9): "Osiceallya",
+            (-35.9, -146.4): "Vamparak",
+            (28.5, 29.2): "Tetrapteron",
+            (-28.9, 24.1): "Woodsprite",
+            (-10.2, 118.0): "Olonipedra",
+            (-0.2, 39.5): "Phyalorpeus",
+            (-17.1, 104.2): "Dragoliic",
+            (16.0, -1.8): "Begonia",
+            (-18.5, 136.9): "Anchusa",
+            (63.2, 168.9): "Tropearockianna",
+            (64.1, 71.2): "Danura",
+            (2.9, 189.5): "Pelargonium",
+            (-86.4, -184.1): "Icomopsis",
+            (-20.7, -30.1): "Bfishes",
+            (12.3, 123.9): "Sting",
+            (36.0, 100.0): "Sturmbeast",
+            (-33.4, 107.9): "Tapirus",
+            (45.9, 1.4): "Fan",
+            (0.0, 0.0): "Prolemuris",
+            (65.9, 120.4): "Syall",
+            (-37.8, 49.5): "Wyll",
+            (65.6, -60.1): "Sool",
+            (-75.3, -157.0): "Wall",
+            (20.8, -67.0): "Lamarha",
+            (6.4, 12.4): "Watefiuul",
+            (-9.9, 176.4): "Atliammera",
+            (-11.9, 17.1): "Neakavirus",
+            (12.0, 166.4): "Auroria",
+            (22.2, 64.2): "Occhioline",
+            (60.1, -141.4): "Xyvliiuccus",
+            (32.1, 70.9): "Wyvuur",
+            (27.0, 110.0): "Cocclophile",
+            (-12.4, -104.9): "Hyphallya",
+            (70.2, -3.0): "Snjol",
+            (-1.2, -1.9): "Catjjihal",
+            (-52.2, 21.1): "Aloemajade",
+            (-28.8, 41.8): "Prolemuris2",
+            
+            # Single Player Missions
+            (16.0, 73.0): "SP_NeedleHills_RB_FM_01_L",
+            (28.0, 95.0): "sp_dlc_01",
+            (18.0, 88.0): "SP_DustBowl_HG_RB_01_L",
+            (19.0, 73.0): "SP_Sebastien_HG_01_L",
+            (29.0, 92.0): "SP_Sebastien_RB_02_L",
+            (38.0, 172.0): "SP_VaderasHollow_RF_FM_01_L",
+            (43.0, 158.0): "SP_PASCAL_FM_01",
+            (26.0, 115.0): "SP_Nancy_OF_02_L",
+            (53.0, 117.0): "SP_PlainsOfGoliath_OF_FM_01_L",
+            (56.0, 117.0): "sp_drifting_sierra_fm_01_l",
+            (12.0, -172.0): "SP_Pascal_RF03_L",
+            (44.0, -137.0): "sp_bonusmap_01",
+            (48.0, -167.0): "SP_Pascal_RF03_CORP_L",
+            (-45.0, 135.0): "SP_PierreLuc_FM_02_L",
+            (18.0, 166.0): "SP_Philippe_RF_RB_01",
+            (46.0, 173.0): "SP_VerdantPinnacle_FM_01_L",
+            (58.0, 154.0): "SP_CoualtHighlands_OF_RF_01_L",
+            (58.0, 152.0): "SP_JeanNormand_DF_01",
+            (32.0, 150.0): "SP_GravesBog_RB_OF_01_L",
+            (51.0, -79.0): "SP_Hometree_L",
+            (25.0, -125.0): "sp_pascal_rf04_l_E3",
+            (30.0, -125.0): "sp_pascal_rf04_l",
+            (27.0, -125.0): "demo_e3_tantalus_l1",
+            (30.0, -145.0): "sp_blackperdition_rf_01_l",
+            
+            # Multiplayer Maps
+            (13.0, 48.0): "mp_openfield_01",
+            (16.0, 30.0): "mp_hellsgate_01",
+            (23.5, 10.0): "mp_floatingmountains_01",
+            (38.0, 53.0): "mp_ancientgrounds_01",
+            (33.0, 67.0): "mp_vaderashollow_fm_01",
+            (21.5, -50.0): "mp_dustbowl_rb_01",
+            (32.0, -60.0): "mp_forsakencaldera_rf_01",
+            (31.0, -83.0): "mp_kowevillage_fm_01",
+            (34.0, -37.0): "mp_rainforest_01",
+            (21.0, -35.0): "mp_fogswamp_rb_01",
+            (58.0, -5.0): "mp_ps3map",
+            (59.0, 155.0): "mp_brokencage_rf_01",
+            (69.0, 155.0): "mp_gravesbog_rb_01",
+            (79.0, 155.0): "mp_needlehills_rb_01",
+            (19.0, 155.0): "mp_hometree",
+            (40.0, 125.0): "mp_bluelagoon_rb_01",
+            (50.0, 125.0): "mp_kowecave_fm_01",
+            
+            # Development/Test Maps
+            (-45.0, 116.0): "Z_Anim_Creatures",
+            (-40.0, 118.0): "pin_z_dev_orouleau",
+            (-40.0, 18.0): "avatar_intro",
+            (-47.0, 118.0): "pin_menu",
+            (-36.0, 109.0): "Z_Anim_Moving",
+            (-36.0, 80.0): "Z_NewGym",
+            (-28.0, 107.0): "MP_Christian_RF_01",
+            (-35.0, 116.0): "z_greenhouse",
+            (-36.0, 130.0): "Gym_Misceleanous",
+            (-99.0, 99.0): "z_hellsgate_01",
+            (12.0, 30.0): "sp_Hellsgate_01",
+            (-30.0, 110.0): "z_hometree_01",
+            (-36.0, 150.0): "RiverBank_RenameTest",
+            (-36.0, 105.0): "z_combatbalance_l",
+            (-40.0, 113.0): "z_QuestGearTesting_L",
+            (-28.0, 110.0): "z_Dev_GenericMissionBriefingHuman",
+            (-28.0, 113.0): "z_Dev_GenericMissionBriefingNavi",
+            (-35.0, 0.0): "gym_ai_multi",
+            (15.0, -175.0): "coop_pascal_01_l",
+            (-30.0, 116.0): "coop_pascal_02_l",
+            (-35.0, 116.0): "sp_pascal_of_01_l",
+            (-33.0, 133.0): "plaza_01",
+            (-43.0, 143.0): "plaza_02"
+        }
+
+    def _find_location_name(self, latitude_str, longitude_str):
+        """Find the location name for given coordinates with tolerance for floating point precision"""
+        try:
+            lat = float(latitude_str)
+            lon = float(longitude_str)
+            
+            # First try exact match
+            coord_key = (lat, lon)
+            if coord_key in self.coordinate_mappings:
+                return self.coordinate_mappings[coord_key]
+            
+            # If no exact match, try with tolerance for floating point precision
+            tolerance = 0.1  # Adjust this if needed
+            for (map_lat, map_lon), location_name in self.coordinate_mappings.items():
+                if abs(lat - map_lat) <= tolerance and abs(lon - map_lon) <= tolerance:
+                    return location_name
+            
+            # No match found
+            return None
+            
+        except (ValueError, TypeError):
+            return None
+
+    def _format_location_display(self, location_value):
+        """Format location for display with map name if found"""
+        try:
+            if not location_value or location_value == "0,0":
+                return "0,0"
+            
+            # Parse the coordinates
+            if "," in location_value:
+                lat_str, lon_str = location_value.split(",", 1)
+                lat_str = lat_str.strip()
+                lon_str = lon_str.strip()
+                
+                # Find the location name
+                location_name = self._find_location_name(lat_str, lon_str)
+                
+                if location_name:
+                    return f"{location_value} ({location_name})"
+                else:
+                    return location_value
+            else:
+                return location_value
+                
+        except Exception as e:
+            self.logger.error(f"Error formatting location display: {str(e)}")
+            return location_value
+
     def create_progress_section(self, parent):
         """Create compact progress section"""
         progress_frame = ttk.LabelFrame(parent, text="📊 Progress & Faction", padding=10)
         progress_frame.pack(side=tk.RIGHT, fill=tk.X, expand=True)
         
-        # Main faction info
-        self.create_compact_field_item(progress_frame, "Player Faction", "PlayerFaction", 
-                            {"0": "Undecided", "1": "Na'vi", "2": "RDA"})
+        # Main faction info        
         self.create_compact_field_item(progress_frame, "Total EP", "TotalEP", readonly=True)
         
         # Max out button (smaller)
@@ -176,8 +452,6 @@ class StatsManager:
         self.create_compact_field_item(p1_frame, "Player1 EPs", "EPs_Player1")
         self.create_compact_field_item(p1_frame, "Player1 newEPs", "newEPs_Player1")
 
-    # Update equipment sections to be more compact:
-
     def create_rda_equipment_section(self, parent):
         """Create compact RDA equipment section"""
         rda_frame = ttk.LabelFrame(parent, text="🤖 RDA Equipment", padding=10)
@@ -198,12 +472,25 @@ class StatsManager:
         ttk.Button(actions_frame, text="📦 Add RDA DLC Items", 
                 command=self._add_all_rda_dlc_items).pack(fill=tk.X, pady=1)
         
-        # Compact weapons section
-        weapons_frame = ttk.LabelFrame(rda_frame, text="⚔️ Weapons", padding=8)
-        weapons_frame.pack(fill=tk.X, pady=(0, 8))
+        # Create horizontal container for weapons and skills
+        equipment_container = ttk.Frame(rda_frame)
+        equipment_container.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+        
+        # Configure column weights for width control
+        equipment_container.grid_columnconfigure(0, weight=1)  # Weapons get 75% width
+        equipment_container.grid_columnconfigure(1, weight=4)  # Skills get 25% width
+        
+        # Compact weapons section (left side) - using grid for better width control
+        weapons_frame = ttk.LabelFrame(equipment_container, text="⚔️ Weapons", padding=8)
+        weapons_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
         self.create_compact_weapon_slots(weapons_frame, is_navi=False)
         
-        # Compact armor section
+        # Compact skills section (right side) - using grid for better width control
+        skills_frame = ttk.LabelFrame(equipment_container, text="🎯 Skills", padding=8)
+        skills_frame.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        self.create_compact_skill_slots(skills_frame, is_navi=False)
+        
+        # Compact armor section (full width below)
         armor_frame = ttk.LabelFrame(rda_frame, text="🛡️ Armor", padding=8)
         armor_frame.pack(fill=tk.X)
         self.create_compact_armor_section(armor_frame, is_navi=False)
@@ -228,15 +515,281 @@ class StatsManager:
         ttk.Button(actions_frame, text="📦 Add Na'vi DLC Items", 
                 command=self._add_all_navi_dlc_items).pack(fill=tk.X)
         
-        # Compact weapons section
-        weapons_frame = ttk.LabelFrame(navi_frame, text="🏹 Weapons", padding=8)
-        weapons_frame.pack(fill=tk.X, pady=(0, 8))
+        # Create horizontal container for weapons and skills
+        equipment_container = ttk.Frame(navi_frame)
+        equipment_container.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+        
+        # Configure column weights for width control
+        equipment_container.grid_columnconfigure(0, weight=1)  # Weapons get 75% width
+        equipment_container.grid_columnconfigure(1, weight=4)  # Skills get 25% width
+        
+        # Compact weapons section (left side) - using grid for better width control
+        weapons_frame = ttk.LabelFrame(equipment_container, text="🏹 Weapons", padding=8)
+        weapons_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
         self.create_compact_weapon_slots(weapons_frame, is_navi=True)
         
-        # Compact armor section
+        # Compact skills section (right side) - using grid for better width control
+        skills_frame = ttk.LabelFrame(equipment_container, text="🎯 Skills", padding=8)
+        skills_frame.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        self.create_compact_skill_slots(skills_frame, is_navi=True)
+        
+        # Compact armor section (full width below)
         armor_frame = ttk.LabelFrame(navi_frame, text="🛡️ Armor", padding=8)
         armor_frame.pack(fill=tk.X)
         self.create_compact_armor_section(armor_frame, is_navi=True)
+
+    def create_compact_skill_slots(self, parent, is_navi=False):
+        """Create compact skill slots"""
+        skills_container = ttk.Frame(parent)
+        skills_container.pack(fill=tk.X, pady=5, padx=5)
+        
+        skill_slots = ["Top Slot", "Right Slot", "Bottom Slot", "Left Slot"]
+        slots_storage = self.navi_skill_slots if is_navi else self.rda_skill_slots
+        skill_mappings = self.navi_skill_mappings if is_navi else self.rda_skill_mappings
+        
+        for i, slot_name in enumerate(skill_slots):
+            slot_frame = ttk.Frame(skills_container)
+            slot_frame.pack(fill=tk.X, pady=2, padx=5)
+            
+            # Compact slot label
+            ttk.Label(slot_frame, text=f"{slot_name}:", 
+                    font=('Segoe UI', 8, 'bold'), width=15).pack(side=tk.LEFT, padx=(0, 5))
+            
+            # Get skills list
+            skill_values = list(skill_mappings.values())
+            skill_values.insert(0, "-Empty-")  # Add empty option at the beginning
+            
+            # Compact skill dropdown
+            skill_combo = ttk.Combobox(slot_frame, values=skill_values, 
+                                    width=25, state="readonly", font=('Segoe UI', 8))
+            skill_combo.set("-Empty-")
+            skill_combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+            block_combobox_mousewheel(skill_combo)
+            
+            # Store skill data
+            slot_data = {
+                "dropdown": skill_combo,
+                "skill_mappings": skill_mappings
+            }
+            
+            while len(slots_storage) <= i:
+                slots_storage.append(None)
+            slots_storage[i] = slot_data
+            
+            # Bind events
+            if is_navi:
+                skill_combo.bind('<<ComboboxSelected>>', lambda e, idx=i: self._on_navi_skill_selected(e, idx))
+            else:
+                skill_combo.bind('<<ComboboxSelected>>', lambda e, idx=i: self._on_rda_skill_selected(e, idx))
+
+    def _load_rda_skills(self, profile):
+        """Load RDA skills from the save file"""
+        soldier = profile.find("Possessions_Soldier")
+        if soldier is None:
+            return
+        
+        skills = soldier.find("Skills")
+        if skills is None:
+            return
+        
+        slots = skills.findall("Slot")
+        for i, slot in enumerate(slots):
+            if i < len(self.rda_skill_slots):
+                skill_id = slot.get("crc_Value", "0")
+                
+                if skill_id == "0":
+                    # Empty slot
+                    self.rda_skill_slots[i]["dropdown"].set("-Empty-")
+                elif skill_id in self.rda_skill_mappings:
+                    # Known skill - show name
+                    skill_name = self.rda_skill_mappings[skill_id]
+                    self.rda_skill_slots[i]["dropdown"].set(skill_name)
+                else:
+                    # Unknown skill - show ID
+                    dropdown = self.rda_skill_slots[i]["dropdown"]
+                    current_values = list(dropdown['values'])
+                    id_display = f"Unknown Skill (ID: {skill_id})"
+                    
+                    # Add the unknown skill to the dropdown values if not already there
+                    if id_display not in current_values:
+                        current_values.append(id_display)
+                        dropdown['values'] = current_values
+                    
+                    dropdown.set(id_display)
+
+    def _load_navi_skills(self, profile):
+        """Load Na'vi skills from the save file"""
+        avatar = profile.find("Possessions_Avatar")
+        if avatar is None:
+            return
+        
+        skills = avatar.find("Skills")
+        if skills is None:
+            return
+        
+        slots = skills.findall("Slot")
+        for i, slot in enumerate(slots):
+            if i < len(self.navi_skill_slots):
+                skill_id = slot.get("crc_Value", "0")
+                
+                if skill_id == "0":
+                    # Empty slot
+                    self.navi_skill_slots[i]["dropdown"].set("-Empty-")
+                elif skill_id in self.navi_skill_mappings:
+                    # Known skill - show name
+                    skill_name = self.navi_skill_mappings[skill_id]
+                    self.navi_skill_slots[i]["dropdown"].set(skill_name)
+                else:
+                    # Unknown skill - show ID
+                    dropdown = self.navi_skill_slots[i]["dropdown"]
+                    current_values = list(dropdown['values'])
+                    id_display = f"Unknown Skill (ID: {skill_id})"
+                    
+                    # Add the unknown skill to the dropdown values if not already there
+                    if id_display not in current_values:
+                        current_values.append(id_display)
+                        dropdown['values'] = current_values
+                    
+                    dropdown.set(id_display)
+
+    def _on_rda_skill_selected(self, event, slot_index):
+        """Handle RDA skill selection"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            event.widget.set("-Empty-")
+            return
+            
+        combo = event.widget
+        selected_skill = combo.get()
+        
+        if selected_skill == "-Empty-":
+            self._update_skill_slot(slot_index, None, is_navi=False)
+            return
+        
+        # Check if it's an unknown skill ID display
+        if selected_skill.startswith("Unknown Skill (ID: "):
+            # Extract the ID from the display text
+            skill_id = selected_skill.split("ID: ")[1].rstrip(")")
+        else:
+            # Find the skill ID from the selected skill name
+            skill_id = None
+            for id, name in self.rda_skill_mappings.items():
+                if name == selected_skill:
+                    skill_id = id
+                    break
+        
+        if skill_id:
+            self._update_skill_slot(slot_index, skill_id, is_navi=False)
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+
+    def _on_navi_skill_selected(self, event, slot_index):
+        """Handle Na'vi skill selection"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            event.widget.set("-Empty-")
+            return
+            
+        combo = event.widget
+        selected_skill = combo.get()
+        
+        if selected_skill == "-Empty-":
+            self._update_skill_slot(slot_index, None, is_navi=True)
+            return
+        
+        # Check if it's an unknown skill ID display
+        if selected_skill.startswith("Unknown Skill (ID: "):
+            # Extract the ID from the display text
+            skill_id = selected_skill.split("ID: ")[1].rstrip(")")
+        else:
+            # Find the skill ID from the selected skill name
+            skill_id = None
+            for id, name in self.navi_skill_mappings.items():
+                if name == selected_skill:
+                    skill_id = id
+                    break
+        
+        if skill_id:
+            self._update_skill_slot(slot_index, skill_id, is_navi=True)
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+
+    def _update_skill_slot(self, slot_index, skill_id, is_navi=False):
+        """Update a skill slot in the XML"""
+        try:
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                return False
+            
+            # Find the appropriate possessions element
+            faction_elem_name = "Possessions_Avatar" if is_navi else "Possessions_Soldier"
+            faction_elem = profile.find(faction_elem_name)
+            if faction_elem is None:
+                faction_elem = ET.SubElement(profile, faction_elem_name)
+            
+            # Find or create Skills element
+            skills_elem = faction_elem.find("Skills")
+            if skills_elem is None:
+                skills_elem = ET.SubElement(faction_elem, "Skills")
+            
+            # Find or create the specific slot
+            slots = skills_elem.findall("Slot")
+            
+            # Ensure we have enough slots
+            while len(slots) <= slot_index:
+                new_slot = ET.SubElement(skills_elem, "Slot")
+                new_slot.set("Index", str(len(slots)))
+                new_slot.set("crc_Value", "0")  # Default empty value
+                slots = skills_elem.findall("Slot")
+            
+            # Update the slot
+            target_slot = slots[slot_index]
+            if skill_id is None:
+                target_slot.set("crc_Value", "0")  # Empty slot
+            else:
+                target_slot.set("crc_Value", skill_id)
+
+            faction_name = "Na'vi" if is_navi else "RDA"
+            self.logger.debug(f"Updated {faction_name} skill slot {slot_index} to {skill_id}")          
+
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error updating skill slot: {str(e)}")
+            return False
+
+    def _create_skill_mappings(self):
+        """Create mappings for skill IDs to their actual names"""
+        self.rda_skill_mappings = {
+
+            "370163335": "Ultrasonic Repulsor IV",
+            "339641018":  "Samson Vehicle Spawn",
+            "3619269117": "Zeta Field IV",
+            "2857450382": "Boat Vehicle Spawn",
+            "3179152460": "Scorpion Vehicle Spawn",
+            "767629789":  "AMP Suit Vehicle Spawn",
+            "3713403672": "ATV Vehicle Spawn",
+            "1399874912": "Dragon Vehicle Spawn",
+            "77959529":   "Elite Training IV",
+            "3305899539": "Chromatic Blend IV",
+            "1862651544": "Genetic Regenerator IV",
+            "4073911841": "Tactical Strike IV",
+            "1522936139": "Dove Vehicle Spawn",
+            "863723867":  "Berserk IV",
+            "861432372": "Buggy Vehicle Spawn",
+        }
+        
+        self.navi_skill_mappings = {
+            "1147099810": "Direhorse Mount Spawn",
+            "3843286588": "Pandora's Protection IV",
+            "611800566":  "Beast's Aegis IV",
+            "2479233397": "Whirl of Fury IV",
+            "2906455959": "Leonopteryx Mount Spawn",
+            "376364380":  "Eywa's Breath IV",
+            "2171844251": "Kinetic Dash IV",
+            "4154870226": "Pandora's Union IV",
+            "2167405524": "Titan's Bash IV",
+            "3229137376": "Swarm's Wrath IV",
+            "3661352705": "Banshee Mount Spawn",       
+        }
 
     def create_settings_section(self, parent):
         """Create compact settings section"""
@@ -295,6 +848,8 @@ class StatsManager:
             # Add specific event bindings
             if key == "PlayerFaction":
                 widget.bind('<<ComboboxSelected>>', self._on_faction_selected)
+            elif key == "crc_LastLoadedPin":
+                widget.bind('<<ComboboxSelected>>', self._on_current_location_selected)
             elif key in ["side", "pawn", "bEntityScanningEnabled", "FirstPersonMode", "RumbleEnabled"]:
                 widget.bind('<<ComboboxSelected>>', self._mark_unsaved_changes)
         else:
@@ -310,7 +865,6 @@ class StatsManager:
             widget.bind('<KeyRelease>', self._mark_unsaved_changes)
             if hasattr(widget, 'current'):  # Combobox
                 widget.bind('<<ComboboxSelected>>', self._mark_unsaved_changes)
-
 
     def create_compact_weapon_slots(self, parent, is_navi=False):
         """Create compact weapon slots"""
@@ -2554,9 +3108,8 @@ class StatsManager:
         # Return the appropriate ammo type for the weapon, or default if not found
         return weapon_ammo_map.get(weapon_id, default_ammo)
 
-    # Data loading methods
     def load_stats(self, tree: ET.ElementTree) -> None:
-        """Load stats data with modern interface - UPDATED to include time loading"""
+        """Load stats data with modern interface - UPDATED to include skills loading"""
         self.logger.debug("Loading stats with modern interface")
         try:
             root = tree.getroot()
@@ -2569,6 +3122,10 @@ class StatsManager:
                 self._update_loadout_display(profile)
                 self._update_navi_loadout_display(profile)
                 self._update_player_info(profile)
+                
+                # Load skills for both factions
+                self._load_rda_skills(profile)
+                self._load_navi_skills(profile)
                 
                 # IMPORTANT: Also load time info here
                 self.load_time_info(tree)
@@ -2601,7 +3158,7 @@ class StatsManager:
                 widget.delete(0, tk.END)
                 widget.insert(0, name)
 
-        # Handle location from LocationInfo (separate from BaseInfo)
+        # Handle location from LocationInfo (separate from BaseInfo) - UPDATED WITH MAP NAMES
         location_value = "0,0"  # Default
         if tree is not None:
             root = tree.getroot()
@@ -2616,6 +3173,56 @@ class StatsManager:
                 if location_elements:
                     location_value = location_elements[0].get("YouAreHere_LatitudeLongitude", "0,0")
                     print(f"DEBUG: Found location (broad search): {location_value}")
+
+        # Handle crc_LastLoadedPin (current location)
+        current_location_id = None
+        if tree is not None:
+            root = tree.getroot()
+            # Check PlayerProfile element first (this is where it actually is)
+            player_profile = root.find("PlayerProfile")
+            if player_profile is not None and player_profile.get("crc_LastLoadedPin") is not None:
+                current_location_id = player_profile.get("crc_LastLoadedPin")
+                print(f"DEBUG: Found crc_LastLoadedPin in PlayerProfile: {current_location_id}")
+            else:
+                # Check root element as fallback
+                if root.get("crc_LastLoadedPin") is not None:
+                    current_location_id = root.get("crc_LastLoadedPin")
+                    print(f"DEBUG: Found crc_LastLoadedPin in root: {current_location_id}")
+                else:
+                    # Check BaseInfo as final fallback
+                    base_info = root.find(".//BaseInfo")
+                    if base_info is not None and base_info.get("crc_LastLoadedPin") is not None:
+                        current_location_id = base_info.get("crc_LastLoadedPin")
+                        print(f"DEBUG: Found crc_LastLoadedPin in BaseInfo: {current_location_id}")
+
+        # Update the current location dropdown
+        if "crc_LastLoadedPin" in self.entries:
+            widget = self.entries["crc_LastLoadedPin"]
+            if current_location_id and current_location_id in self.last_loaded_pin_mappings:
+                location_name = self.last_loaded_pin_mappings[current_location_id]
+                try:
+                    if hasattr(widget, 'set'):
+                        widget.set(location_name)
+                        print(f"DEBUG: Set current location to: {location_name} (ID: {current_location_id})")
+                except Exception as e:
+                    print(f"DEBUG: Error setting current location: {e}")
+            else:
+                # No location found or unknown location ID
+                try:
+                    if hasattr(widget, 'set'):
+                        if current_location_id:
+                            # Show the unknown ID in a user-friendly way
+                            widget.set(f"Unknown Location (ID: {current_location_id})")
+                            print(f"DEBUG: Unknown location ID: {current_location_id}")
+                        else:
+                            # No location set at all
+                            widget.set("-No Location Set-")
+                            print("DEBUG: No crc_LastLoadedPin found in save file")
+                except Exception as e:
+                    print(f"DEBUG: Error setting current location fallback: {e}")
+
+        # Format location with map name
+        formatted_location = self._format_location_display(location_value)
 
         # Get bEntityScanningEnabled from OptionsInfo instead of BaseInfo
         entity_scanning_value = "0"  # Default
@@ -2662,7 +3269,7 @@ class StatsManager:
                 "default": "0"
             },
             "YouAreHere_LatitudeLongitude": {
-                "custom_value": location_value
+                "custom_value": formatted_location  # Use formatted location with map name
             }
         }
 
@@ -2752,7 +3359,6 @@ class StatsManager:
                 self.load_time_info(tree)
             except Exception as time_error:
                 self.logger.error(f"Error loading time info in base_info update: {time_error}")
-
 
     def _update_metagame_info(self, metagame):
         """Update metagame information"""
@@ -3130,7 +3736,8 @@ class StatsManager:
                 "Metagame": {},
                 "Player0": {},
                 "Player1": {},
-                "TimeInfo": {}
+                "TimeInfo": {},
+                "PlayerProfile": {}
             }
 
             # Get faction updates
@@ -3139,6 +3746,23 @@ class StatsManager:
                 faction_map = {"Undecided": "0", "Na'vi": "1", "Navi": "1", "RDA": "2"}
                 faction_value = faction_map.get(current_faction, "0")
                 updates["Metagame"]["PlayerFaction"] = faction_value
+
+            if "crc_LastLoadedPin" in self.entries:
+                selected_location = self.entries["crc_LastLoadedPin"].get()
+                
+                if selected_location == "-No Location Set-":
+                    # Set to None to remove the attribute
+                    updates["PlayerProfile"]["crc_LastLoadedPin"] = None
+                elif selected_location.startswith("Unknown Location (ID: "):
+                    # Extract the ID from the display text for unknown locations
+                    pin_id = selected_location.split("ID: ")[1].rstrip(")")
+                    updates["PlayerProfile"]["crc_LastLoadedPin"] = pin_id
+                else:
+                    # Find the pin ID from the selected location name
+                    for pin_id, location_name in self.last_loaded_pin_mappings.items():
+                        if location_name == selected_location:
+                            updates["PlayerProfile"]["crc_LastLoadedPin"] = pin_id
+                            break
 
             # Get side and pawn updates for BaseInfo
             if "side" in self.entries:

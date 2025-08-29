@@ -84,44 +84,7 @@ class SoundsManager:
         self.sounds_count.pack()
         
         ttk.Label(self.discovery_display, text="Sounds Discovered", font=('Segoe UI', 10)).pack()
-        
-        # === STATISTICS SECTION ===
-        stats_frame = ttk.LabelFrame(sidebar_frame, text="📊 Statistics", padding=15)
-        stats_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        # Create statistics with modern layout
-        self.create_stat_item(stats_frame, "🔊", "Total Sounds", "0", "total_sounds_label")
-        self.create_stat_item(stats_frame, "🌿", "Environmental", "0", "env_sounds_label")
-        self.create_stat_item(stats_frame, "🐾", "Creatures", "0", "creature_sounds_label")
-        self.create_stat_item(stats_frame, "🤖", "Technology", "0", "tech_sounds_label")
-        self.create_stat_item(stats_frame, "👥", "Na'vi", "0", "navi_sounds_label")
-        
-        # === FILTER SECTION ===
-        filter_frame = ttk.LabelFrame(sidebar_frame, text="🔍 Filters", padding=15)
-        filter_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
-        
-        filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
-                                   values=["All Sounds", "🌿 Environmental", "🐾 Creatures", 
-                                          "🤖 Technology", "👥 Na'vi", "🎵 Special"],
-                                   state="readonly", font=('Segoe UI', 9))
-        filter_combo.set("All Sounds")
-        filter_combo.pack(fill=tk.X)
-        filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
-        
-        # === CATEGORY BREAKDOWN ===
-        breakdown_frame = ttk.LabelFrame(sidebar_frame, text="🏷️ Category Breakdown", padding=15)
-        breakdown_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Category breakdown list
-        self.category_listbox = tk.Listbox(breakdown_frame, height=8, font=('Segoe UI', 9))
-        cat_scrollbar = ttk.Scrollbar(breakdown_frame, orient="vertical", command=self.category_listbox.yview)
-        self.category_listbox.configure(yscrollcommand=cat_scrollbar.set)
-        
-        self.category_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        cat_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
+                
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)
@@ -335,28 +298,6 @@ class SoundsManager:
             category = sound_data['category']
             category_counts[category] = category_counts.get(category, 0) + 1
         
-        # Update statistics
-        self.total_sounds_label.config(text=str(total_sounds))
-        self.env_sounds_label.config(text=str(category_counts.get("Environmental", 0)))
-        self.creature_sounds_label.config(text=str(category_counts.get("Creatures", 0)))
-        self.tech_sounds_label.config(text=str(category_counts.get("Technology", 0)))
-        self.navi_sounds_label.config(text=str(category_counts.get("Na'vi", 0)))
-        
-        # Update category breakdown
-        self._update_category_breakdown(category_counts)
-
-    def _update_category_breakdown(self, category_counts):
-        """Update the category breakdown listbox"""
-        self.category_listbox.delete(0, tk.END)
-        
-        # Add categories to listbox
-        for category in sorted(category_counts.keys()):
-            count = category_counts[category]
-            total = len(self.sound_data)
-            pct = (count / total * 100) if total > 0 else 0
-            
-            self.category_listbox.insert(tk.END, f"{category}: {count} sounds ({pct:.1f}%)")
-
     def _apply_filter(self, event=None):
         """Apply search and filter to the sounds list"""
         filter_value = self.filter_var.get()

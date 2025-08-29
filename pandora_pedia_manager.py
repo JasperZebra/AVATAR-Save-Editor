@@ -152,30 +152,6 @@ class PandoraPediaManager:
         filter_combo.pack(fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
         
-        # === KNOWLEDGE BASE INFO ===
-        info_frame = ttk.LabelFrame(sidebar_frame, text="ℹ️ Knowledge Base", padding=15)
-        info_frame.pack(fill=tk.BOTH, expand=True)
-        
-        info_text = tk.Text(info_frame, height=6, font=('Segoe UI', 9), 
-                           wrap=tk.WORD, state=tk.DISABLED, background='#f8f9fa')
-        info_scrollbar = ttk.Scrollbar(info_frame, orient="vertical", command=info_text.yview)
-        info_text.configure(yscrollcommand=info_scrollbar.set)
-        
-        # Add informational text
-        info_content = """The PandoraPedia contains valuable information about Pandora's flora, fauna, culture, and technology.
-
-📖 Discovered articles provide new insights
-✅ Read articles contribute to your understanding
-❌ Undiscovered articles await exploration
-
-Discover articles through gameplay or use the quick actions to unlock all knowledge."""
-        
-        info_text.config(state=tk.NORMAL)
-        info_text.insert(1.0, info_content)
-        info_text.config(state=tk.DISABLED)
-        
-        info_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        info_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""

@@ -115,24 +115,12 @@ class VehicleManager:
         filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
                                    values=["All Vehicles", "✅ Entered Only", "❌ Not Entered", 
                                           "🚁 RDA Air Vehicles", "🚗 RDA Ground Vehicles", "🚤 RDA Water Vehicles",
-                                          "🐎 Na'vi Mounts", "🛶 Water Vehicles"],
+                                          "🐎 Na'vi Mounts", "🛶 RDA Water Vehicles"],
                                    state="readonly", font=('Segoe UI', 9))
         filter_combo.set("All Vehicles")
         filter_combo.pack(fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
         
-        # === VEHICLE TYPE BREAKDOWN ===
-        breakdown_frame = ttk.LabelFrame(sidebar_frame, text="🏷️ Type Breakdown", padding=15)
-        breakdown_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Type breakdown list
-        self.type_listbox = tk.Listbox(breakdown_frame, height=8, font=('Segoe UI', 9))
-        type_scrollbar = ttk.Scrollbar(breakdown_frame, orient="vertical", command=self.type_listbox.yview)
-        self.type_listbox.configure(yscrollcommand=type_scrollbar.set)
-        
-        self.type_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        type_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)
@@ -331,33 +319,6 @@ class VehicleManager:
         self.progress_bar['value'] = completion_pct
         self.completion_label.config(text=f"{completion_pct:.1f}% Complete")
         
-        # Update type breakdown
-        self._update_type_breakdown()
-
-    def _update_type_breakdown(self):
-        """Update the type breakdown listbox"""
-        self.type_listbox.delete(0, tk.END)
-        
-        # Count by type
-        type_counts = {}
-        for vehicle_data in self.vehicle_data.values():
-            vehicle_type = vehicle_data['type']
-            if vehicle_type not in type_counts:
-                type_counts[vehicle_type] = {'total': 0, 'entered': 0}
-            
-            type_counts[vehicle_type]['total'] += 1
-            if vehicle_data['entered']:
-                type_counts[vehicle_type]['entered'] += 1
-        
-        # Add to listbox
-        for vehicle_type in sorted(type_counts.keys()):
-            counts = type_counts[vehicle_type]
-            entered = counts['entered']
-            total = counts['total']
-            pct = (entered / total * 100) if total > 0 else 0
-            
-            self.type_listbox.insert(tk.END, f"{vehicle_type}: {entered}/{total} ({pct:.0f}%)")
-
     def _apply_filter(self, event=None):
         """Apply search and filter to the vehicle list"""
         filter_value = self.filter_var.get()
@@ -401,7 +362,7 @@ class VehicleManager:
             return False
         elif filter_value == "🐎 Na'vi Mounts" and "Na'vi Mount" not in vehicle_type:
             return False
-        elif filter_value == "🛶 Water Vehicles" and "Water Vehicle" not in vehicle_type:
+        elif filter_value == "🛶 RDA Water Vehicles" and "RDA Water Vehicle" not in vehicle_type:
             return False
         
         # Apply search

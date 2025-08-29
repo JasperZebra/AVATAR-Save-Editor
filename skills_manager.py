@@ -89,22 +89,6 @@ class SkillsManager:
         self.completion_label = ttk.Label(progress_frame, text="0%", font=('Segoe UI', 9))
         self.completion_label.pack(anchor=tk.W, pady=(2, 0))
         
-        # === FILTER SECTION ===
-        filter_frame = ttk.LabelFrame(sidebar_frame, text="🔍 Filters", padding=15)
-        filter_frame.pack(fill=tk.X)
-        
-        ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
-        
-        filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
-                                   values=["All Skills", "🔓 Unlocked Only", "🔒 Locked Only", "⭐ Special Only", 
-                                          "⚔️ Combat", "🛡️ Survival", "👤 Stealth", "🏃 Movement", "🔧 Crafting",
-                                          "🌿 Na'vi Connection", "🤖 RDA Training", "🎖️ Specialist", "✨ Special Abilities",
-                                          "🗺️ Exploration", "🚗 Vehicle"],
-                                   state="readonly", font=('Segoe UI', 9))
-        filter_combo.set("All Skills")
-        filter_combo.pack(fill=tk.X)
-        filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
-
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)
@@ -443,7 +427,7 @@ class SkillsManager:
         detail_window.title(f"Skill Details - {skill_name}")
         detail_window.geometry("1600x800")
         detail_window.resizable(True, True)
-        
+         
         # Main frame with padding
         main_frame = ttk.Frame(detail_window, padding=20)
         main_frame.pack(fill=tk.BOTH, expand=True)

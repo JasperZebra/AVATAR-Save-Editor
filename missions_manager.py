@@ -106,26 +106,12 @@ class MissionsManager:
         ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
         
         filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
-                                   values=["All Missions", "✅ Completed", "🔄 In Progress", "⏸️ Not Started", 
-                                          "📖 Story Missions", "⚔️ Combat Missions", "🔬 Research Missions",
-                                          "🚁 Transport Missions"],
+                                   values=["All Missions", "✅ Completed", "🔄 In Progress", "⏸️ Not Started"],
                                    state="readonly", font=('Segoe UI', 9))
         filter_combo.set("All Missions")
         filter_combo.pack(fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
         
-        # === STATUS BREAKDOWN ===
-        breakdown_frame = ttk.LabelFrame(sidebar_frame, text="📋 Status Breakdown", padding=15)
-        breakdown_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Status breakdown chart (text-based)
-        self.status_text = tk.Text(breakdown_frame, height=10, font=('Segoe UI', 9), 
-                                  wrap=tk.WORD, state=tk.DISABLED)
-        status_scrollbar = ttk.Scrollbar(breakdown_frame, orient="vertical", command=self.status_text.yview)
-        self.status_text.configure(yscrollcommand=status_scrollbar.set)
-        
-        self.status_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        status_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
@@ -367,49 +353,6 @@ class MissionsManager:
         self.completion_percentage.config(text=f"{completion_pct:.0f}%")
         self.progress_bar['value'] = completion_pct
         
-        # Update statistics
-        self.total_missions_label.config(text=str(total_missions))
-        self.completed_missions_label.config(text=str(completed_count))
-        self.in_progress_missions_label.config(text=str(in_progress_count))
-        self.not_started_missions_label.config(text=str(not_started_count))
-        
-        # Update status breakdown
-        self._update_status_breakdown()
-
-    def _update_status_breakdown(self):
-        """Update the status breakdown text area"""
-        self.status_text.config(state=tk.NORMAL)
-        self.status_text.delete(1.0, tk.END)
-        
-        # Count by category and status
-        category_stats = {}
-        for mission_data in self.mission_data.values():
-            category = mission_data['category']
-            status = mission_data['status']
-            
-            if category not in category_stats:
-                category_stats[category] = {'Completed': 0, 'In Progress': 0, 'Not Started': 0}
-            
-            category_stats[category][status] += 1
-        
-        # Format breakdown text
-        breakdown_text = "Mission Categories:\n" + "="*25 + "\n\n"
-        
-        for category in sorted(category_stats.keys()):
-            stats = category_stats[category]
-            total = sum(stats.values())
-            completed = stats['Completed']
-            pct = (completed / total * 100) if total > 0 else 0
-            
-            breakdown_text += f"📂 {category}:\n"
-            breakdown_text += f"   ✅ Completed: {stats['Completed']}\n"
-            breakdown_text += f"   🔄 In Progress: {stats['In Progress']}\n"
-            breakdown_text += f"   ⏸️ Not Started: {stats['Not Started']}\n"
-            breakdown_text += f"   📊 Completion: {pct:.1f}%\n\n"
-        
-        self.status_text.insert(1.0, breakdown_text)
-        self.status_text.config(state=tk.DISABLED)
-
     def _apply_filter(self, event=None):
         """Apply search and filter to the missions list"""
         filter_value = self.filter_var.get()
