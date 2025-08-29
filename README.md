@@ -11,7 +11,8 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** and **P
 ## Here's an example of what you can do with this save editor and what was changed:
   - Changed the player pawn to the Na'vi body in the tutorial area **(Can't do this normally)**
   - Changed the Head, Chest, and Leg armor pieces to differnet sets **(Armor pieces can't be chnged normally)**
-![Screenshot 2025-03-21 152125](https://github.com/user-attachments/assets/2b9069cd-7a01-4dbf-b847-629bd2a49de9)
+<img width="322" height="393" alt="Screenshot 2025-08-05 134503" src="https://github.com/user-attachments/assets/496f79ff-f786-4d7b-87dd-0646d61ed37e" />
+<img width="347" height="393" alt="Screenshot 2025-08-05 153844" src="https://github.com/user-attachments/assets/1efd3056-1a21-43d7-96fc-46bb53cdc620" />
 
 # Video Showcase
 [![YouTube](http://i.ytimg.com/vi/854m2cfOvYA/hqdefault.jpg)](https://www.youtube.com/watch?v=854m2cfOvYA)
@@ -80,26 +81,21 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** and **P
 - Section navigation
 
 # Screenshots
-<img width="1403" height="835" alt="Screenshot 2025-08-09 235319" src="https://github.com/user-attachments/assets/ad9b7f52-6761-4f8b-9f92-ee38934118bd" />
 
-
-
-<img width="1802" height="1131" alt="Screenshot 2025-08-09 111942" src="https://github.com/user-attachments/assets/1ed52c69-acc8-4266-a760-a494d99c10ee" />
-<img width="1802" height="1133" alt="Screenshot 2025-08-09 111954" src="https://github.com/user-attachments/assets/4264f905-d42f-4dd3-ad39-1788b175f5be" />
-<img width="1800" height="1128" alt="Screenshot 2025-08-09 112009" src="https://github.com/user-attachments/assets/3e5b449f-28b8-44c1-bc68-66da05c1930f" />
-<img width="1798" height="1133" alt="Screenshot 2025-08-09 112023" src="https://github.com/user-attachments/assets/f5a1f9bc-f457-4131-b3d3-4aa3a95f4f04" />
-<img width="1802" height="1128" alt="Screenshot 2025-08-09 112037" src="https://github.com/user-attachments/assets/1abb9a61-0f0c-4192-834e-ed79582c56bc" />
-<img width="1798" height="1132" alt="Screenshot 2025-08-09 112123" src="https://github.com/user-attachments/assets/fffd7054-d6b6-4a4b-9e1f-86aebde9393e" />
-<img width="1798" height="1130" alt="Screenshot 2025-08-09 112140" src="https://github.com/user-attachments/assets/031d5a34-3406-4d9b-8d55-876dbb7ee828" />
-<img width="1800" height="1131" alt="Screenshot 2025-08-09 112155" src="https://github.com/user-attachments/assets/bb87e81e-55a8-4724-a6f8-3aebb504d402" />
-<img width="1798" height="1130" alt="Screenshot 2025-08-09 112208" src="https://github.com/user-attachments/assets/b74b1338-c83e-4904-a284-567f44a32f08" />
-<img width="1797" height="1130" alt="Screenshot 2025-08-09 112220" src="https://github.com/user-attachments/assets/c8642978-1793-49d6-bfc3-c2e87df11bd1" />
-<img width="1799" height="1128" alt="Screenshot 2025-08-09 112233" src="https://github.com/user-attachments/assets/107c69d7-4a04-40c7-a64c-dc8f99a91f05" />
-<img width="1797" height="1130" alt="Screenshot 2025-08-09 112247" src="https://github.com/user-attachments/assets/62c29e5d-f464-459a-ad68-81eba1e215d8" />
-
-
-
-![Screenshot 2025-03-20 171144](https://github.com/user-attachments/assets/dde6bf94-a1e0-4c0a-88f6-02aedba47a68)
+<img width="1403" height="832" alt="Screenshot 2025-08-29 102025" src="https://github.com/user-attachments/assets/25b50ea5-7cc3-4035-b216-ff710eb0aaef" />
+<img width="1803" height="1134" alt="Screenshot 2025-08-29 102059" src="https://github.com/user-attachments/assets/2fe89d47-26fc-403e-8ed6-4b6f5415ab9e" />
+<img width="1805" height="1132" alt="Screenshot 2025-08-29 102117" src="https://github.com/user-attachments/assets/d00bd8bc-a7b0-4a67-a0b1-dc0016676c2c" />
+<img width="1800" height="1134" alt="Screenshot 2025-08-29 102131" src="https://github.com/user-attachments/assets/e70bbc1f-22c0-47f1-93d6-24108878e55a" />
+<img width="1805" height="1138" alt="Screenshot 2025-08-29 102145" src="https://github.com/user-attachments/assets/1fdfcef5-a43e-46f3-860b-48237ab09187" />
+<img width="1803" height="1138" alt="Screenshot 2025-08-29 102157" src="https://github.com/user-attachments/assets/6527cae9-b09e-4c7b-9250-ba12205ba6c7" />
+<img width="1801" height="1136" alt="Screenshot 2025-08-29 102213" src="https://github.com/user-attachments/assets/ff9e474f-3ec3-41ad-bc96-75cc4abcf935" />
+<img width="1805" height="1133" alt="Screenshot 2025-08-29 102228" src="https://github.com/user-attachments/assets/264f9e59-c7ed-4032-ac20-3fae8402779b" />
+<img width="1803" height="1136" alt="Screenshot 2025-08-29 102240" src="https://github.com/user-attachments/assets/c4a734d6-9df0-4e99-92a9-a15cdba721e8" />
+<img width="1803" height="1134" alt="Screenshot 2025-08-29 102252" src="https://github.com/user-attachments/assets/885be042-495d-47f7-83dc-367e3db6f270" />
+<img width="1801" height="1133" alt="Screenshot 2025-08-29 102304" src="https://github.com/user-attachments/assets/6fc6a3e1-9d89-4521-87b8-c1c91e7b2090" />
+<img width="1802" height="1138" alt="Screenshot 2025-08-29 102318" src="https://github.com/user-attachments/assets/4ca00ff9-695e-420e-a62e-a0026d7fb792" />
+<img width="1800" height="1139" alt="Screenshot 2025-08-29 102328" src="https://github.com/user-attachments/assets/b2ed70a9-a14e-40d6-9944-c405b734ebd3" />
+<img width="1603" height="1037" alt="Screenshot 2025-08-29 102358" src="https://github.com/user-attachments/assets/6ee38c7c-6b2b-452e-855c-157458c354cc" />
 
 
 ## Safety Features
