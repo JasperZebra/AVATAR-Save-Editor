@@ -17,68 +17,216 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** and **P
 # Video Showcase
 [![YouTube](http://i.ytimg.com/vi/854m2cfOvYA/hqdefault.jpg)](https://www.youtube.com/watch?v=854m2cfOvYA)
 
-## Selection Screen
-- Xbox 360 save files **(100% supported)**
+# Selection Screen:
 
-- PC save file **(100% supported, will be releasing a modified `patch.pak` file that'll make the DLC items stay even after quitting the game)**
+### XBox 360:
+- Xbox 360 save files (100% supported)
 
-- PS3 save file **(Coming soon!)**
+### PC:
+- PC save file (100% supported, will be releasing my version of a modified `patch.pak` file, that'll make the DLC items stay even after quitting the game along with a lot of other stuff)
 
-## Player Stats
-- Displays player stats and character information
-  - Character's face
-  - Name
-  - Location coordinates
-  - Faction alignment **(Na'vi/RDA)**
-  - Game time tracking
-  - Loadout display for **RDA** and **Na'vi**
-  - See screenshot section for more
+### PS3:
+- PS3 save file (Coming soon!)
+
+# Player Stats Tab:
+
+### Character Information Section:
+- Displays character's name, faction side, gender, pawn, face, and current location
+
+### Progress & Faction Section:
+- Displays player's faction, total ep, player0's EP and newEPs, and player1's EP and newEPs (Player0 and player1 are for the conquest mini-game)
+
+### RAD Equipment Section:
+- Displays player current weapons and armor pieces for the RDA pawn (you can change the armor pieces for the RDA, give it a try)
+
+### Na'vi Equipment Section:
+- Displays player current weapons and armor pieces for the Na'vi pawn (you can change the armor pieces for the Na'vi, give it a try)
+
+### Game Settings Section:
+- Displays entity scanning, and first person mode options (NOTE: first person is kind of goofy)
+
+### Cost Reduction Section:
+- Displays RDA and Na'vi Cost reduction for the conquest mini-game (tested this and I don't think this feature works)
     
-## Territory Control
-- Territory ownership assignment
-- Unit deployment (Ground/Air/Troops)
-- Base configuration
-- Defense flag management
+# Territory Control Tab:
 
-## Achievements **(WIP)**
-- View achievement status
-- Unlock individual or all achievements
-- Track completion progress
+### Quick Actions:
+- Displays hard mode (don't use if you have not pick a faction/completed the mission "The Choice")
 
-## Navigation
-- Displays all maps in the game
-- Shows checkpoint **Visited** or **Unvisited**
-- `Show All Cheeckpoints` button shows all checkpoint in the game
+### Territory Editor:
+- Displays basic information, military units, territory properties, and defense systems
 
-## Pandora-Pedia
-- Shows all articles in the game
-- Displays the status for each articles **(Locked, In Progress, and Unlocked)**
+### Territory Status:
+- Displays all the territories that are captured by the player, enemy, and are neutral
 
-## Missions
-- Displays current and completed missions **(Names might be wrong)**
+# Achievements Tab:
 
-## Map Pins
-- Displays what areas the player has discovered and what challenges or collectibles you've completed in each area. **(Names might be wrong)**
+### Quick Actions:
+- Displays complete all achievements, and completed selected achievement
 
-## Sounds
-- Displays the sounds found in the save file **(Names might be wrong)**
+### Statistic:
+- Displays total achievements, completed, in progress, and not started
 
-## Tutorial Database
-- Displays the tutorials for the game for the player
+### Filters:
+- Displays filter options
 
-## Vechicle knowledge
-- Displays the Vechicles the player has been in
+### Category Progress:
+- Displays different categories
 
-## Skills
-- Displays SKills
+### Achievement Progress:
+- Displays all achievements 
 
+# Maps Tab:
 
+### Exploration Overview:
+- Displays all the maps the player has visited
 
-## XML Viewer
-- Direct XML view capability
-- Syntax validation
-- Pretty-printing
-- Section navigation
+### Region Statistics:
+- Displays total regions
+
+### Region Filters:
+- Displays regions filter options
+
+### Region Types:
+- Displays different region types
+
+### Pandoran Regions:
+- Displays all maps locations
+
+# Checkpoints Tab:
+
+### Journey Overview:
+- Displays all the checkpoints the player has visited
+
+### Statistics:
+- Displays total checkpoints
+
+### Filters:
+- Displays checkpoints filter options
+
+### Location Summary:
+- Displays different checkpoints types
+
+### Visited Checkpoints:
+- Displays all visited locations
+
+# Pandora-Pedia Tab:
+
+### Quick Actions:
+- Displays discover all articles, mark as discovered, read, and undiscovered for selected article
+
+### Discovery Progress:
+- Displays all articles that are discovered as a percentage
+
+### Statistics:
+- Displays total articles
+
+### Filters:
+- Displays article filter options
+
+### Knowledge Base:
+- Displays different article types
+
+### Encyclopedia Articles:
+- Displays all pandora-pedia articles
+
+# Missions Tab:
+
+### Mission Overview:
+- Displays missions completed as a percentage
+
+### Statistics:
+- Displays total missions
+
+### Filters:
+- Displays mission filter options
+
+### Status Breakdown:
+- Displays different mission categories
+
+### Mission Progress:
+- Displays all missions
+
+# Map Pins Tab:
+
+### Quick Actions:
+- Displays unlock & lock all map pins, and unlock & lock selected pins
+
+### Statistics:
+- Displays total map pins
+
+### Filters:
+- Displays map pins filter options
+
+### Discovered Locations:
+- Displays all locations
+
+# Sounds Tab:
+
+### Discovery Overview:
+- Displays number of sounds discovered
+
+### Statistics:
+- Displays total sounds
+
+### Filters:
+- Displays sound filter options
+
+### Category Breakdown:
+- Displays different sound types
+
+### Discovered Sounds:
+- Displays all sounds
+
+# Tutorial Database Tab:
+
+### Progress Overview:
+- Displays all completed tutorial as a percentage
+
+### Statistics:
+- Displays total tutorials
+
+### Filters:
+- Displays tutorial filter options
+
+### Category Progress:
+- Displays different tutorial types
+
+### Tutorial Completion Status:
+- Displays all tutorials
+
+# Vehicle Knowledge Tab:
+
+### Travel Status:
+- Displays if player has completed fast travel tutorial
+
+### Statistics:
+- Displays total vehicles player has entered
+
+### Filters:
+- Displays vehicle filter options
+
+### Type Breakdown:
+- Displays different vehicle types
+
+### Vehicle Experience:
+- Displays all vehicles
+
+# Skills Tab:
+
+### Statistics:
+- Displays total skills
+
+### Filters:
+- Displays skill filter options
+
+### Character Skills:
+- Displays different skill types used by the player, animals, plants, npcs, etc.
+
+# XML Viewer: 
+
+### XML Section:
+- Displays all readable xml data from the save file
 
 # Screenshots
 
