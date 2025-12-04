@@ -46,7 +46,7 @@ from dataclasses import dataclass
 @dataclass
 class SaveEditorConfig:
     """Configuration settings for the Save Editor"""
-    app_title: str = "Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.1"
+    app_title: str = "Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.1.1"
     window_geometry: str = "1400x900"  # Changed from "1800x1100"
     min_window_size: tuple = (1400, 900)  # Changed from (1200, 800)
     icon_path: str = os.path.join("icon", "avatar_icon.ico")

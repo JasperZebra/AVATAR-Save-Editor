@@ -19,7 +19,7 @@ class VersionSelector:
         
         # Create a new root window
         self.root = tk.Tk()
-        self.root.title("Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.1")
+        self.root.title("Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.1.1")
         self.root.geometry("1400x800")
         self.root.resizable(False, False)
         
@@ -99,7 +99,7 @@ class VersionSelector:
         # Main title
         self.canvas.create_text(
             100, 80, 
-            text="🎮 Avatar: The Game Save Editor Version 2.1",
+            text="🎮 Avatar: The Game Save Editor Version 2.1.1",
             font=('Segoe UI', 28, 'bold'),
             fill='white',
             anchor=tk.NW
@@ -117,7 +117,7 @@ class VersionSelector:
         # Version info
         self.canvas.create_text(
             100, 160,
-            text="Made by: Jasper_Zebra | Version 2.1",
+            text="Made by: Jasper_Zebra | Version 2.1.1",
             font=('Segoe UI', 10),
             fill='#bbbbbb',
             anchor=tk.NW
