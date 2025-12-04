@@ -577,8 +577,14 @@ class SaveEditor:
             return
         
         try:
+            # Get default save game directory for Avatar
+            default_dir = self._get_default_save_directory()
+            
             # File selection
-            file_path = filedialog.askopenfilename(filetypes=self.file_ops.get_file_types())
+            file_path = filedialog.askopenfilename(
+                filetypes=self.file_ops.get_file_types(),
+                initialdir=default_dir
+            )
             if not file_path:
                 return
             
@@ -602,6 +608,35 @@ class SaveEditor:
         except Exception as e:
             self.logger.error(f"Failed to load save file: {e}", exc_info=True)
             show_error("Error", f"Failed to load save file: {e}")
+
+    def _get_default_save_directory(self):
+        """Get the default Avatar save game directory for the current user"""
+        try:
+            # Get the current user's Documents folder
+            if sys.platform == "win32":
+                # Windows
+                import os
+                documents = os.path.expanduser("~\\Documents")
+                avatar_saves = os.path.join(documents, "My Games", "Avatar", "Saved Games")
+            else:
+                # For non-Windows systems, fall back to home directory
+                avatar_saves = os.path.expanduser("~")
+            
+            # Check if the directory exists, if not return Documents or home
+            if os.path.exists(avatar_saves):
+                self.logger.debug(f"Using default save directory: {avatar_saves}")
+                return avatar_saves
+            else:
+                self.logger.warning(f"Avatar save directory not found: {avatar_saves}")
+                # Fall back to Documents folder or user's home directory
+                fallback = os.path.expanduser("~\\Documents") if sys.platform == "win32" else os.path.expanduser("~")
+                self.logger.debug(f"Using fallback directory: {fallback}")
+                return fallback
+                
+        except Exception as e:
+            self.logger.error(f"Error determining default save directory: {e}")
+            # Final fallback to current directory
+            return os.getcwd()
 
     def _check_unsaved_changes(self) -> bool:
         """Check for unsaved changes and prompt user"""

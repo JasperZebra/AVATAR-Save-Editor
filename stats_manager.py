@@ -760,7 +760,7 @@ class StatsManager:
         """Create mappings for skill IDs to their actual names"""
         self.rda_skill_mappings = {
 
-            "370163335": "Ultrasonic Repulsor IV",
+            "370163335":  "Ultrasonic Repulsor IV",
             "339641018":  "Samson Vehicle Spawn",
             "3619269117": "Zeta Field IV",
             "2857450382": "Boat Vehicle Spawn",
@@ -774,7 +774,12 @@ class StatsManager:
             "4073911841": "Tactical Strike IV",
             "1522936139": "Dove Vehicle Spawn",
             "863723867":  "Berserk IV",
-            "861432372": "Buggy Vehicle Spawn",
+            "861432372":  "Buggy Vehicle Spawn",
+
+            "1959749094": "Elitle Training I",
+            "1719323144": "Ultrasonic Repulsor I",
+            "527383063":  "Genetic Regenerator I",
+            "3043422876": "Chromatic Blend I",
         }
         
         self.navi_skill_mappings = {
@@ -1902,7 +1907,7 @@ class StatsManager:
             if faction in ["Na'vi", "Navi"]:
                 max_ep = 500000  # Max EP for Na'vi
             else:  # RDA or Undecided
-                max_ep = 500000  # Max EP for RDA
+                max_ep = 500000 # Max EP for RDA
             
             # Update the EP display
             ep_widget = self.entries["TotalEP"]
