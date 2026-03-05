@@ -61,53 +61,64 @@ class PandoraPediaManager:
         search_entry.bind("<KeyRelease>", self._apply_filter)
 
     def create_sidebar(self, parent):
-        """Create the left sidebar with actions and statistics"""
-        sidebar_frame = ttk.Frame(parent, width=300)
-        sidebar_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15))
+        """Create the left sidebar with tabbed interface for actions and stats"""
+        sidebar_frame = ttk.Frame(parent, width=350)
+        sidebar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 15))
         sidebar_frame.pack_propagate(False)
         
-        # === QUICK ACTIONS SECTION ===
-        actions_frame = ttk.LabelFrame(sidebar_frame, text="⚡ Quick Actions", padding=15)
-        actions_frame.pack(fill=tk.X, pady=(0, 15))
+        # Create notebook (tab container)
+        self.sidebar_notebook = ttk.Notebook(sidebar_frame)
+        self.sidebar_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Primary action button
+        # === QUICK ACTIONS TAB ===
+        actions_tab = ttk.Frame(self.sidebar_notebook, padding=15)
+        self.sidebar_notebook.add(actions_tab, text="⚡ Quick Actions")
+        
+        # Primary action section
+        primary_frame = ttk.LabelFrame(actions_tab, text="All Articles", padding=15)
+        primary_frame.pack(fill=tk.X, pady=(0, 15))
+        
         self.discover_all_button = ttk.Button(
-            actions_frame, text="🔓 Discover All Articles", 
+            primary_frame, text="🔓 Discover All Articles", 
             command=self._unlock_all_articles,
             style="Accent.TButton"
         )
-        self.discover_all_button.pack(fill=tk.X, pady=(0, 10))
+        self.discover_all_button.pack(fill=tk.X)
         
-        # Separator
-        ttk.Separator(actions_frame, orient='horizontal').pack(fill=tk.X, pady=10)
-        
-        # Selection-based actions
-        selection_label = ttk.Label(actions_frame, text="Selected Articles:", font=('Segoe UI', 9, 'bold'))
-        selection_label.pack(anchor=tk.W, pady=(0, 5))
+        # Selection-based actions section
+        selection_frame = ttk.LabelFrame(actions_tab, text="Selected Articles", padding=15)
+        selection_frame.pack(fill=tk.X)
         
         self.mark_discovered_button = ttk.Button(
-            actions_frame, text="📖 Mark as Discovered", 
+            selection_frame, text="📖 Mark as Discovered", 
             command=lambda: self._set_selected_status("Discovered | Not Seen"),
             state="disabled"
         )
         self.mark_discovered_button.pack(fill=tk.X, pady=(0, 5))
         
         self.mark_read_button = ttk.Button(
-            actions_frame, text="✅ Mark as Read", 
+            selection_frame, text="✅ Mark as Read", 
             command=lambda: self._set_selected_status("Discovered | Has Seen"),
             state="disabled"
         )
         self.mark_read_button.pack(fill=tk.X, pady=(0, 5))
         
         self.mark_undiscovered_button = ttk.Button(
-            actions_frame, text="❌ Mark as Undiscovered", 
+            selection_frame, text="❌ Mark as Undiscovered", 
             command=lambda: self._set_selected_status("Not Discovered"),
             state="disabled"
         )
         self.mark_undiscovered_button.pack(fill=tk.X)
         
+        # === STATISTICS TAB ===
+        stats_tab = ttk.Frame(self.sidebar_notebook, padding=15)
+        self.sidebar_notebook.add(stats_tab, text="📊 Statistics")
+        
+        # Use simple frame instead of canvas with scrollbar
+        self.stats_scrollable_frame = stats_tab
+        
         # === DISCOVERY OVERVIEW ===
-        overview_frame = ttk.LabelFrame(sidebar_frame, text="📊 Discovery Progress", padding=15)
+        overview_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="📊 Discovery Progress", padding=15)
         overview_frame.pack(fill=tk.X, pady=(0, 15))
         
         # Large discovery display
@@ -129,7 +140,7 @@ class PandoraPediaManager:
         self.progress_bar.pack(fill=tk.X, pady=(10, 0))
         
         # === STATISTICS SECTION ===
-        stats_frame = ttk.LabelFrame(sidebar_frame, text="📈 Statistics", padding=15)
+        stats_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="📈 Statistics", padding=15)
         stats_frame.pack(fill=tk.X, pady=(0, 15))
         
         # Create statistics with modern layout
@@ -139,7 +150,7 @@ class PandoraPediaManager:
         self.create_stat_item(stats_frame, "❌", "Undiscovered", "0", "undiscovered_articles_label")
         
         # === FILTER SECTION ===
-        filter_frame = ttk.LabelFrame(sidebar_frame, text="🔍 Filters", padding=15)
+        filter_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="🔍 Filters", padding=15)
         filter_frame.pack(fill=tk.X, pady=(0, 15))
         
         ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
@@ -151,7 +162,6 @@ class PandoraPediaManager:
         filter_combo.set("All Articles")
         filter_combo.pack(fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
-        
 
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
@@ -489,7 +499,7 @@ class PandoraPediaManager:
         # Create detailed article information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Article Details - {article_data['title']}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("683x384")
         detail_window.resizable(True, True)
         
         # Main frame with padding

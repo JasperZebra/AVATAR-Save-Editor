@@ -182,46 +182,57 @@ class AchievementsManager:
         search_entry.bind("<KeyRelease>", self._apply_filter)
 
     def create_sidebar(self, parent):
-        """Create the left sidebar with actions and statistics - UPDATED VERSION"""
-        sidebar_frame = ttk.Frame(parent, width=300)
-        sidebar_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15))
+        """Create the left sidebar with tabbed interface for actions and stats"""
+        sidebar_frame = ttk.Frame(parent, width=350)
+        sidebar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 15))
         sidebar_frame.pack_propagate(False)
         
-        # === QUICK ACTIONS SECTION ===
-        actions_frame = ttk.LabelFrame(sidebar_frame, text="⚡ Quick Actions", padding=15)
-        actions_frame.pack(fill=tk.X, pady=(0, 15))
+        # Create notebook (tab container)
+        self.sidebar_notebook = ttk.Notebook(sidebar_frame)
+        self.sidebar_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Primary action button
+        # === QUICK ACTIONS TAB ===
+        actions_tab = ttk.Frame(self.sidebar_notebook, padding=15)
+        self.sidebar_notebook.add(actions_tab, text="⚡ Quick Actions")
+        
+        # Primary action section
+        primary_frame = ttk.LabelFrame(actions_tab, text="All Achievements", padding=15)
+        primary_frame.pack(fill=tk.X, pady=(0, 15))
+        
         self.complete_all_button = ttk.Button(
-            actions_frame, text="🏆 Complete All Achievements", 
+            primary_frame, text="🏆 Complete All Achievements", 
             command=self._complete_all_achievements,
             style="Accent.TButton"
         )
-        self.complete_all_button.pack(fill=tk.X, pady=(0, 10))
+        self.complete_all_button.pack(fill=tk.X)
         
-        # Separator
-        ttk.Separator(actions_frame, orient='horizontal').pack(fill=tk.X, pady=10)
-        
-        # Selection-based actions
-        selection_label = ttk.Label(actions_frame, text="Selected Achievements:", font=('Segoe UI', 9, 'bold'))
-        selection_label.pack(anchor=tk.W, pady=(0, 5))
+        # Selection-based actions section
+        selection_frame = ttk.LabelFrame(actions_tab, text="Selected Achievements", padding=15)
+        selection_frame.pack(fill=tk.X)
         
         self.complete_selected_button = ttk.Button(
-            actions_frame, text="✅ Complete Selected", 
+            selection_frame, text="✅ Complete Selected", 
             command=self._complete_selected,
             state="disabled"
         )
         self.complete_selected_button.pack(fill=tk.X, pady=(0, 5))
         
         self.reset_selected_button = ttk.Button(
-            actions_frame, text="🔄 Reset Selected", 
+            selection_frame, text="🔄 Reset Selected", 
             command=self._reset_selected,
             state="disabled"
         )
         self.reset_selected_button.pack(fill=tk.X)
         
+        # === STATISTICS TAB ===
+        stats_tab = ttk.Frame(self.sidebar_notebook, padding=15)
+        self.sidebar_notebook.add(stats_tab, text="📊 Statistics")
+        
+        # Use simple frame instead of canvas with scrollbar
+        self.stats_scrollable_frame = stats_tab
+        
         # === ACHIEVEMENT OVERVIEW ===
-        overview_frame = ttk.LabelFrame(sidebar_frame, text="🏆 Achievement Progress", padding=15)
+        overview_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="🏆 Achievement Progress", padding=15)
         overview_frame.pack(fill=tk.X, pady=(0, 15))
         
         # Large completion display
@@ -243,7 +254,7 @@ class AchievementsManager:
         self.progress_bar.pack(fill=tk.X, pady=(10, 0))
         
         # === STATISTICS SECTION ===
-        stats_frame = ttk.LabelFrame(sidebar_frame, text="📊 Statistics", padding=15)
+        stats_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="📊 Statistics", padding=15)
         stats_frame.pack(fill=tk.X, pady=(0, 15))
         
         # Create statistics with modern layout
@@ -252,19 +263,18 @@ class AchievementsManager:
         self.create_stat_item(stats_frame, "⏸️", "Not Started", "0", "not_started_achievements_label")
         
         # === FILTER SECTION ===
-        filter_frame = ttk.LabelFrame(sidebar_frame, text="🔍 Filters", padding=15)
+        filter_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="🔍 Filters", padding=15)
         filter_frame.pack(fill=tk.X, pady=(0, 15))
         
         ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
         
-        # UPDATED: Fixed filter options to match new categories
         filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
                                 values=["All Achievements", "✅ Completed", "⏸️ Not Started"],
                                 state="readonly", font=('Segoe UI', 9))
         filter_combo.set("All Achievements")
         filter_combo.pack(fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self._apply_filter)
-        
+
     def create_stat_item(self, parent, icon, label, value, var_name):
         """Create a statistics item with icon, label, and value"""
         stat_frame = ttk.Frame(parent)

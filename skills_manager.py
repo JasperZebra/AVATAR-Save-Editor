@@ -425,7 +425,7 @@ class SkillsManager:
         # Create detailed skill information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Skill Details - {skill_name}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("683x384")
         detail_window.resizable(True, True)
          
         # Main frame with padding
@@ -497,164 +497,271 @@ class SkillsManager:
     def _get_skill_info(self, skill_id):
         """Map skill ID to name and category with enhanced data"""
         
-        # Define skill categories with enhanced information
-        combat_skills = {
-            "370163335": "Rapid Fire",
-            "1588994160": "Precision Shot",
-            "2288728861": "Burst Fire",
-            "1298333286": "Quick Reload",
-            "1749835489": "Headshot",
-            "2901239959": "Combat Roll",
-            "228756694": "Suppression Fire",
-            "2122270851": "Incendiary Rounds",
-            "2193097390": "Frag Grenade",
-            "2282375423": "Armor Piercing"
+        # Define skill categories based on actual game skills
+        
+        # RDA Combat Enhancement Skills
+        rda_combat_enhancement = {
+            "1959749094": "Elite Training I",
+            "3989189724": "Elite Training II",
+            "2596340938": "Elite Training III",
+            "77959529": "Elite Training IV",
+            "1125225940": "Berserk I",
+            "3659056238": "Berserk II",
+            "2904552696": "Berserk III",
+            "863723867": "Berserk IV",
+            "2193097390": "Tactical Strike I",
+            "464605972": "Tactical Strike II",
+            "1823892354": "Tactical Strike III",
+            "4073911841": "Tactical Strike IV",
         }
         
-        survival_skills = {
-            "3121856597": "Health Regeneration",
-            "208683785": "Resource Efficiency",
-            "4172838722": "Scavenger",
-            "1054477512": "Stamina Boost",
-            "1906639931": "Environmental Resistance",
-            "3989189724": "Heat Resistance",
-            "138960729": "Cold Resistance",
-            "1987225269": "Toxin Resistance",
-            "3072205389": "Quick Recovery",
-            "1147345197": "Endurance"
+        # RDA Defensive/Support Skills
+        rda_defensive = {
+            "2815647090": "Zeta Field I",
+            "1054477512": "Zeta Field II",
+            "1239235678": "Zeta Field III",
+            "3619269117": "Zeta Field IV",
+            "527383063": "Genetic Regenerator I",
+            "2254859181": "Genetic Regenerator II",
+            "4049689403": "Genetic Regenerator III",
+            "1862651544": "Genetic Regenerator IV",
+            "3043422876": "Chromatic Blend I",
+            "745513766": "Chromatic Blend II",
+            "1533580208": "Chromatic Blend III",
+            "3305899539": "Chromatic Blend IV",
         }
         
-        stealth_skills = {
-            "3619269117": "Silent Movement",
-            "3919303244": "Camouflage",
-            "707441961": "Enhanced Vision",
-            "1533580208": "Distraction",
-            "1823892354": "Stealth Takedown",
-            "2248739839": "Shadow Step",
-            "464605972": "Quick Strike",
-            "1578904643": "Noise Reduction",
-            "2507739827": "Track Covering",
-            "3843286588": "Night Vision"
+        # RDA Mobility/Utility Skills
+        rda_mobility = {
+            "1719323144": "Ultrasonic Repulsor I",
+            "4285766578": "Ultrasonic Repulsor II",
+            "2289347364": "Ultrasonic Repulsor III",
+            "370163335": "Ultrasonic Repulsor IV",
+            "3737562477": "Sacrifice Grade I",
+            "1204813015": "Sacrifice Grade II",
+            "818465857": "Sacrifice Grade III",
+            "2930530786": "Sacrifice Grade IV",
         }
         
-        movement_skills = {
-            "4279072873": "Sprint",
-            "4285766578": "Climbing",
-            "1774875854": "Swimming",
-            "2149792658": "Jump Height",
-            "4141500320": "Fall Damage Reduction",
-            "527383063": "Agility",
-            "611800566": "Acrobatics",
-            "863723867": "Wall Run",
-            "1533394898": "Balance",
-            "2479233397": "Terrain Navigation"
+        # RDA Vehicle Spawns
+        rda_vehicles = {
+            "339641018": "Samson Vehicle Spawn",
+            "2857450382": "Boat Vehicle Spawn",
+            "3179152460": "Scorpion Vehicle Spawn",
+            "767629789": "AMP Suit Vehicle Spawn",
+            "3713403672": "ATV Vehicle Spawn",
+            "1399874912": "Dragon Vehicle Spawn",
+            "1522936139": "Dove Vehicle Spawn",
+            "861432372": "Buggy Vehicle Spawn",
         }
         
-        crafting_skills = {
-            "2596340938": "Weapon Crafting",
-            "2815647090": "Armor Crafting",
-            "771604749": "Tool Crafting",
-            "2120156884": "Resource Gathering",
-            "154070465": "Material Analysis",
-            "1711548883": "Advanced Engineering",
-            "1785634812": "Recycling",
-            "2057681984": "Improvisation",
-            "2779483555": "Medical Supplies",
-            "2953989487": "Ammunition Crafting"
+        # Na'vi Combat Skills
+        navi_combat = {
+            "4047834971": "Titan's Bash I",
+            "1749835489": "Titan's Bash II",
+            "525037175": "Titan's Bash III",
+            "2167405524": "Titan's Bash IV",
+            "2953989487": "Swarm's Wrath I",
+            "689642709": "Swarm's Wrath II",
+            "1578904643": "Swarm's Wrath III",
+            "3229137376": "Swarm's Wrath IV",
+            "3819761146": "Whirl of Fury I",
+            "2057681984": "Whirl of Fury II",
+            "228756694": "Whirl of Fury III",
+            "2479233397": "Whirl of Fury IV",
         }
         
-        navi_skills = {
-            "3149590643": "Ikran Bond",
-            "3819761146": "Direhorse Bond",
-            "480060929": "Na'vi Language",
-            "525037175": "Tribal Knowledge",
-            "1411228025": "Forest Navigation",
-            "2932769824": "Plant Identification",
-            "3043422876": "Animal Handling",
-            "3605504349": "Hunting",
-            "4047834971": "Tsaheylu Mastery",
-            "4221139584": "Cultural Understanding"
+        # Na'vi Support/Healing Skills
+        navi_support = {
+            "2278341981": "Pandora's Union I",
+            "516287719": "Pandora's Union II",
+            "1774378097": "Pandora's Union III",
+            "4154870226": "Pandora's Union IV",
+            "1711548883": "Eywa's Breath I",
+            "4279072873": "Eywa's Breath II",
+            "2282375423": "Eywa's Breath III",
+            "376364380": "Eywa's Breath IV",
         }
         
-        rda_skills = {
-            "929187032": "AMP Suit Operation",
-            "1073248985": "Vehicle Operation",
-            "1849804230": "Security Systems",
-            "1887679822": "Communications",
-            "2824265184": "Equipment Maintenance",
-            "3490889542": "Data Analysis",
-            "62547143": "Mining Operations",
-            "77959529": "Heavy Weapons",
-            "376364380": "Technology Interface",
-            "521610040": "Science Research"
+        # Na'vi Defensive Skills
+        navi_defensive = {
+            "2507739827": "Pandora's Protection I",
+            "208683785": "Pandora's Protection II",
+            "2071425951": "Pandora's Protection III",
+            "3843286588": "Pandora's Protection IV",
+            "1411228025": "Beast's Aegis I",
+            "3440701635": "Beast's Aegis II",
+            "3121856597": "Beast's Aegis III",
+            "611800566": "Beast's Aegis IV",
         }
         
-        specialist_skills = {
-            "699117554": "Sniper Training",
-            "896499985": "Demolitions Expert",
-            "1539660776": "Tactical Analysis",
-            "3305899539": "Squad Command",
-            "4049689403": "Armor Specialist",
-            "1719323144": "Field Medic",
-            "1745871194": "Reconnaissance",
-            "2831657996": "Electronics",
-            "3130830861": "Hacking",
-            "3440701635": "Sabotage"
+        # Na'vi Mobility Skills
+        navi_mobility = {
+            "4044964372": "Kinetic Dash I",
+            "1745884078": "Kinetic Dash II",
+            "521610040": "Kinetic Dash III",
+            "2171844251": "Kinetic Dash IV",
         }
         
-        special_abilities = {
-            "3659056238": "Aerial Assault",
-            "651760328": "Berserker Rage",
-            "1862651544": "Stealth Camouflage",
-            "1745884078": "Time Perception",
-            "2071425951": "Enhanced Reflexes",
-            "745513766": "Adrenaline Surge",
-            "4073911841": "Force Field",
-            "689642709": "Tracking Vision",
-            "895550929": "Thermal Vision",
-            "1239235678": "Enhanced Strength"
+        # Na'vi Mount Spawns
+        navi_mounts = {
+            "1147099810": "Direhorse Mount Spawn",
+            "2906455959": "Leonopteryx Mount Spawn",
+            "3661352705": "Banshee Mount Spawn",
+            "875933229": "Elite Axe Bodyguard Spawn",
+            "1127390907": "Elite Dual Blades Bodyguard Spawn",
+            "3549266730": "Elite Fighting Staff Bodyguard Spawn",
         }
         
-        exploration_skills = {
-            "1761588079": "Map Reading",
-            "1959749094": "Pathfinding",
-            "2278341981": "Grappling Hook",
-            "3305111690": "Climbing Gear",
-            "4044964372": "Gliding",
-            "1125225940": "Cave Navigation",
-            "2171844251": "River Navigation",
-            "482995089": "Tracking",
-            "2289347364": "Mountaineering",
-            "2904552696": "Weather Prediction"
+        # Special Effects and Status Skills (from additional RDA skills)
+        special_effects = {
+            "1588994160": "Effect_ScaledFire_060",
+            "154070465": "Effect_ScaledFire_100",
+            "3919303244": "Effect_SlingDart_Overtime",
+            "929187032": "SolsDelight_Blind",
+            "482995089": "Leucomelas_Blind",
+            "2831657996": "Root10sec",
+            "3149590643": "Poison_cloud",
+            "1761588079": "HellfireWasp_slow",
         }
         
-        vehicle_skills = {
-            "4154870226": "Helicopter Piloting",
-            "1774378097": "ATV Operation",
-            "2167405524": "Tank Operation",
-            "2254859181": "Boat Navigation",
-            "3229137376": "Aircraft Operation",
-            "218464304": "Defensive Driving",
-            "516287719": "Evasive Maneuvers",
-            "3548279530": "Vehicle Repair"
+        # Invulnerability and Protection Effects
+        protection_effects = {
+            "707441961": "Invulnerable",
+            "2901239959": "MP_CorpRespawnInvulnerability",
+            "2149792658": "MP_NaviRespawnInvulnerability",
+            "2120156884": "MP_CorpShield",
+            "896499985": "MP_NaviShield",
         }
         
-        # Combine all categories
-        all_skills = {}
-        all_skills.update({id: {"name": name, "category": "Combat"} for id, name in combat_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Survival"} for id, name in survival_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Stealth"} for id, name in stealth_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Movement"} for id, name in movement_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Crafting"} for id, name in crafting_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Na'vi Connection"} for id, name in navi_skills.items()})
-        all_skills.update({id: {"name": name, "category": "RDA Training"} for id, name in rda_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Specialist"} for id, name in specialist_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Special Abilities"} for id, name in special_abilities.items()})
-        all_skills.update({id: {"name": name, "category": "Exploration"} for id, name in exploration_skills.items()})
-        all_skills.update({id: {"name": name, "category": "Vehicle"} for id, name in vehicle_skills.items()})
+        # Multiplayer Hills/Zones
+        mp_zones = {
+            "2288728861": "MP_HillOfProtection_C",
+            "4172838722": "MP_HillOfPower_C",
+            "2248739839": "MP_HillOfPower_N",
+            "4141500320": "MP_HillOfProtection_N",
+            "3605504349": "MP_HillOfRejuvenation_C",
+            "2824265184": "MP_HillOfRejuvenation_N",
+        }
         
-        # Return skill info or default value
-        if skill_id in all_skills:
-            return all_skills[skill_id]
-        else:
-            return {"name": f"Unknown Skill ({skill_id})", "category": "Miscellaneous"}
+        # Multiplayer Special Effects
+        mp_effects = {
+            "699117554": "MP_NAVI_Effect_MythicArchery",
+            "3130830861": "MP_CORP_Effect_ArmorPiercing",
+        }
+        
+        # Enemy AI Skills
+        enemy_skills = {
+            "1298333286": "EnemyCSS_3A_1",
+            "3072205389": "EnemyNPG_2A_4",
+            "1147345197": "EnemyNME_3A_4",
+            "2779483555": "EnemyNPG_1A_4",
+            "1887679822": "Enemy_NWM_2A",
+            "651760328": "Enemy_NWM_4A",
+            "3548279530": "EnemyNBD_1A_4",
+        }
+        
+        # Creature/Animal Skills
+        creature_skills = {
+            "138960729": "Enemy_Viperwolf_EliteWasp",
+            "1849804230": "Alpha_Viperwolf",
+            "1785634812": "Viperwolf_Berzerk",
+            "3490889542": "Viperwolf_Heal_LVL9_13",
+            "62547143": "Viperwolf_Heal_LVL1_4",
+            "218464304": "Viperwolf_Heal_LVL5_8",
+            "1745871194": "Viperwolf_Camouflage",
+            "3305111690": "Viperwolf_Bite",
+            "1533394898": "Enemy_Summon_BlackViperwolf",
+            "895550929": "Enemy_Summon_Viperwolf_Galactonotus",
+            "480060929": "Hexapede",
+        }
+        
+        # Hammerhead/Boss Skills
+        boss_skills = {
+            "1906639931": "Hammerhead_Lvl5To8_AttackWarning",
+            "771604749": "Hammerhead_Lvl9To13_AttackWarning",
+            "2932769824": "Hammerhead_Lvl5To8_AttackWarning_LowHealth",
+            "1073248985": "Hammerhead_Lvl1To4_AttackWarning",
+            "1539660776": "Hammerhead_Lvl9To13_AttackWarning_LowHealth",
+            "2122270851": "ScarerShockWave",
+        }
+        
+        # Environmental/Fear Effects
+        environmental_effects = {
+            "1987225269": "OxygenPod_Fear",
+            "1774875854": "Amp_JumpFear",
+        }
+        
+        # Unknown/Unclassified Skills
+        unknown_skills = {
+            "4221139584": "RDA Skill 4221139584",
+            "3396941018": "RDA Skill 3396941018",
+        }
+        
+        # Combine all categories into a master dictionary
+        all_skills = {
+            **rda_combat_enhancement,
+            **rda_defensive,
+            **rda_mobility,
+            **rda_vehicles,
+            **navi_combat,
+            **navi_support,
+            **navi_defensive,
+            **navi_mobility,
+            **navi_mounts,
+            **special_effects,
+            **protection_effects,
+            **mp_zones,
+            **mp_effects,
+            **enemy_skills,
+            **creature_skills,
+            **boss_skills,
+            **environmental_effects,
+            **unknown_skills,
+        }
+        
+        # Determine category for the skill
+        category = "Unknown"
+        if skill_id in rda_combat_enhancement:
+            category = "RDA Combat Enhancement"
+        elif skill_id in rda_defensive:
+            category = "RDA Defensive/Support"
+        elif skill_id in rda_mobility:
+            category = "RDA Mobility/Utility"
+        elif skill_id in rda_vehicles:
+            category = "RDA Vehicle Spawn"
+        elif skill_id in navi_combat:
+            category = "Na'vi Combat"
+        elif skill_id in navi_support:
+            category = "Na'vi Support/Healing"
+        elif skill_id in navi_defensive:
+            category = "Na'vi Defensive"
+        elif skill_id in navi_mobility:
+            category = "Na'vi Mobility"
+        elif skill_id in navi_mounts:
+            category = "Na'vi Mount Spawn"
+        elif skill_id in special_effects:
+            category = "Special Effects"
+        elif skill_id in protection_effects:
+            category = "Protection Effects"
+        elif skill_id in mp_zones:
+            category = "Multiplayer Zones"
+        elif skill_id in mp_effects:
+            category = "Multiplayer Effects"
+        elif skill_id in enemy_skills:
+            category = "Enemy AI"
+        elif skill_id in creature_skills:
+            category = "Creature Skills"
+        elif skill_id in boss_skills:
+            category = "Boss Skills"
+        elif skill_id in environmental_effects:
+            category = "Environmental Effects"
+        
+        # Return skill info
+        skill_name = all_skills.get(skill_id, f"Unknown Skill {skill_id}")
+        
+        return {
+            "id": skill_id,
+            "name": skill_name,
+            "category": category
+        }

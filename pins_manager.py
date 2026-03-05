@@ -62,52 +62,63 @@ class PinsManager:
         search_entry.bind("<KeyRelease>", self._apply_filter)
 
     def create_sidebar(self, parent):
-        """Create the left sidebar with controls and statistics"""
-        sidebar_frame = ttk.Frame(parent, width=280)
-        sidebar_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15))
-        sidebar_frame.pack_propagate(False)  # Maintain fixed width
+        """Create the left sidebar with tabbed interface for controls and stats"""
+        sidebar_frame = ttk.Frame(parent, width=350)
+        sidebar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 15))
+        sidebar_frame.pack_propagate(False)
         
-        # === QUICK ACTIONS SECTION ===
-        actions_frame = ttk.LabelFrame(sidebar_frame, text="⚡ Quick Actions", padding=15)
-        actions_frame.pack(fill=tk.X, pady=(0, 15))
+        # Create notebook (tab container)
+        self.sidebar_notebook = ttk.Notebook(sidebar_frame)
+        self.sidebar_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Primary action buttons (larger, more prominent)
+        # === QUICK ACTIONS TAB ===
+        actions_tab = ttk.Frame(self.sidebar_notebook, padding=15)
+        self.sidebar_notebook.add(actions_tab, text="⚡ Quick Actions")
+        
+        # Primary actions section
+        primary_frame = ttk.LabelFrame(actions_tab, text="All Pins", padding=15)
+        primary_frame.pack(fill=tk.X, pady=(0, 15))
+        
         self.unlock_all_button = ttk.Button(
-            actions_frame, text="🔓 Unlock All Pins", 
+            primary_frame, text="🔓 Unlock All Pins", 
             command=self.unlock_all_pins,
             style="Accent.TButton"
         )
-        self.unlock_all_button.pack(fill=tk.X, pady=(0, 8))
+        self.unlock_all_button.pack(fill=tk.X, pady=(0, 5))
         
         self.reset_all_button = ttk.Button(
-            actions_frame, text="🔒 Lock All Pins", 
+            primary_frame, text="🔒 Lock All Pins", 
             command=self.reset_all_pins
         )
-        self.reset_all_button.pack(fill=tk.X, pady=(0, 8))
+        self.reset_all_button.pack(fill=tk.X)
         
-        # Separator
-        ttk.Separator(actions_frame, orient='horizontal').pack(fill=tk.X, pady=10)
-        
-        # Selection-based actions
-        selection_label = ttk.Label(actions_frame, text="Selected Pins:", font=('Segoe UI', 9, 'bold'))
-        selection_label.pack(anchor=tk.W, pady=(0, 5))
+        # Selection-based actions section
+        selection_frame = ttk.LabelFrame(actions_tab, text="Selected Pins", padding=15)
+        selection_frame.pack(fill=tk.X)
         
         self.unlock_selected_button = ttk.Button(
-            actions_frame, text="🔓 Unlock Selected", 
+            selection_frame, text="🔓 Unlock Selected", 
             command=self.unlock_selected_pins, 
             state="disabled"
         )
         self.unlock_selected_button.pack(fill=tk.X, pady=(0, 5))
         
         self.lock_selected_button = ttk.Button(
-            actions_frame, text="🔒 Lock Selected", 
+            selection_frame, text="🔒 Lock Selected", 
             command=self.lock_selected_pins, 
             state="disabled"
         )
         self.lock_selected_button.pack(fill=tk.X)
         
+        # === STATISTICS TAB ===
+        stats_tab = ttk.Frame(self.sidebar_notebook, padding=15)
+        self.sidebar_notebook.add(stats_tab, text="📊 Statistics")
+        
+        # Use simple frame instead of canvas with scrollbar
+        self.stats_scrollable_frame = stats_tab
+        
         # === STATISTICS SECTION ===
-        stats_frame = ttk.LabelFrame(sidebar_frame, text="📊 Statistics", padding=15)
+        stats_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="📊 Pin Statistics", padding=15)
         stats_frame.pack(fill=tk.X, pady=(0, 15))
         
         # Create statistics with better visual hierarchy
@@ -128,13 +139,13 @@ class PinsManager:
         self.completion_label.pack(anchor=tk.W, pady=(2, 0))
         
         # === FILTER SECTION ===
-        filter_frame = ttk.LabelFrame(sidebar_frame, text="🔍 Filters", padding=15)
+        filter_frame = ttk.LabelFrame(self.stats_scrollable_frame, text="🔍 Filters", padding=15)
         filter_frame.pack(fill=tk.X)
         
         ttk.Label(filter_frame, text="Show:", font=('Segoe UI', 9, 'bold')).pack(anchor=tk.W, pady=(0, 5))
         
         filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, 
-                                   values=["All Pins", "🔓 Unlocked", "🔒 Locked", "🎮 Single Player", "👥 Multiplayer", "❓ Unreleased"],
+                                   values=["All Pins", "🔓 Unlocked", "🔒 Locked", "🎮 Single Player", "👥 Multiplayer", "⛔ Unreleased"],
                                    state="readonly", font=('Segoe UI', 9))
         filter_combo.set("All Pins")
         filter_combo.pack(fill=tk.X)
@@ -334,7 +345,7 @@ class PinsManager:
             # Create detailed info dialog
             detail_window = tk.Toplevel(self.parent)
             detail_window.title(f"Pin Details - {location_name}")
-            detail_window.geometry("1600x800")
+            detail_window.geometry("683x384")
             detail_window.resizable(True, True)
             
             # Main frame with padding
@@ -494,7 +505,7 @@ class PinsManager:
         # Find matching pin ID by location name
         for pin_id, pin_data in self.pins_data.items():
             pin_location = self._get_location_name(pin_id)
-            clean_location = pin_location.replace(" - MULTIPLAYER", "").replace("FIXME! ", "")
+            clean_location = pin_location.replace(" - MULTIPLAYER", "").replace("NOT USED | ", "")
             if clean_location == location:
                 return pin_id
         
@@ -585,7 +596,7 @@ class PinsManager:
             
             if "MULTIPLAYER" in location_name:
                 categories['multiplayer'].append(pin)
-            elif "FIXME" in location_name:
+            elif "NOT USED" in location_name:
                 categories['Unreleased'].append(pin)
             else:
                 categories['single_player'].append(pin)
@@ -639,9 +650,9 @@ class PinsManager:
             pin_type = "👥 Multiplayer"
             clean_location = location_name.replace(" - MULTIPLAYER", "")
             tag = "unlocked_mp" if unlocked == "1" else "locked"
-        elif "FIXME" in location_name:
+        elif "NOT USED" in location_name:
             pin_type = "❓ Unreleased"
-            clean_location = location_name.replace("FIXME! ", "")
+            clean_location = location_name.replace("NOT USED | ", "")
             tag = "Unreleased"
         else:
             pin_type = "🎮 Single Player"
@@ -714,11 +725,11 @@ class PinsManager:
             return False
         elif filter_value == "🔒 Locked" and unlocked != "0":
             return False
-        elif filter_value == "🎮 Single Player" and ("MULTIPLAYER" in location_name or "FIXME" in location_name):
+        elif filter_value == "🎮 Single Player" and ("MULTIPLAYER" in location_name or "NOT USED" in location_name):
             return False
         elif filter_value == "👥 Multiplayer" and "MULTIPLAYER" not in location_name:
             return False
-        elif filter_value == "❓ Unreleased" and "FIXME" not in location_name:
+        elif filter_value == "❓ Unreleased" and "NOT USED" not in location_name:
             return False
         
         # Apply search
@@ -731,6 +742,7 @@ class PinsManager:
         """Convert pin ID to human-readable location name"""
         location_names = {
             # SP MAPS
+            "2943222331": "IKNIMAYA",
             "3822194552": "HOMETREE",            
             "1057194188": "VA'ERÄ RAMUNONG",
             "1172651822": "THE FEBA",
@@ -744,7 +756,6 @@ class PinsManager:
             "2961077726": "LOST CATHEDRAL",
             "3409126972": "PLAINS OF GOLIATH (KAOLIÄ TEI)",
             "355473279":  "BLUE LAGOON",
-            "2943222331": "IKNIMAYA",
             "615754132":  "HELL'S GATE",
             "837458676":  "TANTALUS (TA'NATASI)",
             # MULTIPLAYER
@@ -760,32 +771,35 @@ class PinsManager:
             "2232107097": "FORT NAVARONE - MULTIPLAYER",
             "3616200713": "STALKER'S VALLEY - MULTIPLAYER",
             "2509501782": "HELL'S GATE - MULTIPLAYER",
-            # FIXME! PINS
-            "105239137":  "FIXME! 105239137",
-            "1504064473": "FIXME! 1504064473",
-            "1578821154": "FIXME! 1578821154",
-            "1628184437": "FIXME! 1628184437",
-            "1741938656": "FIXME! 1741938656",
-            "1771880106": "FIXME! 1771880106",
-            "1782610090": "FIXME! 1782610090",
-            "1865345760": "FIXME! 1865345760",
-            "194406935":  "FIXME! 194406935",
-            "2001468046": "FIXME! 2001468046",
+
+            # WORKING DEV ROOMS
             "2169212369": "Dev Room: Animation Creatures",
-            "2185381138": "FIXME! 2185381138",
-            "2216033045": "FIXME! 2216033045",
-            "2353717556": "FIXME! 2353717556",
-            "2555792139": "FIXME! 2555792139",
-            "2672591835": "FIXME! 2672591835",
-            "3564339531": "FIXME! 3564339531",
-            "3586942544": "FIXME! 3586942544",
-            "3615918544": "FIXME! 3615918544",
-            "3903502716": "FIXME! 3903502716",
             "3975313082": "Dev Room: Orouleau",
-            "4294730242": "FIXME! 4294730242",
-            "470159002":  "FIXME! 470159002",
-            "60855408":   "FIXME! 60855408",
-            "3852438644": "FIXME! 3852438644",
+
+            # NOT USED
+            "3586942544": "NOT USED | coop_pascal_02_l",
+            "105239137":  "NOT USED | plaza_02",
+            "1504064473": "NOT USED | sp_dlc_01",
+            "1578821154": "NOT USED | Z_NewGym",
+            "1628184437": "NOT USED | z_greenhouse",
+            "1741938656": "NOT USED | z_Dev_GenericMissionBriefingHuman",
+            "1771880106": "NOT USED | SP_PierreLuc_FM_02_L",
+            "1782610090": "NOT USED | z_combatbalance_l",
+            "1865345760": "NOT USED | z_QuestGearTesting_L",
+            "194406935":  "NOT USED | avatar_intro",
+            "2001468046": "NOT USED | RiverBank_RenameTest",
+            "2185381138": "NOT USED | demo_e3_tantalus_l1",
+            "2216033045": "NOT USED | SP_Sebastien_HG_01_L",
+            "2353717556": "NOT USED | Gym_Misceleanous",
+            "2555792139": "NOT USED | z_Dev_GenericMissionBriefingNavi",
+            "2672591835": "NOT USED | plaza_01",
+            "3564339531": "NOT USED | z_hometree_01",
+            "3615918544": "NOT USED | gym_ai_multi",
+            "3903502716": "NOT USED | sp_blackperdition_rf_01_l",
+            "4294730242": "NOT USED | z_hellsgate_01",
+            "470159002":  "NOT USED | SP_Pascal_RF03_CORP_L",
+            "60855408":   "NOT USED | pin_menu",
+            "3852438644": "NOT USED | sp_pascal_of_01_l",
         }        
         return location_names.get(pin_id, f"Unreleased Location ({pin_id})")
 

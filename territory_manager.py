@@ -14,6 +14,9 @@ class TerritoryManager:
         self.logger.debug("Initializing Modern TerritoryManager")
         self.parent = parent
         self.main_window = main_window
+
+        self.sound_manager = getattr(main_window, 'sound_manager', None)
+
         self.territory_data = {}
         self.territory_tree = None
         
@@ -23,6 +26,13 @@ class TerritoryManager:
         self.defense_flags_bits = {}
         
         self.setup_modern_ui()
+
+    def _add_hover_sound_to_combobox(self, combobox):
+        """Add hover sound effect to a combobox"""
+        if self.sound_manager and hasattr(self.main_window.config, 'play_hover_sounds'):
+            if self.main_window.config.play_hover_sounds:
+                combobox.bind('<Enter>', lambda e: self.sound_manager.play_sound_effect('hover'))
+        return combobox
 
     def setup_modern_ui(self) -> None:
         # Create main container with padding
@@ -60,63 +70,128 @@ class TerritoryManager:
         subtitle_label.pack(anchor=tk.W)
         
     def create_sidebar(self, parent):
-        """Create the left sidebar with actions, editor, and statistics"""
-        sidebar_frame = ttk.Frame(parent, width=350)
-        sidebar_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15))
+        """Create the left sidebar with tabbed interface for actions and editor"""
+        sidebar_frame = ttk.Frame(parent, width=400)
+        sidebar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 15))
         sidebar_frame.pack_propagate(False)
         
-        # === QUICK ACTIONS SECTION ===
-        actions_frame = ttk.LabelFrame(sidebar_frame, text="⚡ Quick Actions", padding=15)
-        actions_frame.pack(fill=tk.X, pady=(0, 15))
+        # Create notebook (tab container)
+        self.sidebar_notebook = ttk.Notebook(sidebar_frame)
+        self.sidebar_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Hard Mode button
+        # ADD TAB HOVER SOUND (only once per tab)
+        self._last_hovered_sidebar_tab = None  # Track which tab we're hovering over
+        
+        def on_sidebar_tab_hover(event):
+            """Play hover sound when mouse enters a NEW tab"""
+            if self.sound_manager and hasattr(self.main_window.config, 'play_hover_sounds'):
+                if self.main_window.config.play_hover_sounds:
+                    try:
+                        tab_id = self.sidebar_notebook.identify(event.x, event.y)
+                        # Only play sound if we're over a tab AND it's a different tab than before
+                        if tab_id and tab_id != self._last_hovered_sidebar_tab:
+                            self._last_hovered_sidebar_tab = tab_id
+                            self.sound_manager.play_sound_effect('hover')
+                        elif not tab_id:
+                            # Reset when not hovering over any tab
+                            self._last_hovered_sidebar_tab = None
+                    except:
+                        pass
+        
+        # Bind hover event to the notebook
+        self.sidebar_notebook.bind('<Motion>', on_sidebar_tab_hover)
+        
+        # === QUICK ACTIONS TAB ===
+        actions_tab = ttk.Frame(self.sidebar_notebook, padding=15)
+        self.sidebar_notebook.add(actions_tab, text="⚡ Quick Actions")
+
+        # Hard Mode section
+        hard_mode_frame = ttk.LabelFrame(actions_tab, text="Hard Mode", padding=15)
+        hard_mode_frame.pack(fill=tk.X, pady=(0, 15))
+        
         self.hard_mode_button = ttk.Button(
-            actions_frame, text="💀 Apply Hard Mode", 
+            hard_mode_frame, text="💀 Apply Hard Mode", 
             command=self._apply_hard_mode,
             style="Accent.TButton"
         )
         self.hard_mode_button.pack(fill=tk.X, pady=(0, 5))
         
-        # Info label for hard mode
-        info_label = ttk.Label(actions_frame, 
+        info_label = ttk.Label(hard_mode_frame, 
                               text="⚠️ Don't use if you haven't picked a faction yet!", 
-                              font=('Segoe UI', 8), foreground='orange')
-        info_label.pack(anchor=tk.W, pady=(0, 10))
+                              font=('Segoe UI', 8), foreground='orange',
+                              wraplength=300)
+        info_label.pack(anchor=tk.W)
         
-        # Separator
-        ttk.Separator(actions_frame, orient='horizontal').pack(fill=tk.X, pady=10)
-        
-        # Selection-based actions
-        selection_label = ttk.Label(actions_frame, text="Selected Territory:", font=('Segoe UI', 9, 'bold'))
-        selection_label.pack(anchor=tk.W, pady=(0, 5))
+        # Selection-based actions section
+        selection_frame = ttk.LabelFrame(actions_tab, text="Selected Territory", padding=15)
+        selection_frame.pack(fill=tk.X)
         
         self.apply_changes_button = ttk.Button(
-            actions_frame, text="✅ Apply Changes", 
+            selection_frame, text="✅ Apply Changes", 
             command=self._apply_territory_changes,
             state="disabled"
         )
         self.apply_changes_button.pack(fill=tk.X, pady=(0, 5))
         
         self.reset_editor_button = ttk.Button(
-            actions_frame, text="🔄 Reset Editor", 
+            selection_frame, text="🔄 Reset Editor", 
             command=self._reset_territory_editors,
             state="disabled"
         )
         self.reset_editor_button.pack(fill=tk.X)
-                                
-        # === TERRITORY EDITOR ===
-        self.create_territory_editor(sidebar_frame)
-
+        
+        # === TERRITORY EDITOR TAB ===
+        editor_tab = ttk.Frame(self.sidebar_notebook)
+        self.sidebar_notebook.add(editor_tab, text="✏️ Territory Editor")
+        
+        # Create canvas and scrollbar for territory editor
+        editor_canvas = tk.Canvas(editor_tab, highlightthickness=0, bg='#1e1e1e')
+        editor_scrollbar = ttk.Scrollbar(editor_tab, orient="vertical", command=editor_canvas.yview)
+        self.editor_scrollable_frame = ttk.Frame(editor_canvas)
+        
+        self.editor_scrollable_frame.bind(
+            "<Configure>",
+            lambda e: editor_canvas.configure(scrollregion=editor_canvas.bbox("all"))
+        )
+        
+        # Create window with proper width binding
+        canvas_window = editor_canvas.create_window((0, 0), window=self.editor_scrollable_frame, anchor="nw")
+        
+        # Bind canvas width to frame width
+        def _configure_frame(event):
+            editor_canvas.itemconfig(canvas_window, width=event.width)
+        
+        editor_canvas.bind('<Configure>', _configure_frame)
+        editor_canvas.configure(yscrollcommand=editor_scrollbar.set)
+        
+        editor_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        editor_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Enable mousewheel scrolling
+        def _on_mousewheel(event):
+            editor_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def _bind_mousewheel(event):
+            editor_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        def _unbind_mousewheel(event):
+            editor_canvas.unbind_all("<MouseWheel>")
+        
+        editor_canvas.bind('<Enter>', _bind_mousewheel)
+        editor_canvas.bind('<Leave>', _unbind_mousewheel)
+        
+        self.create_territory_editor(self.editor_scrollable_frame)
+        
     def create_territory_editor(self, parent):
         """Create the territory editor section"""
-        editor_frame = ttk.LabelFrame(parent, text="✏️ Territory Editor", padding=15)
-        editor_frame.pack(fill=tk.BOTH, expand=True)
-        
         # Territory editors dictionary
         self.territory_editors = {}
         
+        # Add padding to the parent frame
+        parent.configure(padding=15)
+        
         # Basic Information Section
-        basic_frame = ttk.LabelFrame(editor_frame, text="🏷️ Basic Information", padding=10)
+        basic_frame = ttk.LabelFrame(parent, text="🏷️ Basic Information", padding=10)
         basic_frame.pack(fill=tk.X, pady=(0, 10))
         
         # Faction selection
@@ -126,9 +201,10 @@ class TerritoryManager:
         faction_combo = ttk.Combobox(faction_frame, values=["Undecided", "Na'vi", "RDA"], 
                                     state="readonly", width=15)
         faction_combo.pack(side=tk.RIGHT)
+        self._add_hover_sound_to_combobox(faction_combo)  # ADD THIS LINE
         self.territory_editors["Faction"] = faction_combo
         
-        # Base Units
+        # Base Units (Entry - no hover sound needed)
         base_units_frame = ttk.Frame(basic_frame)
         base_units_frame.pack(fill=tk.X, pady=2)
         ttk.Label(base_units_frame, text="Base Units:", font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT)
@@ -137,10 +213,10 @@ class TerritoryManager:
         self.territory_editors["BaseUnits"] = base_units_entry
         
         # Military Units Section
-        military_frame = ttk.LabelFrame(editor_frame, text="⚔️ Military Units", padding=10)
+        military_frame = ttk.LabelFrame(parent, text="⚔️ Military Units", padding=10)
         military_frame.pack(fill=tk.X, pady=(0, 10))
         
-        # Troops
+        # Troops (Entry - no hover sound needed)
         troops_frame = ttk.Frame(military_frame)
         troops_frame.pack(fill=tk.X, pady=2)
         ttk.Label(troops_frame, text="Troops:", font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT)
@@ -148,7 +224,7 @@ class TerritoryManager:
         troops_entry.pack(side=tk.RIGHT)
         self.territory_editors["Troops"] = troops_entry
         
-        # Ground Units
+        # Ground Units (Entry - no hover sound needed)
         ground_frame = ttk.Frame(military_frame)
         ground_frame.pack(fill=tk.X, pady=2)
         ttk.Label(ground_frame, text="Ground Units:", font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT)
@@ -156,7 +232,7 @@ class TerritoryManager:
         ground_entry.pack(side=tk.RIGHT)
         self.territory_editors["Ground"] = ground_entry
         
-        # Air Units
+        # Air Units (Entry - no hover sound needed)
         air_frame = ttk.Frame(military_frame)
         air_frame.pack(fill=tk.X, pady=2)
         ttk.Label(air_frame, text="Air Units:", font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT)
@@ -165,7 +241,7 @@ class TerritoryManager:
         self.territory_editors["Air"] = air_entry
         
         # Territory Properties Section
-        properties_frame = ttk.LabelFrame(editor_frame, text="🏗️ Territory Properties", padding=10)
+        properties_frame = ttk.LabelFrame(parent, text="🗺️ Territory Properties", padding=10)
         properties_frame.pack(fill=tk.X, pady=(0, 10))
         
         # Home Base
@@ -173,8 +249,9 @@ class TerritoryManager:
         home_base_frame.pack(fill=tk.X, pady=2)
         ttk.Label(home_base_frame, text="Home Base:", font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT)
         home_base_combo = ttk.Combobox(home_base_frame, values=["No", "Yes"], 
-                                      state="readonly", width=15)
+                                    state="readonly", width=15)
         home_base_combo.pack(side=tk.RIGHT)
+        self._add_hover_sound_to_combobox(home_base_combo)  # ADD THIS LINE
         self.territory_editors["HomeBase"] = home_base_combo
         
         # Factory
@@ -184,6 +261,7 @@ class TerritoryManager:
         factory_combo = ttk.Combobox(factory_frame, values=["No", "Yes"], 
                                     state="readonly", width=15)
         factory_combo.pack(side=tk.RIGHT)
+        self._add_hover_sound_to_combobox(factory_combo)  # ADD THIS LINE
         self.territory_editors["SecondaryBase"] = factory_combo
         
         # Active Status
@@ -191,12 +269,13 @@ class TerritoryManager:
         active_frame.pack(fill=tk.X, pady=2)
         ttk.Label(active_frame, text="Taken Control:", font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT)
         active_combo = ttk.Combobox(active_frame, values=["No", "Yes"], 
-                                   state="readonly", width=15)
+                                state="readonly", width=15)
         active_combo.pack(side=tk.RIGHT)
+        self._add_hover_sound_to_combobox(active_combo)  # ADD THIS LINE
         self.territory_editors["Active"] = active_combo
-        
+
         # Defense Flags Section
-        defense_frame = ttk.LabelFrame(editor_frame, text="🛡️ Defense Systems", padding=10)
+        defense_frame = ttk.LabelFrame(parent, text="🛡️ Defense Systems", padding=10)
         defense_frame.pack(fill=tk.X, pady=(0, 10))
         
         # Defense flag options with their bit values
@@ -268,15 +347,15 @@ class TerritoryManager:
         # Configure headers
         headers = {
             "faction": ("🏴", 60, "center"),
-            "id": ("🆔 Territory ID", 120, "center"),
-            "base_units": ("🏘️ Base", 80, "center"),
-            "troops": ("👥 Troops", 80, "center"),
-            "ground": ("🚗 Ground", 80, "center"),
-            "air": ("✈️ Air", 80, "center"),
-            "home_base": ("🏠 Home", 80, "center"),
-            "factory": ("🏭 Factory", 80, "center"),
-            "defense": ("🛡️ Defense", 80, "center"),
-            "active": ("✅ Active", 80, "center")
+            "id": ("🆔Territory ID", 120, "center"),
+            "base_units": ("🏘️Base", 80, "center"),
+            "troops": ("👥Troops", 80, "center"),
+            "ground": ("🚗Ground", 80, "center"),
+            "air": ("✈️Air", 80, "center"),
+            "home_base": ("🏠Home", 80, "center"),
+            "factory": ("🏭Factory", 80, "center"),
+            "defense": ("🛡️Defense", 80, "center"),
+            "active": ("✅Active", 80, "center")
         }
         
         for col, (text, width, anchor) in headers.items():
@@ -668,7 +747,7 @@ class TerritoryManager:
         # Create detailed territory information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Territory Details - {territory_id}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("683x384")
         detail_window.resizable(True, True)
         
         # Main frame with padding

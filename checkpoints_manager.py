@@ -400,7 +400,7 @@ class CheckpointsManager:
         # Create detailed checkpoint information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Checkpoint Details - {checkpoint_data['name']}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("683x384")
         detail_window.resizable(True, True)
         
         # Main frame with padding

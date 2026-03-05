@@ -14,7 +14,7 @@ class XMLViewerWindow:
         self.logger.debug("Initializing Modern XML Viewer Window")
         self.window = tk.Toplevel(parent)
         self.window.title("🔍 XML Viewer - Save File Structure")
-        self.window.geometry("1600x1000")
+        self.window.geometry("1366x768")
         
         # Set the window icon to match the main application
         try:
@@ -396,6 +396,9 @@ class XMLViewerWindow:
                 xml_str = ET.tostring(element, encoding='unicode', method='xml')
                 reparsed = minidom.parseString(xml_str)
                 formatted_xml = reparsed.toprettyxml(indent="  ")
+                
+                # Remove extra blank lines
+                formatted_xml = '\n'.join([line for line in formatted_xml.split('\n') if line.strip()])
                 
                 # Update the text area with enhanced formatting
                 self.text_area.config(state="normal")

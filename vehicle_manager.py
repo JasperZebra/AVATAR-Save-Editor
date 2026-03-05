@@ -422,7 +422,7 @@ class VehicleManager:
         # Create detailed vehicle information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Vehicle Details - {vehicle_name}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("683x384")
         detail_window.resizable(True, True)
         
         # Main frame with padding
@@ -520,59 +520,53 @@ class VehicleManager:
     def _get_all_vehicle_ids(self):
         """Return a dictionary of all vehicle IDs with their names and types"""
         vehicle_info = {
-            # RDA Ground Vehicles
-            "2700952790": {
-                "name": "Gator",
-                "type": "RDA Water Vehicle"
-            },
+
             "439556112": {
-                "name": "Swan", 
-                "type": "RDA Ground Vehicle"
-            },
-            "2618300662": {
-                "name": "Buggy",
-                "type": "RDA Ground Vehicle"
-            },
-            "2142115644": {
-                "name": "Grinder",
-                "type": "RDA Ground Vehicle"
-            },
-            
-            # RDA Air Vehicles
-            "3536212596": {
-                "name": "Samson",
+                "name": "Scorpion", 
                 "type": "RDA Air Vehicle"
             },
+            "2618300662": {
+                "name": "AMPSuit",
+                "type": "RDA Ground Vehicle"
+            },
+            "3536212596": {
+                "name": "ATV",
+                "type": "RDA Ground Vehicle"
+            },
+            "2700952790": {
+                "name": "?",
+                "type": "RDA Water Vehicle"
+            },
+            "2142115644": {
+                "name": "?",
+                "type": "RDA Ground Vehicle"
+            },
             "544484482": {
-                "name": "Scorpion",
+                "name": "?",
                 "type": "RDA Air Vehicle"
             },
             "3894271835": {
-                "name": "Dragon Assault Ship",
+                "name": "?",
                 "type": "RDA Air Vehicle"
             },
-            
-            # Na'vi Mounts
             "1295738421": {
-                "name": "Direhorse",
+                "name": "?",
                 "type": "Na'vi Mount"
             },
             "3715482590": {
-                "name": "Mountain Banshee",
+                "name": "?",
                 "type": "Na'vi Mount"
             },
             "982156324": {
-                "name": "Great Leonopteryx",
+                "name": "?",
                 "type": "Na'vi Mount"
             },
-            
-            # Water Vehicles
             "2839450678": {
-                "name": "Gator",
+                "name": "?",
                 "type": "Water Vehicle"
             },
             "1056389427": {
-                "name": "Na'vi Boat",
+                "name": "?",
                 "type": "Water Vehicle"
             }
         }

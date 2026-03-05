@@ -410,7 +410,7 @@ class TutorialManager:
         # Create detailed tutorial information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Tutorial Details - {tutorial_name}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("683x384")
         detail_window.resizable(True, True)
         
         # Main frame with padding
@@ -489,26 +489,26 @@ class TutorialManager:
     def _get_tutorial_description(self, tutorial_name):
         """Get description for a tutorial"""
         descriptions = {
-            "Basic Movement Tutorial": "Learn the fundamental movement controls including walking, running, and basic navigation in the game world.",
-            "Navigation Interface Tutorial": "Master the navigation interface, including menu systems, inventory management, and UI interactions.",
-            "Camera Controls Tutorial": "Understand camera movement, zoom controls, and viewing options for optimal gameplay experience.",
-            "Game Menu Navigation": "Navigate through game menus, settings, and options with confidence and efficiency.",
-            "Map & Waypoint Tutorial": "Learn to use the map system, set waypoints, and navigate the vast world of Pandora effectively.",
-            "Basic Combat Tutorial": "Master the fundamentals of combat including basic attacks, defense, and combat positioning.",
-            "Ranged Weapon Tutorial": "Learn to use ranged weapons effectively, including aiming, ammunition management, and tactical positioning.",
-            "Melee Combat Tutorial": "Develop skills in close-quarters combat, including melee weapons and hand-to-hand combat techniques.",
-            "Stealth Combat Tutorial": "Master stealth techniques, silent takedowns, and avoiding detection during missions.",
-            "Vehicle Combat Tutorial": "Learn combat techniques while piloting various vehicles and mounted combat systems.",
-            "Skill Tree Tutorial": "Understand the skill progression system and how to effectively develop your character's abilities.",
+            "Tutorial_AccessControlScheme_Thanator": "Learn to ride and control the Thanator, mastering its powerful movement and combat capabilities.",
+            "Tutorial_AccessControlScheme_Direhorse": "Master riding the Direhorse, understanding speed control, navigation, and bonding mechanics.",
+            "Tutorial_SkillHealing": "Learn healing abilities and techniques to restore health during exploration and combat.",
+            "Tutorial_TreeOfVisionFirstActivate": "Discover how to activate and use the Tree of Vision to unlock spiritual insights and abilities.",
+            "Tutorial_AccessControlScheme_Leonopteryx": "Master the legendary Leonopteryx, learning advanced aerial maneuvers and bonding with this majestic creature.",
+            "Tutorial_AccessControlScheme_Boat": "Learn to navigate Pandora's waterways using boats, including steering, speed control, and water-based exploration.",
+            "Tutorial_HarmonicGameplayNavi2": "Advanced Na'vi gameplay mechanics focusing on harmonic interactions with Pandora's ecosystem.",
+            "Tutorial_FirstCellSample": "Learn to collect your first cell sample, understanding the basics of scientific specimen gathering.",
+            "Tutorial_AvatarSide": "Understand Avatar-specific gameplay mechanics and abilities unique to Avatar characters.",
+            "Tutorial_GMIFirstActivation": "Learn to activate and use the GMI (Game Mechanical Interface) system for the first time.",
+            "Tutorial_AccessControlScheme_Banshee": "Master flying the Banshee (Ikran), including takeoff, aerial combat, and navigation through Pandora's skies.",
             "Special Abilities Tutorial": "Learn to use special Na'vi abilities and unique powers available to your character.",
-            "Na'vi Bond Tutorial": "Master the bonding mechanics with Na'vi creatures and the spiritual connections of Pandora.",
-            "Character Progression Tutorial": "Understand how character advancement works, including experience, levels, and upgrades.",
-            "Equipment Tutorial": "Learn equipment management, upgrades, and optimization for different gameplay situations.",
-            "Environmental Interaction Tutorial": "Master interaction with Pandora's environment, including climbing, swimming, and environmental puzzles.",
-            "Resource Gathering Tutorial": "Learn efficient resource collection techniques and understanding resource types and uses.",
-            "Crafting System Tutorial": "Master the crafting system to create weapons, tools, and other essential items.",
-            "Pandoran Creatures Tutorial": "Learn about the various creatures of Pandora, their behaviors, and how to interact with them.",
-            "Survival Tips Tutorial": "Essential survival knowledge for thriving in Pandora's challenging environment."
+            "Tutorial_AmmoPod2": "Advanced ammunition management and understanding special ammo types and tactical loadouts.",
+            "Tutorial_TravelAgent": "Learn to use fast travel systems and navigation aids to efficiently move across Pandora.",
+            "Tutorial_BonusMap": "Discover how to access and use bonus map features to find hidden areas and collectibles.",
+            "Tutorial_QuestZone": "Understand quest zones, mission areas, and how to navigate active objective regions.",
+            "Tutorial_SkillScarer": "Learn intimidation and fear-based abilities to control enemy behavior in combat.",
+            "Tutorial_NaviMetapod": "Master the Na'vi Metapod system for advanced character progression and abilities.",
+            "Tutorial_AccessControlScheme_Buggy": "Learn to drive and control the buggy vehicle for ground-based exploration and combat.",
+            "Tutorial_SkillAcquired": "Understand the skill acquisition system and how to unlock new abilities as you progress."
         }
         
         return descriptions.get(tutorial_name, "A comprehensive tutorial covering important game mechanics and features.")
@@ -516,16 +516,26 @@ class TutorialManager:
     def _get_tutorial_objectives(self, tutorial_name):
         """Get learning objectives for a tutorial"""
         objectives = {
-            "Basic Movement Tutorial": "• Master WASD movement controls\n• Learn running and walking speeds\n• Understand basic navigation",
-            "Navigation Interface Tutorial": "• Navigate menus efficiently\n• Access inventory systems\n• Use interface shortcuts",
-            "Camera Controls Tutorial": "• Control camera movement\n• Adjust viewing angles\n• Use zoom functions effectively",
-            "Game Menu Navigation": "• Access all game menus\n• Modify game settings\n• Navigate options screens",
-            "Map & Waypoint Tutorial": "• Open and read the map\n• Set custom waypoints\n• Use navigation aids",
-            "Basic Combat Tutorial": "• Execute basic attacks\n• Use defensive maneuvers\n• Understand combat timing",
-            "Ranged Weapon Tutorial": "• Aim ranged weapons accurately\n• Manage ammunition effectively\n• Use tactical positioning",
-            "Melee Combat Tutorial": "• Master melee weapon combos\n• Execute blocking techniques\n• Use environmental advantages",
-            "Stealth Combat Tutorial": "• Move silently\n• Execute stealth takedowns\n• Avoid enemy detection",
-            "Vehicle Combat Tutorial": "• Control vehicles in combat\n• Use mounted weapons\n• Execute tactical maneuvers"
+            "Tutorial_AccessControlScheme_Thanator": "• Mount and dismount the Thanator\n• Master movement controls\n• Execute powerful attacks",
+            "Tutorial_AccessControlScheme_Direhorse": "• Bond with the Direhorse\n• Control speed and direction\n• Navigate varied terrain",
+            "Tutorial_SkillHealing": "• Activate healing abilities\n• Manage health resources\n• Use healing in combat situations",
+            "Tutorial_TreeOfVisionFirstActivate": "• Locate the Tree of Vision\n• Complete activation sequence\n• Understand spiritual connections",
+            "Tutorial_AccessControlScheme_Leonopteryx": "• Successfully bond with Leonopteryx\n• Master advanced flight controls\n• Execute aerial maneuvers",
+            "Tutorial_AccessControlScheme_Boat": "• Board and operate boats\n• Navigate water routes\n• Use boats for exploration",
+            "Tutorial_HarmonicGameplayNavi2": "• Understand harmonic mechanics\n• Interact with ecosystem elements\n• Apply Na'vi spiritual abilities",
+            "Tutorial_FirstCellSample": "• Identify sample locations\n• Collect cell samples properly\n• Store specimens correctly",
+            "Tutorial_AvatarSide": "• Access Avatar abilities\n• Switch between forms\n• Utilize Avatar advantages",
+            "Tutorial_GMIFirstActivation": "• Activate GMI system\n• Navigate interface options\n• Use basic GMI functions",
+            "Tutorial_AccessControlScheme_Banshee": "• Bond with your Banshee\n• Master flight controls\n• Navigate aerial terrain",
+            "Special Abilities Tutorial": "• Unlock special abilities\n• Execute unique powers\n• Combine abilities effectively",
+            "Tutorial_AmmoPod2": "• Access ammo pods\n• Switch ammunition types\n• Optimize loadouts for missions",
+            "Tutorial_TravelAgent": "• Open fast travel menu\n• Select destinations\n• Use waypoint systems",
+            "Tutorial_BonusMap": "• Access bonus map features\n• Locate hidden collectibles\n• Navigate secret areas",
+            "Tutorial_QuestZone": "• Identify quest zones\n• Enter mission areas\n• Complete zone objectives",
+            "Tutorial_SkillScarer": "• Activate intimidation abilities\n• Control enemy behavior\n• Use fear tactics strategically",
+            "Tutorial_NaviMetapod": "• Access Metapod system\n• Upgrade Na'vi abilities\n• Progress character development",
+            "Tutorial_AccessControlScheme_Buggy": "• Drive and control buggy\n• Navigate rough terrain\n• Use vehicle in combat",
+            "Tutorial_SkillAcquired": "• View acquired skills\n• Understand progression paths\n• Unlock new abilities"
         }
         
         return objectives.get(tutorial_name, "• Complete tutorial objectives\n• Master key mechanics\n• Apply learned skills in gameplay")
@@ -538,32 +548,25 @@ class TutorialManager:
     def _get_all_tutorial_ids(self):
         """Return a dictionary of all tutorial IDs and their names"""
         tutorial_names = {
-            # Basic Controls & Navigation
-            "44333413": "Basic Movement Tutorial",
-            "158780422": "Navigation Interface Tutorial",
-            "304605938": "Camera Controls Tutorial",
-            "734413258": "Game Menu Navigation",
-            "1360295752": "Map & Waypoint Tutorial",
-            
-            # Combat Tutorials
-            "1376083454": "Basic Combat Tutorial",
-            "1579340642": "Ranged Weapon Tutorial",
-            "1827545044": "Melee Combat Tutorial",
-            "1836020734": "Stealth Combat Tutorial",
-            "2013777292": "Vehicle Combat Tutorial",
-            
-            # Skills & Abilities
-            "2038369977": "Skill Tree Tutorial",
+            "44333413": "Tutorial_AccessControlScheme_Thanator",
+            "158780422": "Tutorial_AccessControlScheme_Direhorse",
+            "304605938": "Tutorial_SkillHealing",
+            "734413258": "Tutorial_TreeOfVisionFirstActivate",
+            "1360295752": "Tutorial_AccessControlScheme_Leonopteryx",
+            "1376083454": "Tutorial_AccessControlScheme_Boat",
+            "1579340642": "Tutorial_HarmonicGameplayNavi2",
+            "1827545044": "Tutorial_FirstCellSample",
+            "1836020734": "Tutorial_AvatarSide",
+            "2013777292": "Tutorial_GMIFirstActivation",
+            "2038369977": "Tutorial_AccessControlScheme_Banshee",
             "2046890945": "Special Abilities Tutorial",
-            "2513987320": "Na'vi Bond Tutorial",
-            "2654429851": "Character Progression Tutorial",
-            "2738798113": "Equipment Tutorial",
-            
-            # Environment & Interaction
-            "2924024297": "Environmental Interaction Tutorial",
-            "3610527961": "Resource Gathering Tutorial",
-            "4202415783": "Crafting System Tutorial",
-            "4215961224": "Pandoran Creatures Tutorial",
-            "4274987001": "Survival Tips Tutorial"
+            "2513987320": "Tutorial_AmmoPod2",
+            "2654429851": "Tutorial_TravelAgent",
+            "2738798113": "Tutorial_BonusMap",
+            "2924024297": "Tutorial_QuestZone",
+            "3610527961": "Tutorial_SkillScarer",
+            "4202415783": "Tutorial_NaviMetapod",
+            "4215961224": "Tutorial_AccessControlScheme_Buggy",
+            "4274987001": "Tutorial_SkillAcquired"
         }
         return tutorial_names

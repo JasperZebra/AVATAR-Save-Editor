@@ -8,7 +8,7 @@ from PIL import Image, ImageTk
 from Face_Image_Window import FaceImageWindow
 import logging
 from custom_messagebox import MessageBoxManager, show_info, show_error, show_warning, ask_question, ask_ok_cancel, show_success
-
+import json
 
 class StatsManager:
     def __init__(self, parent: ttk.Frame, main_window):
@@ -16,6 +16,9 @@ class StatsManager:
         self.logger.debug("Initializing Modern StatsManager")
         self.parent = parent
         self.main_window = main_window
+
+        self.sound_manager = getattr(main_window, 'sound_manager', None)
+
         self.entries = {}
         self.face_image_frame = None
         self.face_image_label = None
@@ -24,6 +27,11 @@ class StatsManager:
         self.navi_weapon_slots = []
         self.armor_dropdowns = {}
         self.navi_armor_dropdowns = {}
+        self.armor_preview_labels = {}  # For RDA armor previews
+        self.navi_armor_preview_labels = {}  # For Na'vi armor previews
+        self.saved_outfits_rda = []  # List of saved RDA outfits
+        self.saved_outfits_navi = []  # List of saved Na'vi outfits
+        self.composite_preview_labels = {}  # For layered armor preview
 
         self._create_coordinate_mappings()
 
@@ -48,6 +56,40 @@ class StatsManager:
             }
         
         self.setup_modern_ui()
+
+    def _wrap_button_with_sound(self, button, command=None):
+        """Wrap a button with click and hover sounds"""
+        if command is None:
+            command = button.cget('command')
+        
+        def sound_command():
+            if self.sound_manager and hasattr(self.main_window.config, 'play_click_sounds'):
+                if self.main_window.config.play_click_sounds:
+                    self.sound_manager.play_sound_effect('click')
+            if command:
+                if callable(command):
+                    command()
+                else:
+                    try:
+                        button.tk.call(command)
+                    except:
+                        pass
+        
+        button.config(command=sound_command)
+        
+        # Add hover sound
+        if self.sound_manager and hasattr(self.main_window.config, 'play_hover_sounds'):
+            if self.main_window.config.play_hover_sounds:
+                button.bind('<Enter>', lambda e: self.sound_manager.play_sound_effect('hover'))
+        
+        return button
+
+    def _add_hover_sound_to_combobox(self, combobox):
+        """Add hover sound effect to a combobox"""
+        if self.sound_manager and hasattr(self.main_window.config, 'play_hover_sounds'):
+            if self.main_window.config.play_hover_sounds:
+                combobox.bind('<Enter>', lambda e: self.sound_manager.play_sound_effect('hover'))
+        return combobox
 
     def setup_modern_ui(self) -> None:
         """Setup the modern UI with consistent styling"""
@@ -79,38 +121,77 @@ class StatsManager:
         subtitle_label.pack(anchor=tk.W)
 
     def create_main_content(self, parent):
-        """Create the main content area - single page layout"""
-        # Content container with padding (no scrolling)
-        content_container = ttk.Frame(parent, padding=15)
+        """Create the main content area with nested tabs"""
+        # Content container with padding
+        content_container = ttk.Frame(parent, padding=0)
         content_container.pack(fill=tk.BOTH, expand=True)
         
-        # === TOP ROW: Character & Progress Info ===
-        top_row = ttk.Frame(content_container)
-        top_row.pack(fill=tk.X, pady=(0, 10))
+        # Create main notebook for tabs
+        main_notebook = ttk.Notebook(content_container)
+        main_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Character Info (left side)
-        self.create_character_info_section(top_row)
+        # ADD HOVER SOUND TO TABS (only once per tab)
+        self._last_hovered_tab = None  # Track which tab we're hovering over
         
-        # Progress Info (right side) 
-        self.create_progress_section(top_row)
+        def on_tab_hover(event):
+            """Play hover sound when mouse enters a NEW tab"""
+            if self.sound_manager and hasattr(self.main_window.config, 'play_hover_sounds'):
+                if self.main_window.config.play_hover_sounds:
+                    try:
+                        tab_id = main_notebook.identify(event.x, event.y)
+                        # Only play sound if we're over a tab AND it's a different tab than before
+                        if tab_id and tab_id != self._last_hovered_tab:
+                            self._last_hovered_tab = tab_id
+                            self.sound_manager.play_sound_effect('hover')
+                        elif not tab_id:
+                            # Reset when not hovering over any tab
+                            self._last_hovered_tab = None
+                    except:
+                        pass
         
-        # === MIDDLE ROW: Equipment ===
-        equipment_row = ttk.Frame(content_container)
-        equipment_row.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        # Bind hover event to the notebook
+        main_notebook.bind('<Motion>', on_tab_hover)
         
-        # RDA Equipment (left side)
-        self.create_rda_equipment_section(equipment_row)
+        # === TAB 1: Character & Settings ===
+        char_settings_tab = ttk.Frame(main_notebook, padding=10)
+        main_notebook.add(char_settings_tab, text="📊 Character & Settings")
         
-        # Na'vi Equipment (right side)
-        self.create_navi_equipment_section(equipment_row)
+        # Configure grid to make all boxes same size
+        char_settings_tab.grid_columnconfigure(0, weight=1, uniform="boxes")
+        char_settings_tab.grid_columnconfigure(1, weight=1, uniform="boxes")
+        char_settings_tab.grid_rowconfigure(0, weight=1, uniform="boxes")
+        char_settings_tab.grid_rowconfigure(1, weight=1, uniform="boxes")
         
-        # === BOTTOM ROW: Settings ===
-        self.create_settings_section(content_container)
+        # Top left: Character Info
+        self.create_character_info_section_grid(char_settings_tab, 0, 0)
+        
+        # Top right: Progress Info
+        self.create_progress_section_grid(char_settings_tab, 0, 1)
+        
+        # Bottom left: Game Settings
+        self.create_game_settings_section_grid(char_settings_tab, 1, 0)
+        
+        # Bottom right: Cost Reduction
+        self.create_cost_reduction_section_grid(char_settings_tab, 1, 1)
+        
+        # === TAB 2: RDA Equipment ===
+        rda_tab = ttk.Frame(main_notebook, padding=10)
+        main_notebook.add(rda_tab, text="🤖 RDA Equipment")
+        
+        # RDA Equipment content
+        self.create_rda_equipment_section(rda_tab)
+        
+        # === TAB 3: Na'vi Equipment ===
+        navi_tab = ttk.Frame(main_notebook, padding=10)
+        main_notebook.add(navi_tab, text="🌿 Na'vi Equipment")
+        
+        # Na'vi Equipment content
+        self.create_navi_equipment_section(navi_tab)
 
     def create_character_info_section(self, parent):
         """Create character info section with face preview"""
         char_frame = ttk.LabelFrame(parent, text="👤 Character Information", padding=10)
-        char_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+        char_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
         
         # Main content area
         content_frame = ttk.Frame(char_frame)
@@ -127,26 +208,34 @@ class StatsManager:
         right_col = ttk.Frame(fields_frame)
         right_col.pack(side=tk.RIGHT, fill=tk.X, expand=True)
         
-        # Left column fields (readonly)
-        self.create_compact_field_item(left_col, "Character Name", "namevec", readonly=True)
+        # Left column fields
+        self.create_compact_field_item(left_col, "Character Name", "namevec")
         self.create_compact_field_item(left_col, "Gender", "isfemale", {"0": "Male", "1": "Female"}, readonly=True)
         self.create_compact_field_item(left_col, "Face", "face", self.face_values, readonly=True)
-        
+
         location_options = {"-1": "-No Location Set-"}
         location_options.update(self.last_loaded_pin_mappings)
-        self.create_compact_field_item(left_col, "Current Location", "crc_LastLoadedPin", 
+        self.create_compact_field_item(left_col, "Current Location", "crc_LastLoadedPin",
                             location_options)
-        
+
         # Right column fields (editable - these should be comboboxes)
-        print("DEBUG: Creating Side field with options:", {"4": "Undecided", "1": "Na'vi", "2": "RDA"})
+        print("DEBUG: Creating Side field with options:", {"4": "Undecided", "1": "Na'vi", "2": "RDA", "3": "Neutral"})
 
-        self.create_compact_field_item(right_col, "Player Faction", "PlayerFaction", 
-                            {"0": "Undecided", "1": "Na'vi", "2": "RDA"})
+        self.create_compact_field_item(
+            right_col, "Player Faction", "PlayerFaction", 
+            {"0": "Undecided", "1": "Na'vi", "2": "RDA", "3": "Neutral"}
+        )
 
-        self.create_compact_field_item(right_col, "Side", "side", {"4": "Undecided", "1": "Na'vi", "2": "RDA"})        
+        self.create_compact_field_item(
+            right_col, "Side", "side", 
+            {"4": "Undecided", "1": "Na'vi", "2": "RDA", "3": "Neutral"}
+        )        
 
         print("DEBUG: Creating Pawn field with options:", {"1": "Na'vi", "2": "RDA"})
-        self.create_compact_field_item(right_col, "Pawn", "pawn", {"1": "Na'vi", "2": "RDA"})
+        self.create_compact_field_item(
+            right_col, "Pawn", "pawn", 
+            {"1": "Na'vi", "2": "RDA"}
+        )
         
         self.create_compact_field_item(right_col, "Location", "YouAreHere_LatitudeLongitude", readonly=True)
         
@@ -160,6 +249,413 @@ class StatsManager:
         
         self.face_image_label = ttk.Label(preview_frame, text="No Image", width=15)
         self.face_image_label.pack(pady=5)
+
+    def create_progress_section(self, parent):
+        """Create compact progress section"""
+        progress_frame = ttk.LabelFrame(parent, text="📊 Progress & Faction", padding=10)
+        progress_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+        
+        # Main faction info        
+        self.create_compact_field_item(progress_frame, "Total EP", "TotalEP", readonly=True)
+        
+        # Max out button (smaller)
+        ttk.Button(progress_frame, text="🚀 Max Out Level", 
+                command=self._max_out_level).pack(fill=tk.X, pady=2)
+        
+        ttk.Button(progress_frame, text="➕ Add Custom EP Value",
+        command=self._add_custom_ep).pack(fill=tk.X, pady=2)
+        
+        # EP Values in horizontal layout
+        ep_frame = ttk.Frame(progress_frame)
+        ep_frame.pack(fill=tk.X, pady=(5, 0))
+        
+        # Player0 and Player1 side by side
+        p0_frame = ttk.Frame(ep_frame)
+        p0_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        
+        p1_frame = ttk.Frame(ep_frame)
+        p1_frame.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        
+        self.create_compact_field_item(p0_frame, "Player0 EPs", "EPs")
+        self.create_compact_field_item(p0_frame, "Player0 newEPs", "newEPs")
+        
+        self.create_compact_field_item(p1_frame, "Player1 EPs", "EPs_Player1")
+        self.create_compact_field_item(p1_frame, "Player1 newEPs", "newEPs_Player1")
+
+    def create_character_info_section_grid(self, parent, row, col):
+        """Create character info section for grid layout"""
+        char_frame = ttk.LabelFrame(parent, text="👤 Character Information", padding=10)
+        char_frame.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
+        
+        # Main content area
+        content_frame = ttk.Frame(char_frame)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Left side: Character fields
+        fields_frame = ttk.Frame(content_frame)
+        fields_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        
+        # Two columns for character fields
+        left_col = ttk.Frame(fields_frame)
+        left_col.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+        
+        right_col = ttk.Frame(fields_frame)
+        right_col.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        
+        # Left column fields
+        self.create_compact_field_item(left_col, "Character Name", "namevec")
+        self.create_compact_field_item(left_col, "Gender", "isfemale", {"0": "Male", "1": "Female"}, readonly=True)
+        self.create_compact_field_item(left_col, "Face", "face", self.face_values, readonly=True)
+
+        location_options = {"-1": "-No Location Set-"}
+        location_options.update(self.last_loaded_pin_mappings)
+        self.create_compact_field_item(left_col, "Current Location", "crc_LastLoadedPin",
+                            location_options)
+
+        # Right column fields (editable - these should be comboboxes)
+        self.create_compact_field_item(
+            right_col, "Player Faction", "PlayerFaction",
+            {"0": "Undecided", "1": "Na'vi", "2": "RDA", "3": "Neutral"}
+        )
+
+        self.create_compact_field_item(
+            right_col, "Side", "side", 
+            {"4": "Undecided", "1": "Na'vi", "2": "RDA", "3": "Neutral"}
+        )        
+
+        self.create_compact_field_item(
+            right_col, "Pawn", "pawn", 
+            {"1": "Na'vi", "2": "RDA"}
+        )
+        
+        self.create_compact_field_item(right_col, "Location", "YouAreHere_LatitudeLongitude", readonly=True)
+        
+        # Right side: Face preview
+        preview_frame = ttk.LabelFrame(content_frame, text="Preview", padding=5)
+        preview_frame.pack(side=tk.RIGHT)
+        
+        self.face_image_label = ttk.Label(preview_frame, text="No Image", width=15)
+        self.face_image_label.pack(pady=5)
+
+    def create_progress_section_grid(self, parent, row, col):
+        """Create compact progress section for grid layout"""
+        progress_frame = ttk.LabelFrame(parent, text="📊 Progress & Faction", padding=10)
+        progress_frame.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
+        
+        # Main faction info        
+        self.create_compact_field_item(progress_frame, "Total EP", "TotalEP", readonly=True)
+        
+        # Buttons in horizontal layout
+        buttons_frame = ttk.Frame(progress_frame)
+        buttons_frame.pack(fill=tk.X, pady=2)
+        
+        max_btn = ttk.Button(buttons_frame, text="🚀 Max Out Level")
+        self._wrap_button_with_sound(max_btn, self._max_out_level)
+        max_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+                
+        ep_btn = ttk.Button(buttons_frame, text="➕ Add Custom EP")
+        self._wrap_button_with_sound(ep_btn, self._add_custom_ep)
+        ep_btn.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=(2, 0))
+        
+        # EP Values in horizontal layout
+        ep_frame = ttk.Frame(progress_frame)
+        ep_frame.pack(fill=tk.X, pady=(5, 0))
+        
+        # Player0 and Player1 side by side
+        p0_frame = ttk.Frame(ep_frame)
+        p0_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        
+        p1_frame = ttk.Frame(ep_frame)
+        p1_frame.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        
+        self.create_compact_field_item(p0_frame, "Player0 EPs", "EPs")
+        self.create_compact_field_item(p0_frame, "Player0 newEPs", "newEPs")
+        
+        self.create_compact_field_item(p1_frame, "Player1 EPs", "EPs_Player1")
+        self.create_compact_field_item(p1_frame, "Player1 newEPs", "newEPs_Player1")
+
+    def create_game_settings_section_grid(self, parent, row, col):
+        """Create game settings section for grid layout"""
+        game_settings_frame = ttk.LabelFrame(parent, text="⚙️ Game Settings", padding=10)
+        game_settings_frame.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
+
+        self.create_compact_field_item(
+            game_settings_frame, "Entity Scanning", "bEntityScanningEnabled",
+            {"0": "Disabled", "1": "Enabled"}
+        )
+
+        self.create_compact_field_item(
+            game_settings_frame, "First Person Mode", "FirstPersonMode",
+            {"0": "Disabled", "1": "Enabled"}
+        )
+
+        self.create_compact_field_item(
+            game_settings_frame, "Rumble Enabled", "RumbleEnabled",
+            {"0": "Disabled", "1": "Enabled"}
+        )
+
+    def create_cost_reduction_section_grid(self, parent, row, col):
+        """Create cost reduction section for grid layout"""
+        cost_frame = ttk.LabelFrame(parent, text="💰 Cost Reduction", padding=10)
+        cost_frame.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
+
+        self.create_compact_field_item(cost_frame, "Na'vi Cost Reduction", "NaviCostReduction")
+        self.create_compact_field_item(cost_frame, "RDA Cost Reduction", "CorpCostReduction")
+        self.create_compact_field_item(cost_frame, "Recovery Bits", "RecoveryBits")
+
+    def _add_custom_ep(self):
+        """Add a custom EP value to the current total"""
+        try:
+            if self.main_window.tree is None:
+                show_error("Error", "No save file loaded. Please load a save file first.")
+                return
+            
+            # Get current EP value
+            total_ep_widget = self.entries.get("TotalEP")
+            if not total_ep_widget:
+                show_error("Error", "Total EP widget not found.")
+                return
+            
+            total_ep_text = total_ep_widget.cget("text") if hasattr(total_ep_widget, 'cget') else total_ep_widget.get()
+            
+            # Extract current EP from "12345/500000 (Max EP)" format
+            if "/" in total_ep_text:
+                current_ep = int(total_ep_text.split("/")[0])
+            else:
+                current_ep = 0
+            
+            # Create custom input dialog
+            input_dialog = tk.Toplevel(self.parent)
+            input_dialog.title("Add Custom EP")
+            input_dialog.geometry("400x200")
+            input_dialog.transient(self.parent)
+            input_dialog.grab_set()
+            
+            # Center the dialog
+            input_dialog.update_idletasks()
+            x = (input_dialog.winfo_screenwidth() // 2) - (input_dialog.winfo_width() // 2)
+            y = (input_dialog.winfo_screenheight() // 2) - (input_dialog.winfo_height() // 2)
+            input_dialog.geometry(f"+{x}+{y}")
+            
+            # Result variable
+            result = {"value": None}
+            
+            # Content frame
+            content_frame = ttk.Frame(input_dialog, padding=20)
+            content_frame.pack(fill=tk.BOTH, expand=True)
+            
+            # Info label
+            info_label = ttk.Label(
+                content_frame, 
+                text=f"Current EP: {current_ep:,}\n\nEnter EP amount to add (numbers only):",
+                font=('Segoe UI', 10)
+            )
+            info_label.pack(pady=(0, 10))
+            
+            # Entry field with validation
+            entry_var = tk.StringVar()
+            
+            def validate_numeric_input(new_value):
+                """Only allow numeric input"""
+                if new_value == "":
+                    return True
+                try:
+                    int(new_value)
+                    return True
+                except ValueError:
+                    return False
+            
+            vcmd = (input_dialog.register(validate_numeric_input), '%P')
+            entry = ttk.Entry(content_frame, textvariable=entry_var, font=('Segoe UI', 10), validate='key', validatecommand=vcmd)
+            entry.pack(fill=tk.X, pady=(0, 10))
+            entry.focus_set()
+            
+            # Validation label
+            validation_label = ttk.Label(content_frame, text="", foreground="red", font=('Segoe UI', 8))
+            validation_label.pack(pady=(0, 10))
+            
+            def validate_and_submit():
+                try:
+                    if not entry_var.get():
+                        validation_label.config(text="Please enter a value")
+                        return
+                        
+                    value = int(entry_var.get())
+                    if value < 1:
+                        validation_label.config(text="Value must be at least 1")
+                        return
+                    if value > 2147483647:
+                        validation_label.config(text="Value must not exceed 2,147,483,647")
+                        return
+                    result["value"] = value
+                    input_dialog.destroy()
+                except ValueError:
+                    validation_label.config(text="Please enter a valid number")
+            
+            def cancel():
+                input_dialog.destroy()
+            
+            # Button frame
+            button_frame = ttk.Frame(content_frame)
+            button_frame.pack(fill=tk.X)
+            
+            ttk.Button(button_frame, text="Add EP", command=validate_and_submit).pack(side=tk.LEFT, padx=(0, 5), expand=True, fill=tk.X)
+            ttk.Button(button_frame, text="Cancel", command=cancel).pack(side=tk.RIGHT, expand=True, fill=tk.X)
+            
+            # Bind Enter key
+            entry.bind('<Return>', lambda e: validate_and_submit())
+            entry.bind('<Escape>', lambda e: cancel())
+            
+            # Wait for dialog to close
+            input_dialog.wait_window()
+            
+            custom_value = result["value"]
+            
+            if custom_value is None:  # User cancelled
+                return
+            
+            # Calculate new EP
+            new_ep = current_ep + custom_value
+            
+            # Max EP is now 2,147,483,647 (max 32-bit signed integer)
+            max_ep = 2147483647
+            
+            # Cap at max EP if it exceeds
+            capped = False
+            if new_ep > max_ep:
+                new_ep = max_ep
+                capped = True
+            
+            # Update the EP display with new max
+            formatted_ep = f"{new_ep}/{max_ep} (Max EP)"
+            if hasattr(total_ep_widget, 'config'):
+                total_ep_widget.config(text=formatted_ep)
+            else:
+                total_ep_widget.delete(0, tk.END)
+                total_ep_widget.insert(0, formatted_ep)
+            
+            # Update BaseInfo TotalEP
+            base_info = self.main_window.tree.getroot().find(".//BaseInfo")
+            if base_info is not None:
+                base_info.set("TotalEP", str(new_ep))
+            
+            # Mark changes as unsaved
+            self._mark_unsaved_changes()
+            
+            # Show success message
+            if capped:
+                show_warning("EP Capped", 
+                            f"Added {custom_value:,} EP, but total was capped at maximum ({max_ep:,}).\nNew total: {new_ep:,}")
+            else:
+                show_success("EP Added", 
+                            f"Successfully added {custom_value:,} EP.\nNew total: {new_ep:,}")
+            
+        except Exception as e:
+            self.logger.error(f"Error adding custom EP: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to add custom EP: {str(e)}")
+
+    def _max_out_level(self):
+        """Max out the experience to 2,147,483,647"""
+        try:
+            if self.main_window.tree is None:
+                show_error("Error", "No save file loaded. Please load a save file first.")
+                return
+                
+            # Set to max 32-bit signed integer
+            max_ep = 2147483647
+            
+            # Update the EP display
+            ep_widget = self.entries["TotalEP"]
+            formatted_ep = f"{max_ep}/{max_ep} (Max EP)"
+            if hasattr(ep_widget, 'config'):
+                ep_widget.config(text=formatted_ep)
+            else:
+                ep_widget.delete(0, tk.END)
+                ep_widget.insert(0, formatted_ep)
+            
+            # Update BaseInfo TotalEP if tree exists
+            if self.main_window.tree is not None:
+                base_info = self.main_window.tree.getroot().find(".//BaseInfo")
+                if base_info is not None:
+                    base_info.set("TotalEP", str(max_ep))
+            
+            # Mark changes as unsaved
+            self._mark_unsaved_changes()
+            
+            # Show success message
+            show_info("EP Maxed Out", 
+                            f"Successfully set experience to maximum amount ({max_ep:,}).")
+            
+        except Exception as e:
+            self.logger.error(f"Error maxing out level: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to max out level: {str(e)}")
+
+
+    def _update_xp_info(self, xp_info: Optional[ET.Element]) -> None:
+        if xp_info is None:
+            return
+        
+        # First, check if there's a TotalEP value in BaseInfo
+        total_ep = "0"
+        if self.main_window.tree is not None:
+            base_info = self.main_window.tree.getroot().find(".//BaseInfo")
+            if base_info is not None:
+                total_ep = base_info.get("TotalEP", total_ep)
+        
+        # If no TotalEP found in BaseInfo, fall back to 0
+        if total_ep == "0":
+            total_ep = "0"
+        
+        # Max EP is now 2,147,483,647
+        max_ep = 2147483647
+        
+        # Update TotalEP display with the new format
+        if "TotalEP" in self.entries:
+            widget = self.entries["TotalEP"]
+            formatted_ep = f"{total_ep}/{max_ep} (Max EP)"
+            if isinstance(widget, ttk.Label):
+                widget.config(text=formatted_ep)
+            else:
+                widget.delete(0, tk.END)
+                widget.insert(0, formatted_ep)
+        
+        # Log the total EP for debugging
+        self.logger.debug(f"Total EP set to: {total_ep}")
+
+
+    def _on_faction_selected(self, event):
+        """Handle faction selection change"""
+        try:
+            if self.main_window.tree is None:
+                show_error("Error", "No save file loaded. Please load a save file first.")
+                self.entries["PlayerFaction"].selection_clear()
+                return
+                
+            selected_faction = self.entries["PlayerFaction"].get()
+            
+            # Max EP is always 2,147,483,647 regardless of faction
+            max_ep = 2147483647
+            
+            # Update the EP display format
+            ep_widget = self.entries["TotalEP"]
+            current_ep = ep_widget.cget("text") if hasattr(ep_widget, 'cget') else ep_widget.get()
+            
+            # Handle format conversions
+            if "/" in current_ep:
+                current_ep = current_ep.split("/")[0]
+            
+            # Update with new format
+            if hasattr(ep_widget, 'config'):
+                ep_widget.config(text=f"{current_ep}/{max_ep} (Max EP)")
+            else:
+                ep_widget.delete(0, tk.END)
+                ep_widget.insert(0, f"{current_ep}/{max_ep} (Max EP)")
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+        except Exception as e:
+            self.logger.error(f"Error in faction selection: {str(e)}")
+            show_error("Error", f"Failed to change faction: {str(e)}")
 
     def _on_current_location_selected(self, event):
         """Handle current location selection change"""
@@ -420,151 +916,204 @@ class StatsManager:
             self.logger.error(f"Error formatting location display: {str(e)}")
             return location_value
 
-    def create_progress_section(self, parent):
-        """Create compact progress section"""
-        progress_frame = ttk.LabelFrame(parent, text="📊 Progress & Faction", padding=10)
-        progress_frame.pack(side=tk.RIGHT, fill=tk.X, expand=True)
-        
-        # Main faction info        
-        self.create_compact_field_item(progress_frame, "Total EP", "TotalEP", readonly=True)
-        
-        # Max out button (smaller)
-        ttk.Button(progress_frame, text="🚀 Max Out Level", 
-                command=self._max_out_level).pack(fill=tk.X, pady=2)
-        
-        ttk.Button(progress_frame, text="🔁 Reset EP to 0",
-           command=self._reset_ep_values).pack(fill=tk.X, pady=2)
-        
-        # EP Values in horizontal layout
-        ep_frame = ttk.Frame(progress_frame)
-        ep_frame.pack(fill=tk.X, pady=(5, 0))
-        
-        # Player0 and Player1 side by side
-        p0_frame = ttk.Frame(ep_frame)
-        p0_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-        
-        p1_frame = ttk.Frame(ep_frame)
-        p1_frame.pack(side=tk.RIGHT, fill=tk.X, expand=True)
-        
-        self.create_compact_field_item(p0_frame, "Player0 EPs", "EPs")
-        self.create_compact_field_item(p0_frame, "Player0 newEPs", "newEPs")
-        
-        self.create_compact_field_item(p1_frame, "Player1 EPs", "EPs_Player1")
-        self.create_compact_field_item(p1_frame, "Player1 newEPs", "newEPs_Player1")
-
     def create_rda_equipment_section(self, parent):
         """Create compact RDA equipment section"""
-        rda_frame = ttk.LabelFrame(parent, text="🤖 RDA Equipment", padding=10)
-        rda_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
+        # Main container
+        rda_container = ttk.Frame(parent)
+        rda_container.pack(fill=tk.BOTH, expand=True)
         
-        # Compact action buttons
-        actions_frame = ttk.Frame(rda_frame)
+        # Compact action buttons with uniform width
+        actions_frame = ttk.Frame(rda_container)
         actions_frame.pack(fill=tk.X, pady=(0, 8))
         
-        # Horizontal button layout
-        btn_row1 = ttk.Frame(actions_frame)
-        btn_row1.pack(fill=tk.X, pady=1)
-        ttk.Button(btn_row1, text="🔄 Reset Ammo", 
-                command=self._reset_weapon_ammo).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        ttk.Button(btn_row1, text="🗑️ Remove Duplicates", 
-                command=self._remove_duplicate_items).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
-        
-        ttk.Button(actions_frame, text="📦 Add RDA DLC Items", 
-                command=self._add_all_rda_dlc_items).pack(fill=tk.X, pady=1)
-        
-        # Create horizontal container for weapons and skills
-        equipment_container = ttk.Frame(rda_frame)
-        equipment_container.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
-        
-        # Configure column weights for width control
-        equipment_container.grid_columnconfigure(0, weight=1)  # Weapons get 75% width
-        equipment_container.grid_columnconfigure(1, weight=4)  # Skills get 25% width
-        
-        # Compact weapons section (left side) - using grid for better width control
-        weapons_frame = ttk.LabelFrame(equipment_container, text="⚔️ Weapons", padding=8)
-        weapons_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
-        self.create_compact_weapon_slots(weapons_frame, is_navi=False)
-        
-        # Compact skills section (right side) - using grid for better width control
-        skills_frame = ttk.LabelFrame(equipment_container, text="🎯 Skills", padding=8)
-        skills_frame.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
-        self.create_compact_skill_slots(skills_frame, is_navi=False)
-        
-        # Compact armor section (full width below)
-        armor_frame = ttk.LabelFrame(rda_frame, text="🛡️ Armor", padding=8)
-        armor_frame.pack(fill=tk.X)
-        self.create_compact_armor_section(armor_frame, is_navi=False)
+        # Configure grid to distribute buttons evenly (3 columns)
+        actions_frame.grid_columnconfigure(0, weight=1, uniform="buttons")
+        actions_frame.grid_columnconfigure(1, weight=1, uniform="buttons")
+        actions_frame.grid_columnconfigure(2, weight=1, uniform="buttons")
+
+        # Row 1 - using grid for uniform sizing
+        btn1 = ttk.Button(actions_frame, text="🔄 Reset Ammo")
+        self._wrap_button_with_sound(btn1, self._reset_weapon_ammo)
+        btn1.grid(row=0, column=0, sticky="ew", padx=(0, 2), pady=1)
+
+        btn2 = ttk.Button(actions_frame, text="🗑️ Remove Duplicates")
+        self._wrap_button_with_sound(btn2, self._remove_duplicate_items)
+        btn2.grid(row=0, column=1, sticky="ew", padx=2, pady=1)
+
+        btn3 = ttk.Button(actions_frame, text="📦 Add RDA DLC Items")
+        self._wrap_button_with_sound(btn3, self._add_all_rda_dlc_items)
+        btn3.grid(row=0, column=2, sticky="ew", padx=(2, 0), pady=1)
+
+        # Row 2 - using grid for uniform sizing
+        btn4 = ttk.Button(actions_frame, text="🛡️ Add All RDA Armor")
+        self._wrap_button_with_sound(btn4, self._add_all_rda_armor)
+        btn4.grid(row=1, column=0, sticky="ew", padx=(0, 2), pady=1)
+
+        btn5 = ttk.Button(actions_frame, text="⚔️ Add All RDA Weapons")
+        self._wrap_button_with_sound(btn5, self._add_all_rda_weapons)
+        btn5.grid(row=1, column=1, sticky="ew", padx=2, pady=1)
+
+        btn6 = ttk.Button(actions_frame, text="🎯 Add All RDA Skills")
+        self._wrap_button_with_sound(btn6, self._add_all_rda_skills)
+        btn6.grid(row=1, column=2, sticky="ew", padx=(2, 0), pady=1)
+
+        # Create notebook (tabs) for equipment
+        equipment_notebook = ttk.Notebook(rda_container)
+        equipment_notebook.pack(fill=tk.BOTH, expand=True)
+
+        # ADD HOVER SOUND TO RDA EQUIPMENT TABS (only once per tab)
+        if not hasattr(self, '_rda_last_hovered_tab'):
+            self._rda_last_hovered_tab = None
+
+        def on_rda_tab_hover(event):
+            """Play hover sound when mouse enters a NEW RDA equipment tab"""
+            if self.sound_manager and hasattr(self.main_window.config, 'play_hover_sounds'):
+                if self.main_window.config.play_hover_sounds:
+                    try:
+                        tab_id = equipment_notebook.identify(event.x, event.y)
+                        if tab_id and tab_id != self._rda_last_hovered_tab:
+                            self._rda_last_hovered_tab = tab_id
+                            self.sound_manager.play_sound_effect('hover')
+                        elif not tab_id:
+                            self._rda_last_hovered_tab = None
+                    except:
+                        pass
+
+        equipment_notebook.bind('<Motion>', on_rda_tab_hover)
+
+        # Armor Tab
+        armor_tab = ttk.Frame(equipment_notebook, padding=10)
+        equipment_notebook.add(armor_tab, text="🛡️ Armor")
+        self.create_compact_armor_section(armor_tab, is_navi=False)
+
+        # Weapons Tab
+        weapons_tab = ttk.Frame(equipment_notebook, padding=10)
+        equipment_notebook.add(weapons_tab, text="⚔️ Weapons")
+        self.create_compact_weapon_slots(weapons_tab, is_navi=False)
+
+        # Skills Tab
+        skills_tab = ttk.Frame(equipment_notebook, padding=10)
+        equipment_notebook.add(skills_tab, text="🎯 Skills")
+        self.create_compact_skill_slots(skills_tab, is_navi=False)
 
     def create_navi_equipment_section(self, parent):
         """Create compact Na'vi equipment section"""
-        navi_frame = ttk.LabelFrame(parent, text="🌿 Na'vi Equipment", padding=10)
-        navi_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        # Main container
+        navi_container = ttk.Frame(parent)
+        navi_container.pack(fill=tk.BOTH, expand=True)
         
-        # Compact action button
-        actions_frame = ttk.Frame(navi_frame)
+        # Compact action buttons with uniform width
+        actions_frame = ttk.Frame(navi_container)
         actions_frame.pack(fill=tk.X, pady=(0, 8))
         
-        # Horizontal button layout
-        btn_row1 = ttk.Frame(actions_frame)
-        btn_row1.pack(fill=tk.X, pady=1)
-        ttk.Button(btn_row1, text="🔄 Reset Ammo", 
-                command=self._reset_weapon_ammo).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        ttk.Button(btn_row1, text="🗑️ Remove Duplicates", 
-                command=self._remove_duplicate_items).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        # Configure grid to distribute buttons evenly (3 columns)
+        actions_frame.grid_columnconfigure(0, weight=1, uniform="buttons")
+        actions_frame.grid_columnconfigure(1, weight=1, uniform="buttons")
+        actions_frame.grid_columnconfigure(2, weight=1, uniform="buttons")
 
-        ttk.Button(actions_frame, text="📦 Add Na'vi DLC Items", 
-                command=self._add_all_navi_dlc_items).pack(fill=tk.X)
-        
-        # Create horizontal container for weapons and skills
-        equipment_container = ttk.Frame(navi_frame)
-        equipment_container.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
-        
-        # Configure column weights for width control
-        equipment_container.grid_columnconfigure(0, weight=1)  # Weapons get 75% width
-        equipment_container.grid_columnconfigure(1, weight=4)  # Skills get 25% width
-        
-        # Compact weapons section (left side) - using grid for better width control
-        weapons_frame = ttk.LabelFrame(equipment_container, text="🏹 Weapons", padding=8)
-        weapons_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
-        self.create_compact_weapon_slots(weapons_frame, is_navi=True)
-        
-        # Compact skills section (right side) - using grid for better width control
-        skills_frame = ttk.LabelFrame(equipment_container, text="🎯 Skills", padding=8)
-        skills_frame.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
-        self.create_compact_skill_slots(skills_frame, is_navi=True)
-        
-        # Compact armor section (full width below)
-        armor_frame = ttk.LabelFrame(navi_frame, text="🛡️ Armor", padding=8)
-        armor_frame.pack(fill=tk.X)
-        self.create_compact_armor_section(armor_frame, is_navi=True)
+        # Row 1 - using grid for uniform sizing
+        btn1 = ttk.Button(actions_frame, text="🔄 Reset Ammo")
+        self._wrap_button_with_sound(btn1, self._reset_weapon_ammo)
+        btn1.grid(row=0, column=0, sticky="ew", padx=(0, 2), pady=1)
+
+        btn2 = ttk.Button(actions_frame, text="🗑️ Remove Duplicates")
+        self._wrap_button_with_sound(btn2, self._remove_duplicate_items)
+        btn2.grid(row=0, column=1, sticky="ew", padx=2, pady=1)
+
+        btn3 = ttk.Button(actions_frame, text="📦 Add Na'vi DLC Items")
+        self._wrap_button_with_sound(btn3, self._add_all_navi_dlc_items)
+        btn3.grid(row=0, column=2, sticky="ew", padx=(2, 0), pady=1)
+
+        # Row 2 - using grid for uniform sizing
+        btn4 = ttk.Button(actions_frame, text="🛡️ Add All Na'vi Armor")
+        self._wrap_button_with_sound(btn4, self._add_all_navi_armor)
+        btn4.grid(row=1, column=0, sticky="ew", padx=(0, 2), pady=1)
+
+        btn5 = ttk.Button(actions_frame, text="🏹 Add All Na'vi Weapons")
+        self._wrap_button_with_sound(btn5, self._add_all_navi_weapons)
+        btn5.grid(row=1, column=1, sticky="ew", padx=2, pady=1)
+
+        btn6 = ttk.Button(actions_frame, text="🎯 Add All Na'vi Skills")
+        self._wrap_button_with_sound(btn6, self._add_all_navi_skills)
+        btn6.grid(row=1, column=2, sticky="ew", padx=(2, 0), pady=1)
+
+        # Create notebook (tabs) for equipment
+        equipment_notebook = ttk.Notebook(navi_container)
+        equipment_notebook.pack(fill=tk.BOTH, expand=True)
+
+        # ADD HOVER SOUND TO NA'VI EQUIPMENT TABS (only once per tab)
+        if not hasattr(self, '_navi_last_hovered_tab'):
+            self._navi_last_hovered_tab = None
+
+        def on_navi_tab_hover(event):
+            """Play hover sound when mouse enters a NEW Na'vi equipment tab"""
+            if self.sound_manager and hasattr(self.main_window.config, 'play_hover_sounds'):
+                if self.main_window.config.play_hover_sounds:
+                    try:
+                        tab_id = equipment_notebook.identify(event.x, event.y)
+                        if tab_id and tab_id != self._navi_last_hovered_tab:
+                            self._navi_last_hovered_tab = tab_id
+                            self.sound_manager.play_sound_effect('hover')
+                        elif not tab_id:
+                            self._navi_last_hovered_tab = None
+                    except:
+                        pass
+
+        equipment_notebook.bind('<Motion>', on_navi_tab_hover)
+
+        # Armor Tab
+        armor_tab = ttk.Frame(equipment_notebook, padding=10)
+        equipment_notebook.add(armor_tab, text="🛡️ Armor")
+        self.create_compact_armor_section(armor_tab, is_navi=True)
+
+        # Weapons Tab
+        weapons_tab = ttk.Frame(equipment_notebook, padding=10)
+        equipment_notebook.add(weapons_tab, text="🏹 Weapons")
+        self.create_compact_weapon_slots(weapons_tab, is_navi=True)
+
+        # Skills Tab
+        skills_tab = ttk.Frame(equipment_notebook, padding=10)
+        equipment_notebook.add(skills_tab, text="🎯 Skills")
+        self.create_compact_skill_slots(skills_tab, is_navi=True)
 
     def create_compact_skill_slots(self, parent, is_navi=False):
-        """Create compact skill slots"""
+        """Create compact skill slots with PNG previews"""
         skills_container = ttk.Frame(parent)
-        skills_container.pack(fill=tk.X, pady=5, padx=5)
+        skills_container.pack(fill=tk.BOTH, expand=True, pady=5, padx=5)
+        
+        # Split into left (controls) and right (preview) sections
+        left_section = ttk.Frame(skills_container)
+        left_section.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        
+        right_section = ttk.Frame(skills_container)
+        right_section.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
         skill_slots = ["Top Slot", "Right Slot", "Bottom Slot", "Left Slot"]
         slots_storage = self.navi_skill_slots if is_navi else self.rda_skill_slots
         skill_mappings = self.navi_skill_mappings if is_navi else self.rda_skill_mappings
         
+        # Add spacer at the top to push skill boxes down
+        ttk.Frame(left_section, height=50).pack(side=tk.TOP)
+        
         for i, slot_name in enumerate(skill_slots):
-            slot_frame = ttk.Frame(skills_container)
-            slot_frame.pack(fill=tk.X, pady=2, padx=5)
+            slot_frame = ttk.Frame(left_section)
+            slot_frame.pack(fill=tk.X, pady=12)
             
             # Compact slot label
             ttk.Label(slot_frame, text=f"{slot_name}:", 
-                    font=('Segoe UI', 8, 'bold'), width=15).pack(side=tk.LEFT, padx=(0, 5))
+                    font=('Segoe UI', 9, 'bold'), width=12).pack(side=tk.LEFT, padx=(0, 8))
             
             # Get skills list
             skill_values = list(skill_mappings.values())
             skill_values.insert(0, "-Empty-")  # Add empty option at the beginning
             
-            # Compact skill dropdown
+            # Compact skill dropdown (BIGGER and LONGER like weapons)
             skill_combo = ttk.Combobox(slot_frame, values=skill_values, 
-                                    width=25, state="readonly", font=('Segoe UI', 8))
+                                    width=40, state="readonly", font=('Segoe UI', 10), height=10)
             skill_combo.set("-Empty-")
             skill_combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
             block_combobox_mousewheel(skill_combo)
+            self._add_hover_sound_to_combobox(skill_combo)
             
             # Store skill data
             slot_data = {
@@ -581,6 +1130,194 @@ class StatsManager:
                 skill_combo.bind('<<ComboboxSelected>>', lambda e, idx=i: self._on_navi_skill_selected(e, idx))
             else:
                 skill_combo.bind('<<ComboboxSelected>>', lambda e, idx=i: self._on_rda_skill_selected(e, idx))
+        
+        # Create preview area on the right - COMPOSITE VIEW (same as weapons)
+        right_section.grid_columnconfigure(0, weight=1)
+        right_section.grid_rowconfigure(0, weight=1)
+        
+        # Single composite preview frame
+        composite_frame = ttk.LabelFrame(right_section, text="Skill Preview", padding=5)
+        composite_frame.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        
+        # Configure the frame to expand
+        composite_frame.grid_columnconfigure(0, weight=1)
+        composite_frame.grid_rowconfigure(0, weight=1)
+        
+        composite_label = ttk.Label(composite_frame, text="No Skills\nEquipped", 
+                                    width=20, anchor="center", relief="sunken")
+        composite_label.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        
+        # Store the composite label
+        if not hasattr(self, 'skill_composite_preview_labels'):
+            self.skill_composite_preview_labels = {}
+        faction_key = 'navi' if is_navi else 'rda'
+        self.skill_composite_preview_labels[faction_key] = composite_label
+        
+        # Create hidden individual preview labels for internal tracking
+        if not hasattr(self, 'skill_preview_labels'):
+            self.skill_preview_labels = {}
+        if faction_key not in self.skill_preview_labels:
+            self.skill_preview_labels[faction_key] = {}
+        
+        for i in range(len(skill_slots)):
+            # These labels won't be displayed but will hold the individual skill PNGs
+            image_label = ttk.Label(composite_frame)  # Create but don't pack
+            self.skill_preview_labels[faction_key][i] = image_label
+
+    def _load_skill_image(self, skill_id, slot_index, is_navi=False):
+        """Load skill PNG for a specific slot - prepares for composite rendering"""
+        try:
+            # Get the preview label for this slot
+            faction_key = 'navi' if is_navi else 'rda'
+            
+            if not hasattr(self, 'skill_preview_labels') or faction_key not in self.skill_preview_labels:
+                self.logger.warning(f"No skill preview labels found for {faction_key}")
+                return
+            
+            if slot_index not in self.skill_preview_labels[faction_key]:
+                self.logger.warning(f"No preview label found for slot {slot_index}")
+                return
+            
+            image_label = self.skill_preview_labels[faction_key][slot_index]
+            
+            # Get skill name from ID
+            skill_mappings = self.navi_skill_mappings if is_navi else self.rda_skill_mappings
+            skill_name = skill_mappings.get(skill_id, f"Unknown Skill ({skill_id})")
+            
+            # Sanitize skill name for filename
+            sanitized_name = skill_name.replace("/", "_")
+            sanitized_name = sanitized_name.replace("'", "")
+            sanitized_name = sanitized_name.replace(":", "")
+            sanitized_name = sanitized_name.replace("ä", "a").replace("ì", "i")
+            
+            # Determine the correct faction folder
+            faction_folder = "navi" if is_navi else "rda"
+            
+            # Try to find PNG in assets/skills/{faction}/ folder
+            png_path = os.path.join("assets", "skills", faction_folder, f"{sanitized_name}.png")
+            
+            # Also try with skill ID as filename
+            if not os.path.exists(png_path):
+                png_path = os.path.join("assets", "skills", faction_folder, f"{skill_id}.png")
+            
+            if os.path.exists(png_path):
+                # Load the PNG
+                image = Image.open(png_path)
+                # Resize to 100x100 for 2x2 grid
+                image = image.resize((100, 100), Image.LANCZOS)
+                
+                # Ensure image has alpha channel for transparency
+                if image.mode != 'RGBA':
+                    image = image.convert('RGBA')
+                
+                # Store the PIL Image on the label for later compositing
+                if not hasattr(image_label, 'skill_image'):
+                    image_label.skill_image = {}
+                image_label.skill_image[slot_index] = image
+                
+                # Trigger composite rendering
+                self._render_composite_skills(is_navi)
+                
+                self.logger.debug(f"Loaded skill PNG: {png_path}")
+            else:
+                # No PNG found - remove from composite
+                if hasattr(image_label, 'skill_image') and slot_index in image_label.skill_image:
+                    del image_label.skill_image[slot_index]
+                self._render_composite_skills(is_navi)
+                self.logger.debug(f"Skill PNG not found: {png_path}")
+                
+        except Exception as e:
+            self.logger.error(f"Error loading skill PNG: {str(e)}", exc_info=True)
+
+    def _render_composite_skills(self, is_navi=False):
+        """Render composite skill image by positioning all 4 skills in a 2x2 grid"""
+        try:
+            from PIL import Image, ImageTk, ImageDraw, ImageFont
+            
+            faction_key = 'navi' if is_navi else 'rda'
+            
+            # Get composite preview label
+            if not hasattr(self, 'skill_composite_preview_labels') or faction_key not in self.skill_composite_preview_labels:
+                return
+            
+            composite_label = self.skill_composite_preview_labels[faction_key]
+            
+            # Get skill labels
+            if not hasattr(self, 'skill_preview_labels') or faction_key not in self.skill_preview_labels:
+                return
+            
+            skill_labels = self.skill_preview_labels[faction_key]
+            
+            # Check for any equipped skills
+            has_any_skill = False
+            for slot_idx in range(4):
+                if slot_idx in skill_labels:
+                    label = skill_labels[slot_idx]
+                    if hasattr(label, 'skill_image') and slot_idx in label.skill_image:
+                        has_any_skill = True
+                        break
+            
+            # If no skills equipped → reset preview
+            if not has_any_skill:
+                composite_label.configure(image="")
+                composite_label.configure(text="No Skills\nEquipped")
+                return
+            
+            # === CREATE COMPOSITE IMAGE ===
+            canvas_size = 300
+            
+            # Positions for 2x2 grid (matching weapon cross pattern spacing)
+            positions = {
+                0: (100, 0),    # Top
+                1: (200, 100),  # Right
+                2: (100, 200),  # Bottom
+                3: (0, 100)     # Left
+            }
+            
+            # Create composite background
+            composite = Image.new('RGBA', (canvas_size, canvas_size), (30, 30, 30, 255))
+            
+            # Paste each skill image
+            for slot_idx, (x, y) in positions.items():
+                if slot_idx in skill_labels:
+                    label = skill_labels[slot_idx]
+                    if hasattr(label, 'skill_image') and slot_idx in label.skill_image:
+                        skill_img = label.skill_image[slot_idx]
+                        composite.paste(skill_img, (x, y), skill_img)
+            
+            # Draw slot labels
+            draw = ImageDraw.Draw(composite)
+            try:
+                font = ImageFont.truetype("arial.ttf", 12)
+            except:
+                font = ImageFont.load_default()
+            
+            slot_names = {0: "Top", 1: "Right", 2: "Bottom", 3: "Left"}
+            
+            for slot_idx, (x, y) in positions.items():
+                if slot_idx in skill_labels:
+                    label_obj = skill_labels[slot_idx]
+                    if hasattr(label_obj, 'skill_image') and slot_idx in label_obj.skill_image:
+                        text = slot_names[slot_idx]
+                        bbox = draw.textbbox((0, 0), text, font=font)
+                        text_w = bbox[2] - bbox[0]
+                        text_h = bbox[3] - bbox[1]
+                        
+                        padding = 3
+                        draw.rectangle(
+                            [x, y, x + text_w + padding*2, y + text_h + padding*2],
+                            fill=(0, 0, 0, 180)
+                        )
+                        draw.text((x + padding, y + padding), text, fill=(255, 255, 255), font=font)
+            
+            # Convert to Tk image and display
+            photo = ImageTk.PhotoImage(composite)
+            composite_label.configure(image=photo)
+            composite_label.image = photo  # Keep reference
+            composite_label.configure(text="")
+
+        except Exception as e:
+            self.logger.error(f"Error rendering composite skills: {str(e)}", exc_info=True)
 
     def _load_rda_skills(self, profile):
         """Load RDA skills from the save file"""
@@ -604,6 +1341,8 @@ class StatsManager:
                     # Known skill - show name
                     skill_name = self.rda_skill_mappings[skill_id]
                     self.rda_skill_slots[i]["dropdown"].set(skill_name)
+                    # Load skill image
+                    self._load_skill_image(skill_id, i, is_navi=False)
                 else:
                     # Unknown skill - show ID
                     dropdown = self.rda_skill_slots[i]["dropdown"]
@@ -639,6 +1378,8 @@ class StatsManager:
                     # Known skill - show name
                     skill_name = self.navi_skill_mappings[skill_id]
                     self.navi_skill_slots[i]["dropdown"].set(skill_name)
+                    # Load skill image
+                    self._load_skill_image(skill_id, i, is_navi=True)
                 else:
                     # Unknown skill - show ID
                     dropdown = self.navi_skill_slots[i]["dropdown"]
@@ -663,6 +1404,15 @@ class StatsManager:
         selected_skill = combo.get()
         
         if selected_skill == "-Empty-":
+            # Clear this skill from composite
+            faction_key = 'rda'
+            if hasattr(self, 'skill_preview_labels') and faction_key in self.skill_preview_labels:
+                if slot_index in self.skill_preview_labels[faction_key]:
+                    label = self.skill_preview_labels[faction_key][slot_index]
+                    if hasattr(label, 'skill_image') and slot_index in label.skill_image:
+                        del label.skill_image[slot_index]
+            # Re-render composite without this skill
+            self._render_composite_skills(is_navi=False)
             self._update_skill_slot(slot_index, None, is_navi=False)
             return
         
@@ -679,6 +1429,9 @@ class StatsManager:
                     break
         
         if skill_id:
+            # Load skill image
+            self._load_skill_image(skill_id, slot_index, is_navi=False)
+            # Update XML
             self._update_skill_slot(slot_index, skill_id, is_navi=False)
             self.main_window.unsaved_label.config(text="Unsaved Changes")
 
@@ -693,6 +1446,15 @@ class StatsManager:
         selected_skill = combo.get()
         
         if selected_skill == "-Empty-":
+            # Clear this skill from composite
+            faction_key = 'navi'
+            if hasattr(self, 'skill_preview_labels') and faction_key in self.skill_preview_labels:
+                if slot_index in self.skill_preview_labels[faction_key]:
+                    label = self.skill_preview_labels[faction_key][slot_index]
+                    if hasattr(label, 'skill_image') and slot_index in label.skill_image:
+                        del label.skill_image[slot_index]
+            # Re-render composite without this skill
+            self._render_composite_skills(is_navi=True)
             self._update_skill_slot(slot_index, None, is_navi=True)
             return
         
@@ -709,6 +1471,9 @@ class StatsManager:
                     break
         
         if skill_id:
+            # Load skill image
+            self._load_skill_image(skill_id, slot_index, is_navi=True)
+            # Update XML
             self._update_skill_slot(slot_index, skill_id, is_navi=True)
             self.main_window.unsaved_label.config(text="Unsaved Changes")
 
@@ -757,74 +1522,280 @@ class StatsManager:
             return False
 
     def _create_skill_mappings(self):
-        """Create mappings for skill IDs to their actual names"""
-        self.rda_skill_mappings = {
-
-            "370163335":  "Ultrasonic Repulsor IV",
-            "339641018":  "Samson Vehicle Spawn",
+        """Create mappings for skill IDs to their actual names, organized by category"""
+        
+        # ===== RDA SKILLS =====
+        
+        # RDA Combat Enhancement
+        rda_combat_enhancement = {
+            "1959749094": "Elite Training I",
+            "3989189724": "Elite Training II",
+            "2596340938": "Elite Training III",
+            "77959529": "Elite Training IV",
+            "1125225940": "Berserk I",
+            "3659056238": "Berserk II",
+            "2904552696": "Berserk III",
+            "863723867": "Berserk IV",
+            "2193097390": "Tactical Strike I",
+            "464605972": "Tactical Strike II",
+            "1823892354": "Tactical Strike III",
+            "4073911841": "Tactical Strike IV",
+        }
+        
+        # RDA Defensive/Support
+        rda_defensive = {
+            "2815647090": "Zeta Field I",
+            "1054477512": "Zeta Field II",
+            "1239235678": "Zeta Field III",
             "3619269117": "Zeta Field IV",
+            "527383063": "Genetic Regenerator I",
+            "2254859181": "Genetic Regenerator II",
+            "4049689403": "Genetic Regenerator III",
+            "1862651544": "Genetic Regenerator IV",
+            "3043422876": "Chromatic Blend I",
+            "745513766": "Chromatic Blend II",
+            "1533580208": "Chromatic Blend III",
+            "3305899539": "Chromatic Blend IV",
+        }
+        
+        # RDA Mobility/Utility
+        rda_mobility = {
+            "1719323144": "Ultrasonic Repulsor I",
+            "4285766578": "Ultrasonic Repulsor II",
+            "2289347364": "Ultrasonic Repulsor III",
+            "370163335": "Ultrasonic Repulsor IV",
+            "3737562477": "Sacrifice Grade I",
+            "1204813015": "Sacrifice Grade II",
+            "818465857": "Sacrifice Grade III",
+            "2930530786": "Sacrifice Grade IV",
+        }
+        
+        # RDA Vehicle Spawns
+        rda_vehicles = {
+            "339641018": "Samson Vehicle Spawn",
             "2857450382": "Boat Vehicle Spawn",
             "3179152460": "Scorpion Vehicle Spawn",
-            "767629789":  "AMP Suit Vehicle Spawn",
+            "767629789": "AMP Suit Vehicle Spawn",
             "3713403672": "ATV Vehicle Spawn",
             "1399874912": "Dragon Vehicle Spawn",
-            "77959529":   "Elite Training IV",
-            "3305899539": "Chromatic Blend IV",
-            "1862651544": "Genetic Regenerator IV",
-            "4073911841": "Tactical Strike IV",
             "1522936139": "Dove Vehicle Spawn",
-            "863723867":  "Berserk IV",
-            "861432372":  "Buggy Vehicle Spawn",
-
-            "1959749094": "Elitle Training I",
-            "1719323144": "Ultrasonic Repulsor I",
-            "527383063":  "Genetic Regenerator I",
-            "3043422876": "Chromatic Blend I",
+            "861432372": "Buggy Vehicle Spawn",
+            "4135278811": "Miles Quaritch Spawn",
+            "": "Miles Quaritch Spawn",
+            "": " Spawn",
+            "": " Spawn",
+            "": " Spawn",
         }
         
-        self.navi_skill_mappings = {
-            "1147099810": "Direhorse Mount Spawn",
-            "3843286588": "Pandora's Protection IV",
-            "611800566":  "Beast's Aegis IV",
-            "2479233397": "Whirl of Fury IV",
-            "2906455959": "Leonopteryx Mount Spawn",
-            "376364380":  "Eywa's Breath IV",
-            "2171844251": "Kinetic Dash IV",
-            "4154870226": "Pandora's Union IV",
+        # ===== NA'VI SKILLS =====
+        
+        # Na'vi Combat
+        navi_combat = {
+            "4047834971": "Titan's Bash I",
+            "1749835489": "Titan's Bash II",
+            "525037175": "Titan's Bash III",
             "2167405524": "Titan's Bash IV",
+            "2953989487": "Swarm's Wrath I",
+            "689642709": "Swarm's Wrath II",
+            "1578904643": "Swarm's Wrath III",
             "3229137376": "Swarm's Wrath IV",
-            "3661352705": "Banshee Mount Spawn",       
+            "3819761146": "Whirl of Fury I",
+            "2057681984": "Whirl of Fury II",
+            "228756694": "Whirl of Fury III",
+            "2479233397": "Whirl of Fury IV",
         }
-
-    def create_settings_section(self, parent):
-        """Create compact settings section"""
-        settings_container = ttk.Frame(parent)
-        settings_container.pack(fill=tk.X)
         
-        # Game Settings (left)
-        settings_frame = ttk.LabelFrame(settings_container, text="⚙️ Game Settings", padding=10)
-        settings_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+        # Na'vi Support/Healing
+        navi_support = {
+            "2278341981": "Pandora's Union I",
+            "516287719": "Pandora's Union II",
+            "1774378097": "Pandora's Union III",
+            "4154870226": "Pandora's Union IV",
+            "1711548883": "Eywa's Breath I",
+            "4279072873": "Eywa's Breath II",
+            "2282375423": "Eywa's Breath III",
+            "376364380": "Eywa's Breath IV",
+        }
         
-        # These should be editable comboboxes
-        print("DEBUG: Creating bEntityScanningEnabled field with options:", {"0": "Disabled", "1": "Enabled"})
-        self.create_compact_field_item(settings_frame, "Entity Scanning", "bEntityScanningEnabled", 
-                            {"0": "Disabled", "1": "Enabled"})
+        # Na'vi Defensive
+        navi_defensive = {
+            "2507739827": "Pandora's Protection I",
+            "208683785": "Pandora's Protection II",
+            "2071425951": "Pandora's Protection III",
+            "3843286588": "Pandora's Protection IV",
+            "1411228025": "Beast's Aegis I",
+            "3440701635": "Beast's Aegis II",
+            "3121856597": "Beast's Aegis III",
+            "611800566": "Beast's Aegis IV",
+        }
         
-        self.create_compact_field_item(settings_frame, "First Person Mode", "FirstPersonMode", 
-                            {"0": "Disabled", "1": "Enabled"})
-        self.create_compact_field_item(settings_frame, "Rumble Enabled", "RumbleEnabled", 
-                            {"0": "Disabled", "1": "Enabled"})
+        # Na'vi Mobility
+        navi_mobility = {
+            "4044964372": "Kinetic Dash I",
+            "1745884078": "Kinetic Dash II",
+            "521610040": "Kinetic Dash III",
+            "2171844251": "Kinetic Dash IV",
+        }
         
-        # Check what type of widget was created
-        print(f"DEBUG: bEntityScanningEnabled widget type: {type(self.entries['bEntityScanningEnabled'])}")
+        # Na'vi Mount Spawns
+        navi_mounts = {
+            "1147099810": "Direhorse Mount Spawn",
+            "2906455959": "Leonopteryx Mount Spawn",
+            "3661352705": "Banshee Mount Spawn",
+            "875933229": "Elite Axe Bodyguard Spawn",
+            "1127390907": "Elite Dual Blades Bodyguard Spawn",
+            "3549266730": "Elite Fighting Staff Bodyguard Spawn",
+            "2760553404": "Grace Augustine's Avatar Spawn",
+        }
         
-        # Cost Reduction (right)
-        cost_frame = ttk.LabelFrame(settings_container, text="💰 Cost Reduction", padding=10)
-        cost_frame.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        # # ===== GAME MECHANICS & EFFECTS =====
         
-        self.create_compact_field_item(cost_frame, "Na'vi Cost Reduction", "NaviCostReduction")
-        self.create_compact_field_item(cost_frame, "RDA Cost Reduction", "CorpCostReduction")
-        self.create_compact_field_item(cost_frame, "Recovery Bits", "RecoveryBits")
+        # # Special Effects
+        # special_effects = {
+        #     "4221139584": "Effect_ScaledFire_020",
+        #     "1588994160": "Effect_ScaledFire_060",
+        #     "154070465": "Effect_ScaledFire_100",
+        #     "3919303244": "Effect_SlingDart_Overtime",
+        #     "929187032": "SolsDelight_Blind",
+        #     "482995089": "Leucomelas_Blind",
+        #     "2831657996": "Root10sec",
+        #     "3149590643": "Poison_cloud",
+        #     "1761588079": "HellfireWasp_slow",
+        # }
+        
+        # # Protection Effects
+        # protection_effects = {
+        #     "707441961": "Hammerhead_Invulnerable",
+        #     "2901239959": "MP_CorpRespawnInvulnerability",
+        #     "2149792658": "MP_NaviRespawnInvulnerability",
+        #     "2120156884": "MP_CorpShield",
+        #     "896499985": "MP_NaviShield",
+        # }
+        
+        # # Multiplayer Zones
+        # mp_zones = {
+        #     "2288728861": "MP_HillOfProtection_C",
+        #     "4172838722": "MP_HillOfPower_C",
+        #     "2248739839": "MP_HillOfPower_N",
+        #     "4141500320": "MP_HillOfProtection_N",
+        #     "3605504349": "MP_HillOfRejuvenation_C",
+        #     "2824265184": "MP_HillOfRejuvenation_N",
+        # }
+        
+        # # Multiplayer Effects
+        # mp_effects = {
+        #     "699117554": "MP_NAVI_Effect_MythicArchery",
+        #     "3130830861": "MP_CORP_Effect_ArmorPiercing",
+        # }
+        
+        # # Environmental Effects
+        # environmental_effects = {
+        #     "1987225269": "OxygenPod_Fear",
+        #     "1774875854": "Amp_JumpFear",
+        # }
+        
+        # # ===== AI & CREATURES =====
+        
+        # # Enemy AI
+        # enemy_skills = {
+        #     "1298333286": "EnemyCSS_3A_1",
+        #     "3072205389": "EnemyNPG_2A_4",
+        #     "1147345197": "EnemyNME_3A_4",
+        #     "2779483555": "EnemyNPG_1A_4",
+        #     "1887679822": "Enemy_NWM_2A",
+        #     "651760328": "Enemy_NWM_4A",
+        #     "3548279530": "EnemyNBD_1A_4",
+        # }
+        
+        # # Creature Skills
+        # creature_skills = {
+        #     "138960729": "Enemy_Viperwolf_EliteWasp",
+        #     "1849804230": "Alpha_Viperwolf",
+        #     "1785634812": "Viperwolf_Berzerk",
+        #     "3490889542": "Viperwolf_Heal_LVL9_13",
+        #     "62547143": "Viperwolf_Heal_LVL1_4",
+        #     "218464304": "Viperwolf_Heal_LVL5_8",
+        #     "1745871194": "Viperwolf_Camouflage",
+        #     "3305111690": "Viperwolf_Bite",
+        #     "1533394898": "Enemy_Summon_BlackViperwolf",
+        #     "895550929": "Enemy_Summon_Viperwolf_Galactonotus",
+        #     "480060929": "Hexapede",
+        # }
+        
+        # # Boss Skills
+        # boss_skills = {
+        #     "1906639931": "Hammerhead_Lvl5To8_AttackWarning",
+        #     "771604749": "Hammerhead_Lvl9To13_AttackWarning",
+        #     "2932769824": "Hammerhead_Lvl5To8_AttackWarning_LowHealth",
+        #     "1073248985": "Hammerhead_Lvl1To4_AttackWarning",
+        #     "1539660776": "Hammerhead_Lvl9To13_AttackWarning_LowHealth",
+        #     "2122270851": "ScarerShockWave",
+        # }
+        
+        # # Unknown Skills
+        # unknown_skills = {
+        #     "4221139584": "RDA Skill 4221139584",
+        #     "3396941018": "RDA Skill 3396941018",
+        # }
+        
+        # ===== COMBINE INTO MASTER DICTIONARIES =====
+        
+        # RDA Master Dictionary
+        self.rda_skill_mappings = {
+            **rda_combat_enhancement,
+            **rda_defensive,
+            **rda_mobility,
+            **rda_vehicles,
+            # **special_effects,
+            # **protection_effects,
+            # **mp_zones,
+            # **mp_effects,
+            # **environmental_effects,
+            # **enemy_skills,
+            # **creature_skills,
+            # **boss_skills,
+            # **unknown_skills,
+        }
+        
+        # Na'vi Master Dictionary
+        self.navi_skill_mappings = {
+            **navi_combat,
+            **navi_support,
+            **navi_defensive,
+            **navi_mobility,
+            **navi_mounts,
+            # **special_effects,
+            # **protection_effects,
+            # **mp_zones,
+            # **mp_effects,
+            # **environmental_effects,
+            # **enemy_skills,
+            # **creature_skills,
+            # **boss_skills,
+            # **unknown_skills,
+        }
+        
+        # Store category mappings for reference
+        self.skill_categories = {
+            "rda_combat_enhancement": rda_combat_enhancement,
+            "rda_defensive": rda_defensive,
+            "rda_mobility": rda_mobility,
+            "rda_vehicles": rda_vehicles,
+            "navi_combat": navi_combat,
+            "navi_support": navi_support,
+            "navi_defensive": navi_defensive,
+            "navi_mobility": navi_mobility,
+            "navi_mounts": navi_mounts,
+            # "special_effects": special_effects,
+            # "protection_effects": protection_effects,
+            # "mp_zones": mp_zones,
+            # "mp_effects": mp_effects,
+            # "environmental_effects": environmental_effects,
+            # "enemy_skills": enemy_skills,
+            # "creature_skills": creature_skills,
+            # "boss_skills": boss_skills,
+            # "unknown_skills": unknown_skills,
+        }
 
     def create_compact_field_item(self, parent, label, key, options=None, readonly=False):
         """Create a compact field item"""
@@ -844,11 +1815,12 @@ class StatsManager:
             if key == "face":
                 widget.bind('<Button-1>', lambda e: self._on_face_selected())
         elif options:
-            # Combobox with options (this should be hit for side, pawn, bEntityScanningEnabled)
+            # Combobox with options
             widget = ttk.Combobox(field_frame, values=list(options.values()), 
                                 state="readonly", font=('Segoe UI', 8), height=4)
             widget.pack(fill=tk.X, pady=(1, 0))
             block_combobox_mousewheel(widget)
+            self._add_hover_sound_to_combobox(widget)
             
             # Add specific event bindings
             if key == "PlayerFaction":
@@ -857,10 +1829,36 @@ class StatsManager:
                 widget.bind('<<ComboboxSelected>>', self._on_current_location_selected)
             elif key in ["side", "pawn", "bEntityScanningEnabled", "FirstPersonMode", "RumbleEnabled"]:
                 widget.bind('<<ComboboxSelected>>', self._mark_unsaved_changes)
+                
+                if key == "pawn":
+                    def pawn_changed_update_face(event):
+                        self._on_face_selected()
+                        return None
+                    widget.bind('<<ComboboxSelected>>', pawn_changed_update_face, add='+')
         else:
             # Regular entry
             widget = ttk.Entry(field_frame, font=('Segoe UI', 8))
             widget.pack(fill=tk.X, pady=(1, 0))
+            
+            # Add validation for RecoveryBits
+            if key == "RecoveryBits":
+                def validate_recovery_bits(event):
+                    try:
+                        value = widget.get()
+                        if value:
+                            int_value = int(value)
+                            if int_value > 500:
+                                widget.delete(0, tk.END)
+                                widget.insert(0, "500")
+                                show_warning("Value Capped", "Recovery Bits cannot exceed 500.")
+                            elif int_value < 0:
+                                widget.delete(0, tk.END)
+                                widget.insert(0, "0")
+                    except ValueError:
+                        pass
+                
+                widget.bind('<FocusOut>', validate_recovery_bits)
+                widget.bind('<Return>', validate_recovery_bits)
         
         # Store widget reference
         self.entries[key] = widget
@@ -868,62 +1866,122 @@ class StatsManager:
         # Add change tracking for all editable widgets
         if not readonly and hasattr(widget, 'bind'):
             widget.bind('<KeyRelease>', self._mark_unsaved_changes)
-            if hasattr(widget, 'current'):  # Combobox
-                widget.bind('<<ComboboxSelected>>', self._mark_unsaved_changes)
+            if hasattr(widget, 'current'):
+                if key not in ["PlayerFaction", "crc_LastLoadedPin", "side", "pawn", "bEntityScanningEnabled", "FirstPersonMode", "RumbleEnabled"]:
+                    widget.bind('<<ComboboxSelected>>', self._mark_unsaved_changes)
+
+        # Enforce 10-character limit on the character name entry
+        if key == "namevec" and not readonly:
+            def _enforce_name_limit(event, w=widget):
+                if len(w.get()) > 10:
+                    w.delete(10, tk.END)
+            widget.bind('<KeyRelease>', _enforce_name_limit, add='+')
 
     def create_compact_weapon_slots(self, parent, is_navi=False):
-        """Create compact weapon slots"""
+        """Create compact weapon slots with controls on left, single composite preview on right"""
         weapons_container = ttk.Frame(parent)
-        weapons_container.pack(fill=tk.X, pady=5)
+        weapons_container.pack(fill=tk.BOTH, expand=True, pady=5, padx=5)
         
-        weapon_slots = ["Right", "Down", "Left", "Top"]
+        # Split into two main sections
+        left_section = ttk.Frame(weapons_container)
+        left_section.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        
+        right_section = ttk.Frame(weapons_container)
+        right_section.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        
+        weapon_slots = ["Top", "Right", "Down", "Left"]
+        
         slots_storage = self.navi_weapon_slots if is_navi else self.weapon_slots
         
+        # Get weapons list
+        all_weapons = self._get_faction_weapons(is_navi)
+        
+        # Create single composite preview box on the right - SAME AS ARMOR
+        right_section.grid_columnconfigure(0, weight=1)
+        right_section.grid_rowconfigure(0, weight=1)
+        
+        # Single weapon preview frame - BIGGER
+        weapon_preview_frame = ttk.LabelFrame(right_section, text="Weapon Preview", padding=5)
+        weapon_preview_frame.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        
+        # Configure the frame to expand
+        weapon_preview_frame.grid_columnconfigure(0, weight=1)
+        weapon_preview_frame.grid_rowconfigure(0, weight=1)
+        
+        weapon_preview_label = ttk.Label(weapon_preview_frame, text="No Weapons\nEquipped", 
+                                    width=20, anchor="center", relief="sunken")
+        weapon_preview_label.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        
+        # Store the composite preview label
+        if not hasattr(self, 'weapon_composite_preview_labels'):
+            self.weapon_composite_preview_labels = {}
+        faction_key = 'navi' if is_navi else 'rda'
+        self.weapon_composite_preview_labels[faction_key] = weapon_preview_label
+        
+        # Create hidden individual preview labels for internal tracking (like armor does)
+        if not hasattr(self, 'weapon_preview_labels'):
+            self.weapon_preview_labels = {}
+        if faction_key not in self.weapon_preview_labels:
+            self.weapon_preview_labels[faction_key] = {}
+        
+        for i in range(len(weapon_slots)):
+            # These labels won't be displayed but will hold the individual weapon GIFs
+            image_label = ttk.Label(weapon_preview_frame)  # Create but don't pack
+            self.weapon_preview_labels[faction_key][i] = image_label
+        
+        # Add spacer at the top to push weapon boxes down
+        ttk.Frame(left_section, height=20).pack(side=tk.TOP)
+        
+        # Now create compact controls on the left
         for i, slot_name in enumerate(weapon_slots):
-            slot_frame = ttk.Frame(weapons_container)
-            slot_frame.pack(fill=tk.X, pady=2)
+            # Compact control frame
+            control_frame = ttk.Frame(left_section)
+            control_frame.pack(fill=tk.X, pady=12)
             
-            # Compact slot label
-            ttk.Label(slot_frame, text=f"{slot_name}:", 
-                    font=('Segoe UI', 8, 'bold'), width=6).pack(side=tk.LEFT, padx=(0, 5))
+            # Slot label
+            ttk.Label(control_frame, text=f"{slot_name}:", font=('Segoe UI', 9, 'bold'), width=6).pack(side=tk.LEFT, padx=(0, 8))
             
-            # Get weapons list
-            all_weapons = self._get_faction_weapons(is_navi)
-            
-            # Compact weapon dropdown
-            weapon_combo = ttk.Combobox(slot_frame, values=list(all_weapons.values()), 
-                                    width=25, state="readonly", font=('Segoe UI', 8))
+            # Weapon dropdown
+            weapon_combo = ttk.Combobox(control_frame, values=list(all_weapons.values()), 
+                                    state="readonly", font=('Segoe UI', 10), width=40, height=10)
             weapon_combo.set("-Empty-")
-            weapon_combo.pack(side=tk.LEFT, padx=(0, 5))
+            weapon_combo.pack(side=tk.LEFT, padx=(0, 8))
             block_combobox_mousewheel(weapon_combo)
+            self._add_hover_sound_to_combobox(weapon_combo)
             
             # Compact ammo controls
-            ttk.Label(slot_frame, text="Ammo:", font=('Segoe UI', 7)).pack(side=tk.LEFT, padx=(5, 2))
-            ammo_entry = ttk.Entry(slot_frame, width=6, font=('Segoe UI', 8))
+            ammo_container = ttk.Frame(control_frame)
+            ammo_container.pack(side=tk.LEFT)
+            
+            ttk.Label(ammo_container, text="Ammo:", font=('Segoe UI', 8)).pack(side=tk.LEFT, padx=(0, 3))
+            ammo_entry = ttk.Entry(ammo_container, width=6, font=('Segoe UI', 9))
             ammo_entry.insert(0, "0")
-            ammo_entry.pack(side=tk.LEFT, padx=1)
+            ammo_entry.pack(side=tk.LEFT, padx=(0, 3))
             
-            # Infinite ammo checkbox
             infinite_var = tk.BooleanVar()
-            infinite_check = ttk.Checkbutton(slot_frame, text="∞", variable=infinite_var)
-            infinite_check.pack(side=tk.LEFT, padx=2)
+            infinite_check = ttk.Checkbutton(ammo_container, text="∞", variable=infinite_var)
+            infinite_check.pack(side=tk.LEFT, padx=(0, 8))
             
-            # Compact clip display
-            ttk.Label(slot_frame, text="Clip:", font=('Segoe UI', 7)).pack(side=tk.LEFT, padx=(5, 2))
-            clip_label = ttk.Label(slot_frame, text="0", width=4, font=('Segoe UI', 8))
+            ttk.Label(ammo_container, text="Clip:", font=('Segoe UI', 8)).pack(side=tk.LEFT, padx=(0, 3))
+            clip_label = ttk.Label(ammo_container, text="0", font=('Segoe UI', 9), width=4)
             clip_label.pack(side=tk.LEFT)
             
-            # Store and bind (same as before)
+            # Store slot data
             slot_data = {
-                "dropdown": weapon_combo, "ammo_entry": ammo_entry, "clip_entry": clip_label,
-                "infinite_var": infinite_var, "infinite_check": infinite_check, "all_weapons": all_weapons
+                "dropdown": weapon_combo,
+                "ammo_entry": ammo_entry,
+                "clip_entry": clip_label,
+                "infinite_var": infinite_var,
+                "infinite_check": infinite_check,
+                "all_weapons": all_weapons,
+                "slot_name": slot_name
             }
             
             while len(slots_storage) <= i:
                 slots_storage.append(None)
             slots_storage[i] = slot_data
             
-            # Bind events (same as before)
+            # Bind events
             if is_navi:
                 weapon_combo.bind('<<ComboboxSelected>>', lambda e, idx=i: self._on_navi_weapon_selected(e, idx))
             else:
@@ -932,47 +1990,800 @@ class StatsManager:
             infinite_check.bind('<ButtonRelease-1>', lambda e, idx=i, navi=is_navi: self._toggle_infinite_ammo(e, idx, navi))
             ammo_entry.bind('<KeyRelease>', lambda e, idx=i, navi=is_navi: self._update_ammo_value(e, idx, navi))
 
-    def create_compact_armor_section(self, parent, is_navi=False):
-        """Create compact armor section"""
-        armor_container = ttk.Frame(parent)
-        armor_container.pack(fill=tk.X, pady=5)
-        
-        # Create armor mappings
-        if is_navi:
-            if not hasattr(self, 'navi_armor_sets'):
-                self._create_navi_armor_mappings()
-            armor_sets = self.navi_armor_sets
-            armor_dropdowns = self.navi_armor_dropdowns
-        else:
-            if not hasattr(self, 'rda_armor_sets'):
-                self._create_rda_armor_mappings()
-            armor_sets = self.rda_armor_sets
-            armor_dropdowns = self.armor_dropdowns
-        
-        # Compact armor slots
-        armor_slots = [("headwear", "Head"), ("torso", "Torso"), ("legs", "Legs")]
-        
-        for slot_id, slot_name in armor_slots:
-            slot_frame = ttk.Frame(armor_container)
-            slot_frame.pack(fill=tk.X, pady=2)
+    def _load_weapon_image(self, weapon_id, slot_index, is_navi=False):
+        """Load weapon PNG for a specific slot - prepares for composite rendering"""
+        try:
+            # Get the preview label for this slot
+            faction_key = 'navi' if is_navi else 'rda'
             
-            ttk.Label(slot_frame, text=f"{slot_name}:", 
-                    font=('Segoe UI', 8, 'bold'), width=6).pack(side=tk.LEFT, padx=(0, 5))
+            if not hasattr(self, 'weapon_preview_labels') or faction_key not in self.weapon_preview_labels:
+                self.logger.warning(f"No weapon preview labels found for {faction_key}")
+                return
             
-            values = list(armor_sets[slot_id].values())
-            combo = ttk.Combobox(slot_frame, values=values, state="readonly", 
-                            width=25, font=('Segoe UI', 8))
-            combo.set("-Empty-")
-            combo.pack(side=tk.LEFT)
-            block_combobox_mousewheel(combo)
+            if slot_index not in self.weapon_preview_labels[faction_key]:
+                self.logger.warning(f"No preview label found for slot {slot_index}")
+                return
             
-            # Bind events
-            if is_navi:
-                combo.bind('<<ComboboxSelected>>', lambda e, slot=slot_id: self._on_navi_armor_selected(e, slot))
+            image_label = self.weapon_preview_labels[faction_key][slot_index]
+            
+            # Get weapon name from ID
+            weapon_name = self._get_item_name(weapon_id)
+            
+            # Sanitize weapon name for filename
+            sanitized_name = weapon_name.replace("/", "_")
+            sanitized_name = sanitized_name.replace("'", "")
+            sanitized_name = sanitized_name.replace(":", "")
+            sanitized_name = sanitized_name.replace("ä", "a").replace("ì", "i")
+            
+            # Try to find PNG in assets/weapons/ folder
+            png_path = os.path.join("assets", "weapons", f"{sanitized_name}.png")
+            
+            if not os.path.exists(png_path):
+                png_path = os.path.join("assets", "weapons", f"{weapon_id}.png")
+            
+            if os.path.exists(png_path):
+                # Load the PNG
+                image = Image.open(png_path)
+                # Resize to 100x100 for 3x3 grid
+                image = image.resize((100, 100), Image.LANCZOS)
+                
+                # Ensure image has alpha channel for transparency
+                if image.mode != 'RGBA':
+                    image = image.convert('RGBA')
+                
+                # Store the PIL Image on the label for later compositing
+                if not hasattr(image_label, 'weapon_image'):
+                    image_label.weapon_image = {}
+                image_label.weapon_image[slot_index] = image
+                
+                # Trigger composite rendering WITHOUT force regeneration
+                self._render_composite_weapons(is_navi, force_regenerate=False)
+                
+                self.logger.debug(f"Loaded weapon PNG: {png_path}")
             else:
-                combo.bind('<<ComboboxSelected>>', lambda e, slot=slot_id: self._on_armor_selected(e, slot))
+                # No PNG found - remove from composite
+                if hasattr(image_label, 'weapon_image') and slot_index in image_label.weapon_image:
+                    del image_label.weapon_image[slot_index]
+                self._render_composite_weapons(is_navi, force_regenerate=False)
+                self.logger.debug(f"Weapon PNG not found: {png_path}")
+                
+        except Exception as e:
+            self.logger.error(f"Error loading weapon PNG: {str(e)}", exc_info=True)
+
+    def _render_composite_weapons(self, is_navi=False, force_regenerate=False):
+        """Render composite weapon image by positioning all 4 weapons in a 3x3 cross pattern"""
+        try:
+            from PIL import Image, ImageTk, ImageDraw, ImageFont
             
-            armor_dropdowns[slot_id] = combo
+            faction_key = 'navi' if is_navi else 'rda'
+            
+            # Get composite preview label
+            if not hasattr(self, 'weapon_composite_preview_labels') or faction_key not in self.weapon_composite_preview_labels:
+                return
+            
+            composite_label = self.weapon_composite_preview_labels[faction_key]
+            
+            # Get weapon labels
+            if not hasattr(self, 'weapon_preview_labels') or faction_key not in self.weapon_preview_labels:
+                return
+            
+            weapon_labels = self.weapon_preview_labels[faction_key]
+            
+            # Check for any equipped weapons
+            has_any_weapon = False
+            for slot_idx in range(4):
+                if slot_idx in weapon_labels:
+                    label = weapon_labels[slot_idx]
+                    if hasattr(label, 'weapon_image') and slot_idx in label.weapon_image:
+                        has_any_weapon = True
+                        break
+            
+            # If no weapons equipped → reset preview
+            if not has_any_weapon:
+                composite_label.configure(image="")
+                composite_label.configure(text="No Weapons\nEquipped")
+                return
+            
+            # === CREATE COMPOSITE IMAGE ===
+            canvas_size = 300
+            
+            # Positions: display slot 0=Top, 1=Right, 2=Down, 3=Left
+            positions = {
+                0: (100, 0),    # Top
+                1: (200, 100),  # Right
+                2: (100, 200),  # Down
+                3: (0, 100)     # Left
+            }
+            
+            # Create composite background
+            composite = Image.new('RGBA', (canvas_size, canvas_size), (30, 30, 30, 255))
+            
+            # Paste each weapon image
+            for slot_idx, (x, y) in positions.items():
+                if slot_idx in weapon_labels:
+                    label = weapon_labels[slot_idx]
+                    if hasattr(label, 'weapon_image') and slot_idx in label.weapon_image:
+                        weapon_img = label.weapon_image[slot_idx]
+                        composite.paste(weapon_img, (x, y), weapon_img)
+            
+            # Draw slot labels
+            draw = ImageDraw.Draw(composite)
+            try:
+                font = ImageFont.truetype("arial.ttf", 12)
+            except:
+                font = ImageFont.load_default()
+            
+            slot_names = {0: "Top", 1: "Right", 2: "Down", 3: "Left"}
+            
+            for slot_idx, (x, y) in positions.items():
+                if slot_idx in weapon_labels:
+                    label_obj = weapon_labels[slot_idx]
+                    if hasattr(label_obj, 'weapon_image') and slot_idx in label_obj.weapon_image:
+                        text = slot_names[slot_idx]
+                        bbox = draw.textbbox((0, 0), text, font=font)
+                        text_w = bbox[2] - bbox[0]
+                        text_h = bbox[3] - bbox[1]
+                        
+                        padding = 3
+                        draw.rectangle(
+                            [x, y, x + text_w + padding*2, y + text_h + padding*2],
+                            fill=(0, 0, 0, 180)
+                        )
+                        draw.text((x + padding, y + padding), text, fill=(255, 255, 255), font=font)
+            
+            # Convert to Tk image and display
+            photo = ImageTk.PhotoImage(composite)
+            composite_label.configure(image=photo)
+            composite_label.image = photo  # Keep reference
+            composite_label.configure(text="")
+
+        except Exception as e:
+            self.logger.error(f"Error rendering composite weapons: {str(e)}", exc_info=True)
+
+    def _animate_composite_weapons(self, label):
+        """
+        Animate composite weapon display by cycling through frames.
+        Prevents runaway animation loops by canceling older .after() timers.
+        """
+
+        # If an animation loop is already running, cancel it before starting a new one.
+        if hasattr(label, "_after_id") and label._after_id:
+            try:
+                label.after_cancel(label._after_id)
+            except Exception:
+                pass  # safe to ignore if ID is invalid
+            label._after_id = None
+
+        # Safety check – no frames to animate
+        if not hasattr(label, 'composite_frames') or not label.composite_frames:
+            return
+
+        # Animation function
+        def update_frame():
+            try:
+                # Ensure composite_frames still exists
+                if not hasattr(label, 'composite_frames') or not label.composite_frames:
+                    return
+
+                # Update the frame
+                label.configure(image=label.composite_frames[label.frame_index])
+                label.frame_index = (label.frame_index + 1) % len(label.composite_frames)
+
+                # Schedule next frame and store timer ID
+                label._after_id = label.after(50, update_frame)
+
+            except Exception as e:
+                self.logger.error(f"Error animating composite weapons: {str(e)}", exc_info=True)
+
+        # Start animation
+        update_frame()
+
+    def _get_current_gender(self):
+        """Get the current character's gender from the save file"""
+        try:
+            # First try to get from the UI entries (if already loaded)
+            if "isfemale" in self.entries:
+                gender_widget = self.entries["isfemale"]
+                gender_text = gender_widget.cget("text") if hasattr(gender_widget, 'cget') else gender_widget.get()
+                
+                if gender_text == "Female":
+                    self.logger.debug("Gender from UI: female")
+                    return "female"
+                elif gender_text == "Male":
+                    self.logger.debug("Gender from UI: male")
+                    return "male"
+            
+            # Fallback: read directly from XML if UI not loaded yet
+            if self.main_window.tree is not None:
+                root = self.main_window.tree.getroot()
+                profile = root.find("PlayerProfile")
+                
+                if profile is not None:
+                    base_info = profile.find("BaseInfo")
+                    if base_info is not None:
+                        is_female = base_info.get("isfemale", "0")
+                        gender = "female" if is_female == "1" else "male"
+                        self.logger.debug(f"Gender from XML: {gender} (isfemale={is_female})")
+                        return gender
+            
+            self.logger.warning("Could not determine gender, defaulting to male")
+            return "male"  # Default fallback
+            
+        except Exception as e:
+            self.logger.error(f"Error getting gender: {str(e)}", exc_info=True)
+            return "male"  # Default fallback
+
+    def _load_armor_image(self, armor_id, slot_type, is_navi=False):
+        """Load and display armor PNG for a specific slot - prepares for layering"""
+        try:
+            # Get the preview label for this slot
+            preview_labels = self.navi_armor_preview_labels if is_navi else self.armor_preview_labels
+            
+            if slot_type not in preview_labels:
+                self.logger.warning(f"No preview label found for {slot_type}")
+                return
+            
+            image_label = preview_labels[slot_type]
+            
+            # Get armor name from ID
+            armor_name = self._get_item_name(armor_id)
+            
+            # Sanitize armor name for filename - KEEP SPACES, NO UNDERSCORES
+            sanitized_name = armor_name.replace("/", "_")  # Only replace slashes
+            sanitized_name = sanitized_name.replace("'", "")  # Remove apostrophes
+            sanitized_name = sanitized_name.replace(":", "")  # Remove colons
+            sanitized_name = sanitized_name.replace("ä", "a").replace("ì", "i")  # Handle special chars
+            
+            # Determine the correct faction folder
+            faction_folder = "navi" if is_navi else "rda"
+            
+            # Get gender from the save file
+            gender = self._get_current_gender()  # Returns "male" or "female"
+            
+            # Try to find PNG in assets/armors/{faction}/{gender}/ folder
+            png_path = os.path.join("assets", "armors", faction_folder, gender, f"{sanitized_name}.png")
+            
+            # Also try with armor ID as filename
+            if not os.path.exists(png_path):
+                png_path = os.path.join("assets", "armors", faction_folder, gender, f"{armor_id}.png")
+            
+            if os.path.exists(png_path):
+                # Load the PNG
+                image = Image.open(png_path)
+                # Resize to standard size (300x300)
+                image = image.resize((300, 300), Image.LANCZOS)
+                
+                # Ensure image has alpha channel for transparency
+                if image.mode != 'RGBA':
+                    image = image.convert('RGBA')
+                
+                # Store the PIL Image on the label for later layering
+                if not hasattr(image_label, 'armor_images'):
+                    image_label.armor_images = {}
+                image_label.armor_images[slot_type] = image
+                
+                # Trigger composite rendering
+                self._render_composite_armor(is_navi)
+                
+                self.logger.debug(f"Loaded armor PNG: {png_path}")
+            else:
+                # No PNG found - show placeholder
+                if hasattr(image_label, 'armor_images') and slot_type in image_label.armor_images:
+                    del image_label.armor_images[slot_type]
+                self._render_composite_armor(is_navi)
+                self.logger.debug(f"Armor PNG not found: {png_path}")
+                
+        except Exception as e:
+            self.logger.error(f"Error loading armor PNG: {str(e)}", exc_info=True)
+
+    def _render_composite_armor(self, is_navi=False):
+        """Render composite armor image by layering legs -> torso -> head"""
+        try:
+            preview_labels = self.navi_armor_preview_labels if is_navi else self.armor_preview_labels
+            
+            # Create a blank canvas (100x100, transparent)
+            composite = Image.new('RGBA', (300, 300), (0, 0, 0, 0))
+            
+            # Layer order: legs (bottom) -> torso (middle) -> headwear (top)
+            layer_order = ['legs', 'torso', 'headwear']
+            
+            has_any_armor = False
+            
+            # Composite the layers
+            for slot_type in layer_order:
+                if slot_type in preview_labels:
+                    label = preview_labels[slot_type]
+                    if hasattr(label, 'armor_images') and slot_type in label.armor_images:
+                        armor_image = label.armor_images[slot_type]
+                        # Ensure image has alpha channel
+                        if armor_image.mode != 'RGBA':
+                            armor_image = armor_image.convert('RGBA')
+                        # Paste onto composite (alpha composite)
+                        composite = Image.alpha_composite(composite, armor_image)
+                        has_any_armor = True
+            
+            # Find a label to display the composite on
+            # We'll create a dedicated composite preview label
+            if not hasattr(self, 'composite_preview_labels'):
+                self.composite_preview_labels = {}
+            
+            faction_key = 'navi' if is_navi else 'rda'
+            
+            if faction_key in self.composite_preview_labels:
+                composite_label = self.composite_preview_labels[faction_key]
+                
+                if has_any_armor:
+                    # Convert to PhotoImage and display
+                    photo = ImageTk.PhotoImage(composite)
+                    composite_label.configure(image=photo, text="")
+                    composite_label.image = photo  # Keep reference
+                else:
+                    # No armor equipped
+                    composite_label.configure(image="", text="No Armor\nEquipped")
+            
+        except Exception as e:
+            self.logger.error(f"Error rendering composite armor: {str(e)}", exc_info=True)
+
+    def _display_gif(self, label, gif_path):
+        """Display an animated GIF on a label"""
+        try:
+            from PIL import Image, ImageTk, ImageSequence
+            
+            # Open the GIF
+            gif = Image.open(gif_path)
+            
+            # Get all frames
+            frames = []
+            for frame in ImageSequence.Iterator(gif):
+                # Resize frame to fit (100x100)
+                frame = frame.copy()
+                frame = frame.resize((100, 100), Image.LANCZOS)
+                frames.append(ImageTk.PhotoImage(frame))
+            
+            # Store frames on the label to prevent garbage collection
+            label.frames = frames
+            label.frame_index = 0
+            
+            # Clear any text
+            label.configure(text="")
+            
+            # Start animation
+            self._animate_gif(label)
+            
+        except Exception as e:
+            self.logger.error(f"Error displaying GIF: {str(e)}", exc_info=True)
+            label.configure(image="", text="Error")
+
+    def _animate_gif(self, label):
+        """Animate a GIF by cycling through frames"""
+        try:
+            if not hasattr(label, 'frames') or not label.frames:
+                return
+            
+            # Update to next frame
+            label.configure(image=label.frames[label.frame_index])
+            label.frame_index = (label.frame_index + 1) % len(label.frames)
+            
+            # Schedule next frame (100ms delay = 10 FPS)
+            label.after(100, lambda: self._animate_gif(label))
+            
+        except Exception as e:
+            self.logger.error(f"Error animating GIF: {str(e)}")
+
+    def _open_outfit_manager(self, is_navi=False):
+        """Open the outfit manager window"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        # Create outfit manager window
+        manager_window = tk.Toplevel(self.parent)
+        faction_name = "Na'vi" if is_navi else "RDA"
+        manager_window.title(f"{faction_name} Outfit Manager")
+        manager_window.geometry("600x500")
+        manager_window.transient(self.parent)
+        manager_window.grab_set()
+
+        # Set window icon
+        icon_path = os.path.join("icon", "avatar_icon.ico")
+        if os.path.exists(icon_path):
+            try:
+                manager_window.iconbitmap(icon_path)
+            except Exception as e:
+                logging.getLogger('OutfitManager').warning(f"Failed to set window icon: {e}")
+        else:
+            logging.getLogger('OutfitManager').warning(f"Icon file not found: {icon_path}")
+
+        # Set dark background
+        manager_window.configure(bg='#1e1e1e')
+        
+        # Center the window
+        manager_window.update_idletasks()
+        x = (manager_window.winfo_screenwidth() // 2) - (manager_window.winfo_width() // 2)
+        y = (manager_window.winfo_screenheight() // 2) - (manager_window.winfo_height() // 2)
+        manager_window.geometry(f"+{x}+{y}")
+        
+        # Main container with dark background
+        main_container = ttk.Frame(manager_window, padding=15)
+        main_container.pack(fill=tk.BOTH, expand=True)
+        main_container.configure(style='Dark.TFrame')
+        
+        # Create style for dark background if it doesn't exist
+        style = ttk.Style()
+        style.configure('Dark.TFrame', background='#1e1e1e')
+        style.configure('Dark.TLabel', background='#1e1e1e', foreground='white')
+        style.configure('Dark.TLabelframe', background='#1e1e1e', foreground='white')
+        style.configure('Dark.TLabelframe.Label', background='#1e1e1e', foreground='white')
+        
+        # Title
+        title_label = ttk.Label(main_container, 
+                            text=f"{faction_name} Outfit Manager",
+                            font=('Segoe UI', 12, 'bold'),
+                            style='Dark.TLabel')
+        title_label.pack(pady=(0, 10))
+        
+        # Current outfit section
+        current_frame = ttk.LabelFrame(main_container, text="Current Outfit", padding=10, style='Dark.TLabelframe')
+        current_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        # Get current armor
+        armor_dropdowns = self.navi_armor_dropdowns if is_navi else self.armor_dropdowns
+        current_outfit = {
+            "headwear": armor_dropdowns["headwear"].get(),
+            "torso": armor_dropdowns["torso"].get(),
+            "legs": armor_dropdowns["legs"].get()
+        }
+        
+        # Display current outfit
+        ttk.Label(current_frame, text=f"Head: {current_outfit['headwear']}", 
+                font=('Segoe UI', 9), style='Dark.TLabel').pack(anchor=tk.W, pady=2)
+        ttk.Label(current_frame, text=f"Torso: {current_outfit['torso']}", 
+                font=('Segoe UI', 9), style='Dark.TLabel').pack(anchor=tk.W, pady=2)
+        ttk.Label(current_frame, text=f"Legs: {current_outfit['legs']}", 
+                font=('Segoe UI', 9), style='Dark.TLabel').pack(anchor=tk.W, pady=2)
+        
+        # Save current outfit button
+        save_frame = ttk.Frame(current_frame, style='Dark.TFrame')
+        save_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        ttk.Button(save_frame, text="💾 Save Current Outfit", 
+                command=lambda: self._save_current_outfit(is_navi, manager_window)).pack(side=tk.LEFT, padx=(0, 5))
+        
+        # Saved outfits section
+        saved_frame = ttk.LabelFrame(main_container, text="Saved Outfits", padding=10, style='Dark.TLabelframe')
+        saved_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Create scrollable list of saved outfits
+        canvas = tk.Canvas(saved_frame, highlightthickness=0, bg='#1e1e1e')
+        scrollbar = ttk.Scrollbar(saved_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas, style='Dark.TFrame')
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Display saved outfits
+        self._refresh_outfit_list(scrollable_frame, is_navi, manager_window)
+        
+        # Close button
+        ttk.Button(main_container, text="Close", 
+                command=manager_window.destroy).pack(pady=(10, 0))
+        
+    def _save_current_outfit(self, is_navi, parent_window):
+        """Save the current outfit with a custom name - UPDATED FOR PERSISTENT STORAGE"""
+        # Get current armor
+        armor_dropdowns = self.navi_armor_dropdowns if is_navi else self.armor_dropdowns
+        current_outfit = {
+            "headwear": armor_dropdowns["headwear"].get(),
+            "torso": armor_dropdowns["torso"].get(),
+            "legs": armor_dropdowns["legs"].get()
+        }
+        
+        # Check if any armor is empty
+        if (current_outfit["headwear"] == "-Empty-" and 
+            current_outfit["torso"] == "-Empty-" and 
+            current_outfit["legs"] == "-Empty-"):
+            show_warning("Empty Outfit", "Cannot save an outfit with no armor pieces.")
+            return
+        
+        # Create dialog to get outfit name
+        name_dialog = tk.Toplevel(parent_window)
+        name_dialog.title("Save Outfit")
+        name_dialog.geometry("400x150")
+        name_dialog.transient(parent_window)
+        name_dialog.grab_set()
+        
+        # Center the dialog
+        name_dialog.update_idletasks()
+        x = (name_dialog.winfo_screenwidth() // 2) - (name_dialog.winfo_width() // 2)
+        y = (name_dialog.winfo_screenheight() // 2) - (name_dialog.winfo_height() // 2)
+        name_dialog.geometry(f"+{x}+{y}")
+        
+        result = {"name": None}
+        
+        # Content frame
+        content_frame = ttk.Frame(name_dialog, padding=20)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+        
+        ttk.Label(content_frame, text="Enter outfit name:", 
+                font=('Segoe UI', 10)).pack(pady=(0, 10))
+        
+        name_entry = ttk.Entry(content_frame, font=('Segoe UI', 10))
+        name_entry.pack(fill=tk.X, pady=(0, 10))
+        name_entry.focus_set()
+        
+        def save_outfit():
+            outfit_name = name_entry.get().strip()
+            if not outfit_name:
+                show_warning("Invalid Name", "Please enter a valid outfit name.")
+                return
+            
+            result["name"] = outfit_name
+            name_dialog.destroy()
+        
+        # Buttons
+        button_frame = ttk.Frame(content_frame)
+        button_frame.pack(fill=tk.X)
+        
+        ttk.Button(button_frame, text="Save", command=save_outfit).pack(side=tk.LEFT, padx=(0, 5), expand=True, fill=tk.X)
+        ttk.Button(button_frame, text="Cancel", command=name_dialog.destroy).pack(side=tk.RIGHT, expand=True, fill=tk.X)
+        
+        name_entry.bind('<Return>', lambda e: save_outfit())
+        name_entry.bind('<Escape>', lambda e: name_dialog.destroy())
+        
+        # Wait for dialog to close
+        name_dialog.wait_window()
+        
+        if result["name"]:
+            # Save the outfit
+            outfit_data = {
+                "name": result["name"],
+                "headwear": current_outfit["headwear"],
+                "torso": current_outfit["torso"],
+                "legs": current_outfit["legs"]
+            }
+            
+            saved_outfits = self.saved_outfits_navi if is_navi else self.saved_outfits_rda
+            saved_outfits.append(outfit_data)
+            
+            # SAVE TO FILE
+            if self._save_outfits_to_file(saved_outfits, is_navi):
+                show_success("Outfit Saved", f"Outfit '{result['name']}' has been saved successfully!")
+                # Refresh the outfit list in the manager window
+                self._refresh_outfit_manager(parent_window, is_navi)
+            else:
+                show_error("Save Failed", "Failed to save outfit to file.")
+
+    def _delete_outfit(self, outfit_index, is_navi, parent_window):
+        """Delete a saved outfit - UPDATED FOR PERSISTENT STORAGE"""
+        saved_outfits = self.saved_outfits_navi if is_navi else self.saved_outfits_rda
+        
+        if 0 <= outfit_index < len(saved_outfits):
+            outfit_name = saved_outfits[outfit_index]["name"]
+            
+            # Confirm deletion
+            if ask_ok_cancel("Confirm Delete", f"Are you sure you want to delete outfit '{outfit_name}'?"):
+                del saved_outfits[outfit_index]
+                
+                # SAVE TO FILE
+                if self._save_outfits_to_file(saved_outfits, is_navi):
+                    show_success("Outfit Deleted", f"Outfit '{outfit_name}' has been deleted.")
+                    # Refresh the outfit list
+                    self._refresh_outfit_manager(parent_window, is_navi)
+                else:
+                    show_error("Delete Failed", "Failed to save changes to file.")
+
+    def _refresh_outfit_list(self, container, is_navi, parent_window):
+        """Refresh the list of saved outfits"""
+        # Clear existing widgets
+        for widget in container.winfo_children():
+            widget.destroy()
+        
+        # Create style if not exists
+        style = ttk.Style()
+        style.configure('Dark.TFrame', background='#1e1e1e')
+        style.configure('Dark.TLabel', background='#1e1e1e', foreground='white')
+        
+        saved_outfits = self.saved_outfits_navi if is_navi else self.saved_outfits_rda
+        
+        if not saved_outfits:
+            ttk.Label(container, text="No saved outfits yet.", 
+                    font=('Segoe UI', 9), foreground='gray', 
+                    style='Dark.TLabel').pack(pady=20)
+            return
+        
+        for idx, outfit in enumerate(saved_outfits):
+            outfit_frame = ttk.Frame(container, relief='solid', borderwidth=1, style='Dark.TFrame')
+            outfit_frame.pack(fill=tk.X, pady=5, padx=5)
+            
+            # Outfit info
+            info_frame = ttk.Frame(outfit_frame, padding=10, style='Dark.TFrame')
+            info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            
+            ttk.Label(info_frame, text=outfit["name"], 
+                    font=('Segoe UI', 10, 'bold'), 
+                    style='Dark.TLabel').pack(anchor=tk.W)
+            ttk.Label(info_frame, text=f"Head: {outfit['headwear']}", 
+                    font=('Segoe UI', 8), 
+                    style='Dark.TLabel').pack(anchor=tk.W)
+            ttk.Label(info_frame, text=f"Torso: {outfit['torso']}", 
+                    font=('Segoe UI', 8), 
+                    style='Dark.TLabel').pack(anchor=tk.W)
+            ttk.Label(info_frame, text=f"Legs: {outfit['legs']}", 
+                    font=('Segoe UI', 8), 
+                    style='Dark.TLabel').pack(anchor=tk.W)
+            
+            # Buttons
+            button_frame = ttk.Frame(outfit_frame, padding=5, style='Dark.TFrame')
+            button_frame.pack(side=tk.RIGHT)
+            
+            ttk.Button(button_frame, text="📥 Load", 
+                    command=lambda o=outfit: self._load_outfit(o, is_navi, parent_window)).pack(pady=2)
+            ttk.Button(button_frame, text="🗑️ Delete", 
+                    command=lambda i=idx: self._delete_outfit(i, is_navi, parent_window)).pack(pady=2)
+        
+    def _refresh_outfit_manager(self, manager_window, is_navi):
+        """Refresh the entire outfit manager window"""
+        # Close and reopen the window
+        manager_window.destroy()
+        self._open_outfit_manager(is_navi)
+
+    def _load_outfit(self, outfit, is_navi, parent_window):
+        """Load a saved outfit"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        try:
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            armor_dropdowns = self.navi_armor_dropdowns if is_navi else self.armor_dropdowns
+            
+            # Update each armor piece
+            for slot_type in ["headwear", "torso", "legs"]:
+                armor_name = outfit[slot_type]
+                
+                # Update dropdown
+                armor_dropdowns[slot_type].set(armor_name)
+                
+                # Update the armor in the save file
+                self._update_armor(profile, slot_type, armor_name, is_navi=is_navi)
+                
+                # Update preview
+                if armor_name != "-Empty-":
+                    armor_ids = self.navi_armor_ids if is_navi else self.rda_armor_ids
+                    armor_id = armor_ids[slot_type].get(armor_name)
+                    if armor_id:
+                        self._load_armor_image(armor_id, slot_type, is_navi=is_navi)
+                else:
+                    # Clear preview for empty slots
+                    preview_labels = self.navi_armor_preview_labels if is_navi else self.armor_preview_labels
+                    if slot_type in preview_labels:
+                        preview_label = preview_labels[slot_type]
+                        preview_label.configure(image="", text="No Armor")
+                        if hasattr(preview_label, 'frames'):
+                            delattr(preview_label, 'frames')
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+            # Close the manager window FIRST (releases grab)
+            parent_window.destroy()
+            
+            # THEN show success message (after grab is released)
+            show_success("Outfit Loaded", f"Outfit '{outfit['name']}' has been loaded successfully!")
+            
+        except Exception as e:
+            self.logger.error(f"Error loading outfit: {str(e)}", exc_info=True)
+            # Close the window first to release grab
+            try:
+                parent_window.destroy()
+            except:
+                pass
+            # Then show error
+            show_error("Error", f"Failed to load outfit: {str(e)}")
+
+    def _get_outfit_storage_path(self, is_navi=False):
+        """Get the path to the outfit storage file for the current save"""
+        try:
+            # Try different possible attributes for the current file path
+            current_file = None
+            
+            # Check various possible attribute names
+            if hasattr(self.main_window, 'current_file'):
+                current_file = self.main_window.current_file
+            elif hasattr(self.main_window, 'file_path'):
+                current_file = self.main_window.file_path
+            elif hasattr(self.main_window, 'current_save_path'):
+                current_file = self.main_window.current_save_path
+            elif hasattr(self.main_window, 'filepath'):
+                current_file = self.main_window.filepath
+            
+            if current_file is None:
+                self.logger.error("Could not find current file path in main_window")
+                return None
+            
+            # Get the save file name without extension
+            save_file_name = os.path.splitext(os.path.basename(current_file))[0]
+            
+            # Create outfits directory if it doesn't exist
+            outfits_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outfits")
+            if not os.path.exists(outfits_dir):
+                os.makedirs(outfits_dir)
+                self.logger.debug(f"Created outfits directory: {outfits_dir}")
+            
+            # Create file name based on save and faction
+            faction_suffix = "navi" if is_navi else "rda"
+            outfit_file = os.path.join(outfits_dir, f"{save_file_name}_{faction_suffix}_outfits.json")
+            
+            return outfit_file
+            
+        except Exception as e:
+            self.logger.error(f"Error getting outfit storage path: {str(e)}")
+            return None
+    
+    def _load_outfits_from_file(self, is_navi=False):
+        """Load saved outfits from JSON file"""
+        try:
+            outfit_file = self._get_outfit_storage_path(is_navi)
+            if outfit_file is None:
+                return []
+            
+            if not os.path.exists(outfit_file):
+                self.logger.debug(f"No outfit file found at {outfit_file}")
+                return []
+            
+            with open(outfit_file, 'r', encoding='utf-8') as f:
+                outfits = json.load(f)
+                self.logger.debug(f"Loaded {len(outfits)} outfits from {outfit_file}")
+                return outfits
+                
+        except Exception as e:
+            self.logger.error(f"Error loading outfits from file: {str(e)}")
+            return []
+
+    def _save_outfits_to_file(self, outfits, is_navi=False):
+        """Save outfits to JSON file"""
+        try:
+            outfit_file = self._get_outfit_storage_path(is_navi)
+            if outfit_file is None:
+                self.logger.error("Cannot save outfits: no current save file")
+                return False
+            
+            with open(outfit_file, 'w', encoding='utf-8') as f:
+                json.dump(outfits, f, indent=2, ensure_ascii=False)
+                self.logger.debug(f"Saved {len(outfits)} outfits to {outfit_file}")
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Error saving outfits to file: {str(e)}")
+            return False
+
+    def _initialize_outfit_storage(self):
+        """Initialize outfit storage by loading saved outfits for current save file"""
+        try:
+            # Load RDA outfits
+            self.saved_outfits_rda = self._load_outfits_from_file(is_navi=False)
+            self.logger.debug(f"Initialized RDA outfits: {len(self.saved_outfits_rda)} loaded")
+            
+            # Load Na'vi outfits
+            self.saved_outfits_navi = self._load_outfits_from_file(is_navi=True)
+            self.logger.debug(f"Initialized Na'vi outfits: {len(self.saved_outfits_navi)} loaded")
+            
+        except Exception as e:
+            self.logger.error(f"Error initializing outfit storage: {str(e)}")
+            self.saved_outfits_rda = []
+            self.saved_outfits_navi = []
 
     def _get_equipped_weapons(self, profile: ET.Element) -> dict:
         """Get equipped RDA weapons data"""
@@ -1340,117 +3151,208 @@ class StatsManager:
             # RDA Ammo
             "4029490973": "Rifle Ammo",
             "2220072441": "Shotgun Ammo",
-            "3183424835": "SMG Ammo",
-            "3227899887": "Grenade Ammo",
-            "4198025789": "Rocket Ammo",
-            "2442117335": "LMG Ammo",
-            "3819023512": "Heavy Ammo",
+            "3183424835": "Rifle Ammo",
+            "3227899887": "Machine Gun Ammo",
+            "4198025789": "Mini-Grenades Ammo",
+            "2442117335": "Flame Ammo",
+            "3819023512": "Nail Ammo",
 
             #############################################
 
             # RDA Armor Sets
 
             # E3 Exotant Armor Set
-            "666504347":  "E3 Exotant Head",     
-            "531856612":  "E3 Exotant Torso",       
-            "1234921930": "E3 Exotant Legs", 
+            "666504347": "E3 Exotant Head", # PNG SET FEMALE     
+            "531856612": "E3 Exotant Torso", # PNG SET FEMALE        
+            "1234921930": "E3 Exotant Legs", # PNG SET FEMALE 
+            
+            # E3 Exclusive
+            "2507615751": "E3 RDA HELM", # PNG SET FEMALE
+            "2628484515": "E3 RDA CHEST", # PNG SET FEMALE 
+            "694483043": "E3 RDA LEG", # PNG SET FEMALE 
 
             # Tusk Armor set
-            "2800661647": "Tusk Head",
-            "2024422324": "Tusk Torso",
-            "1949228588": "Tusk Legs",
+            "2800661647": "TUSK Helmet I", # PNG SET FEMALE 
+            "2024422324": "TUSK Chest Armor I", # PNG SET FEMALE 
+            "1949228588": "TUSK Leg Armor I", # PNG SET FEMALE 
 
             # Titan Armor Set
-            "4082430736": "Titan Head", 
-            "205852157":  "Titan Torso",
-            "1052486966": "Titan Legs",
+            "4082430736": "TITAN Helmet IV", # PNG SET FEMALE
+            "205852157": "TITAN Chest Armor IV", # PNG SET FEMALE
+            "1052486966": "TITAN Leg Armor IV", # PNG SET FEMALE 
         
             # Militum Armor Set
-            "149499402":  "Militum Head",  
-            "4160278759": "Militum Torso",    
-            "3305533484": "Militum Legs",   
+            "149499402": "MILITUM Helmet IV", # PNG SET FEMALE   
+            "4160278759": "MILITUM Chest Armor IV", # PNG SET FEMALE     
+            "3305533484": "MILITUM Leg Armor IV", # PNG SET FEMALE
 
             # Kodiak Armor Set
-            "1593826001": "Kodiak Head",          
-            "2716738620": "Kodiak Torso",        
-            "2467333367": "Kodiak Legs",      
+            "1593826001": "KODIAK Helmet IV", # PNG SET FEMALE 
+            "2716738620": "KODIAK Chest Armor IV", # PNG SET FEMALE      
+            "2467333367": "KODIAK Leg Armor IV", # PNG SET FEMALE    
 
-            # Exotant Armor Set
-            "3527939275": "Exotant Head",     
-            "1193780569": "Exotant Torso",       
-            "1379870057": "Exotant Legs",         
+            # EXOTANT Armor Sets
+            "707432217": "EXOTANT Helmet I", # PNG SET FEMALE 
+            "941983816": "EXOTANT Helmet II", # PNG SET FEMALE 
+            "4194195158": "EXOTANT Helmet III", # PNG SET FEMALE 
+            "3527939275": "EXOTANT Helmet IV", # PNG SET FEMALE 
+            "2995015784": "EXOTANT Chest Armor I", # PNG SET FEMALE
+            "649139601": "EXOTANT Chest Armor II", # PNG SET FEMALE 
+            "116369467": "EXOTANT Chest Armor III", # PNG SET FEMALE 
+            "1193780569": "EXOTANT Chest Armor IV", # PNG SET FEMALE 
+            "1151571180": "EXOTANT Leg Armor I", # PNG SET FEMALE 
+            "8207805": "EXOTANT Leg Armor II", # PNG SET FEMALE 
+            "873531632": "EXOTANT Leg Armor III", # PNG SET FEMALE
+            "1379870057": "EXOTANT Leg Armor IV", # PNG SET FEMALE
 
             # Centauri Armor Set
-            "403319592":  "Centauri Head",     
-            "3877361093": "Centauri Torso",   
-            "3588584718": "Centauri Legs",        
+            "403319592": "CENTAURI Helmet IV", # PNG SET FEMALE 
+            "3877361093": "CENTAURI Chest Armor IV", # PNG SET FEMALE  
+            "3588584718": "CENTAURI Leg Armor IV", # PNG SET FEMALE       
 
             # Hydra Armor Set
-            "3753317026": "Hydra Head",      
-            "1851965193": "Hydra Torso",        
-            "2428117146": "Hydra Legs",   
+            "3753317026": "HYDRA Helmet III", # PNG SET FEMALE    
+            "1851965193": "HYDRA Chest Armor III", # PNG SET FEMALE         
+            "2428117146": "HYDRA Leg Armor III", # PNG SET FEMALE  
 
             # Warthog Armor Set
-            "2823901304": "Warthog Head",         
-            "1981144899": "Warthog Torso",          
-            "2056338139": "Warthog Legs",    
+            "2823901304": "WARTHOG Helmet II", # PNG SET FEMALE       
+            "1981144899": "WARTHOG Chest Armor II", # PNG SET FEMALE          
+            "2056338139": "WARTHOG Leg Armor II", # PNG SET FEMALE 
 
             # Viper Armor Set
-            "3980056687": "Viper Head",
-            "3574042272": "Viper Torso",
-            "1417888964": "Viper Legs",
-
-            # DLC BRASHER I Armor Set
-            "3005472419": "DLC BRASHER I Head",
-            "730661330": "DLC BRASHER I Torso",
-            "3718956374": "DLC BRASHER I Legs",
-
-            # DLC BRASHER IV Armor Set
-            "3064631211": "DLC BRASHER II Head",
-            "2822640242": "DLC BRASHER II Torso",
-            "2398239326": "DLC BRASHER II Legs",
-
-            # DLC BRASHER III Armor Set
-            "3228789267": "DLC BRASHER III Head",
-            "1063425278": "DLC BRASHER III Troso",
-            "228340789": "DLC BRASHER III Legs",
+            "3980056687": "VIPER Helmet I", # PNG SET FEMALE 
+            "3574042272": "VIPER Chest Armor I", # PNG SET FEMALE 
+            "1417888964": "VIPER Leg Armor I", # PNG SET FEMALE 
             
-            # DLC BRASHER IV Armor Set
-            "3818917462": "DLC BRASHER IV Head",
-            "1993326532": "DLC BRASHER IV Torso",
-            "1675050996": "DLC BRASHER IV Legs",
+            # Plaza Variants
+            "1830604945": "(Plaza) ARTHURA Helmet I", # PNG SET FEMALE 
+            "3717529612": "(Plaza) ARTHURA I Helmet I", # PNG SET FEMALE
+            "3542803707": "(Plaza) WARTHOG Helmet II", # PNG SET FEMALE 
+            "1956713330": "(Plaza) ARTHURA Chest Armor I", 
+            "207655578": "(Plaza) ARTHURA I Chest Armor I", 
+            "48199277": "(Plaza) WARTHOG Chest Armor II", 
+            "765525764": "(Plaza) ARTHURA Leg Armor I", 
+            "3199333350": "(Plaza) ARTHURA I Leg Armor I", 
+            "2953713425": "(Plaza) WARTHOG Leg Armor II", 
 
-            # DLC MISHETICA I Armor Set
-            "1563279247": "DLC MISHETICA I Head",
-            "3313721598": "DLC MISHETICA I Torso",
-            "866428026": "DLC MISHETICA I Legs",
-
-            # DLC MISHETICA II Armor Set
-            "4103047382": "DLC MISHETICA II Head",
-            "3927643407": "DLC MISHETICA II Torso",
-            "3436657955": "DLC MISHETICA II Legs",
-
-            # DLC MISHETICA III Armor Set
-            "4001710741": "DLC MISHETICA III Head",
-            "294960248": "DLC MISHETICA III Torso",
-            "594156723": "DLC MISHETICA III Legs",
-
-            # DLC MISHETICA IV Armor Set
-            "1950293887": "DLC MISHETICA IV Head",
-            "3780161261": "DLC MISHETICA IV Torso", 
-            "4098371293": "DLC MISHETICA IV Legs",
+            # DLC BRASHER Armor Sets
+            "3005472419": "DLC BRASHER Helmet I", # PNG SET FEMALE 
+            "730661330": "DLC BRASHER Chest Armor I", # PNG SET FEMALE 
+            "3718956374": "DLC BRASHER Leg Armor I", # PNG SET FEMALE 
+            "3064631211": "DLC BRASHER Helmet II", # PNG SET FEMALE 
+            "2822640242": "DLC BRASHER Chest Armor II", # PNG SET FEMALE 
+            "2398239326": "DLC BRASHER Leg Armor II", # PNG SET FEMALE 
+            "3228789267": "DLC BRASHER Helmet III", # PNG SET FEMALE 
+            "1063425278": "DLC BRASHER Chest Armor III", # PNG SET FEMALE 
+            "228340789": "DLC BRASHER Leg Armor III", # PNG SET FEMALE 
+            "3818917462": "DLC BRASHER Helmet IV", # PNG SET FEMALE 
+            "1993326532": "DLC BRASHER Chest Armor IV", # PNG SET FEMALE 
+            "1675050996": "DLC BRASHER Leg Armor IV", # PNG SET FEMALE 
+            
+            # DLC MISHETICA Armor Sets
+            "1563279247": "DLC MISHETICA Helmet I", # PNG SET FEMALE 
+            "3313721598": "DLC MISHETICA Chest Armor I", # PNG SET FEMALE 
+            "866428026": "DLC MISHETICA Leg Armor I", # PNG SET FEMALE 
+            "4103047382": "DLC MISHETICA Helmet II", # PNG SET FEMALE 
+            "3927643407": "DLC MISHETICA Chest Armor II", # PNG SET FEMALE 
+            "3436657955": "DLC MISHETICA Leg Armor II", # PNG SET FEMALE 
+            "4001710741": "DLC MISHETICA Helmet III", # PNG SET FEMALE 
+            "294960248": "DLC MISHETICA Chest Armor III", # PNG SET FEMALE 
+            "594156723": "DLC MISHETICA Leg Armor III", # PNG SET FEMALE 
+            "1950293887": "DLC MISHETICA Helmet IV", # PNG SET FEMALE 
+            "3780161261": "DLC MISHETICA Chest Armor IV", # PNG SET FEMALE 
+            "4098371293": "DLC MISHETICA Leg Armor IV", # PNG SET FEMALE 
 
             # Default RDA Armor Set
-            "433486271":  "Default RDA Head",
-            "2818823188": "Default RDA Torso",
-            "1457212295": "Default RDA Legs",
+            "433486271": "Default RDA Head", # PNG SET FEMALE 
+            "2818823188": "Default RDA Torso", # PNG SET FEMALE 
+            "1457212295": "Default RDA Legs", # PNG SET FEMALE 
             
+            # Multiplayer RDA Variants - Headwear
+            "141479065": "MP Default RDA Helmet", # PNG SET FEMALE 
+            "525389396": "MP TUSK Helmet", # PNG SET FEMALE
+            "300886691": "MP WARTHOG Helmet", # PNG SET FEMALE
+            "3457132420": "MP HYDRA Helmet", # PNG SET FEMALE 
+            "2253457575": "MP KODIAK Helmet", # PNG SET FEMALE 
+            "737812838": "MP TITAN Helmet", # PNG SET FEMALE 
+            "3232037214": "MP CENTAURI Helmet", # PNG SET FEMALE 
+            "3494378620": "MP MILITUM Helmet", # PNG SET FEMALE 
+            
+            # Multiplayer RDA Variants - Torso
+            "2048911708": "MP Default RDA Chest Armor", # PNG SET FEMALE 
+            "1762823826": "MP TUSK Chest Armor", # PNG SET FEMALE 
+            "1739418213": "MP WARTHOG Chest Armor", # PNG SET FEMALE 
+            "3162407489": "MP HYDRA Chest Armor", # PNG SET FEMALE 
+            "407920359": "MP KODIAK Chest Armor", # PNG SET FEMALE 
+            "3053156134": "MP TITAN Chest Armor", # PNG SET FEMALE 
+            "1587916574": "MP CENTAURI Chest Armor", # PNG SET FEMALE 
+            "1313253948": "MP MILITUM Chest Armor", # PNG SET FEMALE 
+            
+            # Multiplayer RDA Variants - Legs
+            "4016386396": "MP Default RDA Leg Armor", # PNG SET FEMALE 
+            "2894072922": "MP TUSK Leg Armor", # PNG SET FEMALE 
+            "2722097325": "MP WARTHOG Leg Armor", # PNG SET FEMALE 
+            "688151105": "MP HYDRA Leg Armor", # PNG SET FEMALE 
+            "820586591": "MP KODIAK Leg Armor", # PNG SET FEMALE 
+            "2638348702": "MP TITAN Leg Armor", # PNG SET FEMALE 
+            "1981602214": "MP CENTAURI Leg Armor", # PNG SET FEMALE 
+            "1728044164": "MP MILITUM Leg Armor", # PNG SET FEMALE 
+            
+            # Generic Categories
+            "1633102956": "ACAT Head Gear", # PNG SET FEMALE 
+            "1178592625": "ACAT Chest Armor", # PNG SET FEMALE 
+            "1002215802": "ACAT Leg Armor", # PNG SET FEMALE 
 
-
+            # RDA Full Gear Sets (Torso Only)
+            "73022142": "RDA Standard Issue Full Armor", # F M
+            "2047018253": "TUSK Full Armor I", # F M
+            "2529656365": "VIPER Full Armor I",# F M
+            "1664737020": "WARTHOG Full Armor II", # F M
+            "1042585997": "HYDRA Full Armor III",#FM
+            "785085314": "TITAN Full Armor IV",#FM
+            "2271254608": "KODIAK Full Armor IV",#FM
+            "1639122250": "CENTAURI Full Armor IV",#FM
+            "3033145114": "MILITUM Full Armor IV",#FM
+            "3193262026": "BRASHER Full Armor IV",#FM
+            "2543713080": "EXOTANT Full Armor IV",#FM
+            "972384937": "MISHETICA Full Armor IV",#FM
+            "3245854685": "BRASHER Full Armor I",#FM
+            "708867294": "EXOTANT Full Armor I",#FM
+            "3313639392": "MISHETICA Full Armor I",#FM
+            "1583237298": "BRASHER Full Armor II",#FM
+            "230953782": "EXOTANT Full Armor II",#FM
+            "2321733749": "MISHETICA Full Armor II",#FM
+            "2944242316": "BRASHER Full Armor III",#FM
+            "1174097902": "EXOTANT Full Armor III",#FM
+            "2863266063": "MISHETICA Full Armor III",#FM
+            "663343731": "E3 TITAN Full Armor IV",#FM
+            "3435030896": "E3 EXOTANT Full Armor IV",#FM
+            
+            # Multiplayer RDA Full Gear
+            "2152765075": "MP RDA Standard Full Armor",#FM
+            "1144369633": "MP VIPER Full Armor",#FM
+            "3471767070": "MP TUSK Full Armor",#FM
+            "3621006831": "MP WARTHOG Full Armor",#FM
+            "3123590560": "MP HYDRA Full Armor",#FM
+            "1630387372": "MP KODIAK Full Armor",#FM
+            "3364247422": "MP TITAN Full Armor",#FM
+            "2281578934": "MP CENTAURI Full Armor",#FM
+            "1384594406": "MP MILITUM Full Armor",#FM
+            "3503258363": "MP BRASHER Full Armor I",#FM
+            "1881585149": "MP BRASHER Full Armor II",#FM
+            "1227929200": "MP BRASHER Full Armor III",#FM
+            "1923449271": "MP BRASHER Full Armor IV",#FM
+            "1006158328": "MP EXOTANT Full Armor I",#FM
+            "599584377":  "MP EXOTANT Full Armor II",#FM
+            "2746641170": "MP EXOTANT Full Armor III",#FM
+            "1533883717": "MP EXOTANT Full Armor IV",#FM
+            "3560614598": "MP MISHETICA Full Armor I",#FM
+            "2753176890": "MP MISHETICA Full Armor II",#FM
+            "1290067443": "MP MISHETICA Full Armor III",#FM
+            "4110787796": "MP MISHETICA Full Armor IV",#FM
 
             #############################################
-
-
 
             # Na'vi Weapons
 
@@ -1464,7 +3366,7 @@ class StatsManager:
             "2285146948": "DLC Tanhì Dual Blade I",
             "2257287091": "DLC Tanhì Dual Blade II",
             "3543126973": "DLC Tanhì Dual Blade III",
-            "2007498681": "DLC Tanhì Dual Balde IV",
+            "2007498681": "DLC Tanhì Dual Blade IV",
             
             # Crossbow
             "1662469074": "Taronyu Crossbow I", 
@@ -1485,6 +3387,7 @@ class StatsManager:
             "958613249": "AVR-M30 Machine Gun IV",
 
             # ELITE M30 Machine Gun
+            "818439597": "ELITE AVR-M30 I",
             "1048019290": "ELITE AVR-M30 II",
             "172062103": "ELITE AVR-M30 III",
             "921966990": "ELITE AVR-M30 IV",   
@@ -1514,7 +3417,7 @@ class StatsManager:
             "3139393077": "DLC Hufwe Fighting Staff IV",
 
             # Bow
-            "291262189": "DLC Taronyu Tsko Bow I",
+            "291262189": "Taronyu Tsko Bow I",
             "371977402": "Tsko Nawm Bow IV",
             "2092736556": "Tsko Kyktan Bow III", 
             "535013914": "Tasmsiyu Tsko Bow II",
@@ -1526,95 +3429,183 @@ class StatsManager:
             "435991093": "DLC RAWKE Bow IV",
 
             # Na'vi Ammo
-            "1042656528": "Arrow Ammo",  
-            "435601722": "Spear Ammo",   
-            "3069972540": "Poison Ammo", 
+            "1042656528": "M30 Ammo",  
+            "435601722": "Arrow Ammo",   
+            "3069972540": "Crossbow Ammo", 
 
             #############################################
 
             # Na'vi Armor   
             
-            
             # RDA-Issue Avatar Gear
-            "236713729": "RDA-Issue Avatar Head",
-            "2228061969": "RDA-Issue Avatar Torso",
-            "753645081": "RDA-Issue Avatar Legs",
+            "236713729": "RDA-Issue Avatar Head",#FM
+            "2228061969": "RDA-Issue Avatar Torso",#FM
+            "753645081": "RDA-Issue Avatar Legs",#FM
 
             # TSAMSIYU Armor Set
-            "3705555217":"TSAMSIYU Head",
-            "1869067530":"TSAMSIYU Torso",
-            "780789927":"TSAMSIYU Legs",
+            "3705555217": "TSAMSIYU Head Gear I",#FM
+            "1869067530": "TSAMSIYU Chest Gear I",#FM
+            "780789927": "TSAMSIYU Leg Gear I",#FM
 
-            # NAWM Armor III
-            "3363478556": "NAWM Head",  
-            "1118628876": "NAWM Torso",   
-            "3934969092": "NAWM Legs",
+            # NAWM Armor Set
+            "3363478556": "NAWM Head Gear III",#FM  
+            "1118628876": "NAWM Chest Gear III",#FM
+            "3934969092": "NAWM Leg Gear III",#FM
 
             # EYKTAN Armor Set
-            "84098544": "EYKTAN Head",
-            "3666151432": "EYKTAN Torso",
-            "815973795": "EYKTAN Legs",
+            "84098544": "EYKTAN Head Gear IV",#FM
+            "3666151432": "EYKTAN Chest Gear IV",#FM
+            "815973795": "EYKTAN Leg Gear IV",#FM
 
-            # KARYU Armor Set
-            "2070955956": "KARYU Head",
-            "1711646853": "KARYU Torso",
-            "2024863229": "KARYU Legs",
+            # # KARYU Armor Set
+            "2070955956": "KARYU Head Gear IV",#FM
+            "1711646853": "KARYU Chest Gear IV",#FM
+            "2024863229": "KARYU Leg Gear IV",#FM
 
             # NAWMA EYKTAN Armor Set
-            "1519513878": "NAWMA EYKTAN Head",
-            "2232927470": "NAWMA EYKTAN Torso",
-            "1865419077": "NAWMA EYKTAN Legs",
+            "1519513878": "NAWMA EYKTAN Head Gear IV",#FM
+            "2232927470": "NAWMA EYKTAN Chest Gear IV",#FM
+            "1865419077": "NAWMA EYKTAN Leg Gear IV",#FM
 
             # NAWMA TARONYU Armor Set
-            "3932154789": "NAWMA TARONYU Head",
-            "884530381": "NAWMA TARONYU Torso",
-            "3480671099": "NAWMA TARONYU Legs",
+            "3932154789": "NAWMA TARONYU Head Gear IV",#FM
+            "884530381": "NAWMA TARONYU Chest Gear IV",#FM
+            "3480671099": "NAWMA TARONYU Leg Gear IV",#FM
+            
+            # NAWMA TARONYU Series I-III
+            "2628269855": "NAWMA TARONYU Head Gear I",#FM
+            "2451035112": "NAWMA TARONYU Head Gear II",#FM
+            "797099877": "NAWMA TARONYU Head Gear III",#FM
+            "3743365442": "NAWMA TARONYU Chest Gear I",#FM
+            "3516980661": "NAWMA TARONYU Chest Gear II",#FM
+            "974871842": "NAWMA TARONYU Chest Gear III",#FM
+            "4259766772": "NAWMA TARONYU Leg Gear I",#FM
+            "4082697475": "NAWMA TARONYU Leg Gear II",#FM
+            "406565443": "NAWMA TARONYU Leg Gear III",#FM
 
             # NAWMA TSAMSIYU Armor Set
-            "25166328": "NAWMA TSAMSIYU Head",
-            "3724948480": "NAWMA TSAMSIYU Torso",
-            "874641835": "NAWMA TSAMSIYU Legs",
-
-            # TIREA Armor Set
-            "985254384": "TIREA Head",
-            "386149755": "TIREA Torso",
-            "216177023": "TIREA Legs",
+            "25166328": "NAWMA TSAMSIYU Head Gear IV",#FM
+            "3724948480": "NAWMA TSAMSIYU Chest Gear IV",#FM
+            "874641835": "NAWMA TSAMSIYU Leg Gear IV",#FM
 
             # 'AWVEA TSAMSIYU Armor Set   
-            "3529616870": "'AWVEA TSAMSIYU Head",   
-            "1641566717": "'AWVEA TSAMSIYU Torso",   
-            "540413008": "'AWVEA TSAMSIYU Legs", 
+            "3529616870": "'AWVEA TSAMSIYU Head Gear II",#FM
+            "1641566717": "'AWVEA TSAMSIYU Chest Gear II", #FM  
+            "540413008": "'AWVEA TSAMSIYU Leg Gear II",#FM
+            
+            # DLC TARONYU Armor Set
+            "2508072600": "DLC TARONYU Head Gear I",#FM
+            "3240533717": "DLC TARONYU Head Gear II",#FM
+            "2008660537": "DLC TARONYU Head Gear III",#FM
+            "1753343575": "DLC TARONYU Head Gear IV",#FM
+            "2282473897": "DLC TARONYU Chest Gear I",#FM
+            "3143727513": "DLC TARONYU Chest Gear II",#FM
+            "145354853": "DLC TARONYU Chest Gear III",#FM
+            "1161560796": "DLC TARONYU Chest Gear IV",#FM
+            "2529072337": "DLC TARONYU Leg Gear I",#FM
+            "3155647284": "DLC TARONYU Leg Gear II",#FM
+            "2697550098": "DLC TARONYU Leg Gear III",#FM
+            "1591391960": "DLC TARONYU Leg Gear IV",#FM
 
-            # TSTEU II Armor Set 
-            "1336514870": "DLC TSTEU II Head",
-            "904822394": "DLC TSTEU II Torso",
-            "848846039": "DLC TSTEU II Legs",
-
-            # TSTEU III Armor Set 
-            "1312065276": "DLC TSTEU III Head",
-            "824495264": "DLC TSTEU III Torso",
-            "2571396567": "DLC TSTEU III Legs",             
-
-            # TSTEU IV Armor Set 
-            "1500118218": "DLC TSTEU IV Head",
-            "1960056897": "DLC TSTSU IV Torso",
-            "1865591877": "DLC TSTEU IV legs",   
-
-            # TARONYU II Armor Set
-            "3240533717": "DLC TARONYU II Head",
-            "3143727513": "DLC TARONYU II Torso",
-            "3155647284": "DLC TARONYU II Legs",
-
-            # TARONYU III Armor Set
-            "2008660537": "DLC TARONYU III Head",
-            "145354853": "DLC TARONYU III Torso",
-            "2697550098": "DLC TARONYU III Legs",
-
-            # TARONYU IV Armor Set
-            "1753343575": "DLC TARONYU IV Head",
-            "1161560796": "DLC TARONYU IV Torso",
-            "1591391960": "DLC TARONYU IV Legs",                 
-                        
+            # DLC TSTEU Armor Set
+            "209155874": "DLC TSTEU Head Gear I",#FM
+            "1336514870": "DLC TSTEU Head Gear II",#FM
+            "1312065276": "DLC TSTEU Head Gear III",#FM
+            "1500118218": "DLC TSTEU Head Gear IV",#FM
+            "285382675": "DLC TSTEU Chest Gear I",#FM
+            "904822394": "DLC TSTEU Chest Gear II",#FM
+            "824495264": "DLC TSTEU Chest Gear III",#FM
+            "1960056897": "DLC TSTEU Chest Gear IV",#FM
+            "263701867": "DLC TSTEU Leg Gear I",#FM
+            "848846039": "DLC TSTEU Leg Gear II",#FM
+            "2571396567": "DLC TSTEU Leg Gear III",#FM
+            "1865591877": "DLC TSTEU Leg Gear IV",#FM
+            
+            # TIREA Armor Set
+            "985254384": "DLC TIREA Head Gear IV",#FM
+            "386149755": "DLC TIREA Chest Gear IV",#FM
+            "216177023": "DLC TIREA Leg Gear IV",#FM
+            "3843346967": "DLC TIREA Head Gear I",#FM
+            "2311491761": "DLC TIREA Head Gear II",#FM
+            "1026490230": "DLC TIREA Head Gear III",#FM
+            "4167122214": "DLC TIREA Chest Gear I",#FM
+            "4085348349": "DLC TIREA Chest Gear II",#FM
+            "1111405866": "DLC TIREA Chest Gear III",#FM
+            "3872677982": "DLC TIREA Leg Gear I",#FM
+            "4109849936": "DLC TIREA Leg Gear II",#FM
+            "3932036189": "DLC TIREA Leg Gear III",#FM
+            
+            # Multiplayer Na'vi Variants - Headwear
+            "530792999": "MP Standard Avatar Braid",#FM
+            "1700803530": "MP TSAMSIYU Head Gear",#FM
+            "1809831741": "MP 'AWVEA TSAMSIYU Head Gear",#FM
+            "3653380410": "MP NAWM Head Gear",#FM
+            "2185175904": "MP NAWMA EYKTAN Head Gear",#FM
+            "3643724686": "MP NAWMA TSAMSIYU Head Gear",#FM
+            "3719163782": "MP EYKTAN Head Gear",#FM
+            "3089741679": "MP NAWMA TARONYU Head Gear",#FM
+            
+            # Multiplayer Na'vi Variants - Torso
+            "1456585305": "MP RDA-Issue Avatar Pack",#FM
+            "2128543788": "MP TSAMSIYU Chest Gear",#FM
+            "1885398235": "MP 'AWVEA TSAMSIYU Chest Gear",#FM
+            "2427507012": "MP NAWM Chest Armor",#FM
+            "1017757237": "MP NAWMA EYKTAN Chest Gear",#FM
+            "1740132059": "MP NAWMA TSAMSIYU Chest Gear",#FM
+            "1664840403": "MP EYKTAN Chest Gear",#FM
+            "113191482": "MP NAWMA TARONYU Chest Gear",#FM
+            
+            # Multiplayer Na'vi Variants - Legs
+            "2505428162": "MP RDA-Issue Avatar Pants",#FM
+            "4129766097": "MP TSAMSIYU Leg Gear",#FM
+            "4170767910": "MP 'AWVEA TSAMSIYU Leg Gear",#FM
+            "1395959775": "MP NAWM Leg Armor",#FM
+            "3435767277": "MP NAWMA EYKTAN Leg Gear",#FM
+            "2547537155": "MP NAWMA TSAMSIYU Leg Gear",#FM
+            "2472241419": "MP EYKTAN Leg Gear",#FM
+            "4141822434": "MP NAWMA TARONYU Leg Gear",#FM
+            
+            # Na'vi Full Gear Sets (Torso Only)
+            "2032708175": "RDA-Issue Avatar Full Gear",#FM
+            "252528002": "TSAMSIYU Full Armor I",#FM
+            "372743795": "'AWVEA TSAMSIYU Full Armor II",#FM
+            "1129711996": "NAWM Full Armor III",#FM
+            "2989529994": "EYKTAN Full Armor IV",#FM
+            "1402662052": "NAWMA EYKTAN Full Armor IV",#FM
+            "4192587225": "NAWMA TSAMSIYU Full Armor IV",#FM
+            "2879322417": "NAWMA TARONYU Full Armor I",#FM
+            "2997101248": "NAWMA TARONYU Full Armor II",#FM
+            "295336182": "NAWMA TARONYU Full Armor III",#FM
+            "667753227": "NAWMA TARONYU Full Armor IV",#FM
+            "1854698207": "TARONYU Full Armor I",#FM
+            "996344322": "TARONYU Full Armor II",#FM
+            "1685658698": "TARONYU Full Armor III",#FM
+            "868628882": "TARONYU Full Armor IV",#FM
+            "2243676636": "TSTEU Full Armor I",#FM
+            "1761171846": "TSTEU Full Armor II",#FM
+            "2399125800": "TSTEU Full Armor III",#FM
+            "437161312": "TSTEU Full Armor IV",#FM
+            "2292562331": "TIREA Full Armor I",#FM
+            "3486379662": "TIREA Full Armor II",#FM
+            "2156101037": "TIREA Full Armor III",#FM
+            "1235215492": "TIREA Full Armor IV",#FM
+            "1786356450": "KARYU Full Armor IV",#FM
+            
+            # Multiplayer Na'vi Full Gear
+            "4246865506": "MP RDA-Issue Avatar Full Gear",#FM
+            "3152066193": "MP TSAMSIYU Full Armor",#FM
+            "2732223840": "MP 'AWVEA TSAMSIYU Full Armor",#FM
+            "3344737617": "MP NAWM Full Armor",#FM
+            "3050817624": "MP NAWMA EYKTAN Full Armor",#FM
+            "531163429": "MP NAWMA TSAMSIYU Full Armor",#FM
+            "1417527158": "MP EYKTAN Full Armor",#FM
+            "3339349152": "MP NAWMA TARONYU Full Armor I",#FM
+            "3727734609": "MP NAWMA TARONYU Full Armor II",#FM
+            "2533248945": "MP NAWMA TARONYU Full Armor III",#FM
+            "1615540413": "MP NAWMA TARONYU Full Armor",#FM
+            "3050137439": "MP NAWMA TARONYU Full Armor IV",#FM
+            "499041501": "MP TARONYU Full Set",#FM
+            "880177199": "MP TSTEU Full Armor",#FM
         }
 
     def _get_item_name(self, item_id: str) -> str:
@@ -1650,7 +3641,7 @@ class StatsManager:
             # M30 Machine Gun
             "1304439874", "1132447925", "982090295", "958613249",
             # ELITE M30 Machine Gun
-            "1048019290", "172062103", "921966990",
+            "818439597","1048019290", "172062103", "921966990",
             # Club
             "4093397293", "4249071066", "3879387803", "240531571",
             # DLC Axe
@@ -1706,67 +3697,208 @@ class StatsManager:
         """Create mappings for RDA armor pieces by type"""
         self.rda_armor_sets = {
             "headwear": {
-                "433486271": "Default RDA Head",
-                "2800661647":"Tusk Head",
-                "666504347":  "E3 Exotant Head", 
-                "4082430736": "Titan Head",
-                "149499402": "Militum Head",
-                "1593826001": "Kodiak Head",
-                "3527939275": "Exotant Head",
-                "403319592": "Centauri Head",
-                "3753317026": "Hydra Head",
-                "2823901304": "Warthog Head",
-                "3980056687": "Viper Head",
-                "3005472419": "DLC BRASHER I Head",
-                "3064631211": "DLC BRASHER II Head",
-                "3228789267": "DLC BRASHER III Head",
-                "3818917462": "DLC BRASHER IV Head",
-                "1563279247": "DLC MISHETICA I Head",
-                "4103047382": "DLC MISHETICA II Head",
-                "4001710741": "DLC MISHETICA III Head",
-                "1950293887": "DLC MISHETICA IV Head", 
+                # Base/Standard Armors
+                "433486271": "Default RDA Head", 
+                "2800661647": "TUSK Helmet I",  
+                "2823901304": "WARTHOG Helmet II",
+                "3753317026": "HYDRA Helmet III",
+                "1593826001": "KODIAK Helmet IV",
+                "4082430736": "TITAN Helmet IV",
+                "403319592": "CENTAURI Helmet IV",
+                "149499402": "MILITUM Helmet IV",
+                "3980056687": "VIPER Helmet I",
+                
+                # E3 Exclusive
+                "2507615751": "E3 RDA HELM",
+                "666504347": "E3 Exotant Head",
+                
+                # Plaza Variants
+                "1830604945": "(Plaza) ARTHURA Helmet I",
+                "3717529612": "(Plaza) ARTHURA I Helmet I",
+                "3542803707": "(Plaza) WARTHOG Helmet II",
+                
+                # DLC BRASHER
+                "3005472419": "DLC BRASHER Helmet I", 
+                "3064631211": "DLC BRASHER Helmet II", 
+                "3228789267": "DLC BRASHER Helmet III", 
+                "3818917462": "DLC BRASHER Helmet IV", 
+                
+                # DLC EXOTANT
+                "707432217": "EXOTANT Helmet I", 
+                "941983816": "EXOTANT Helmet II", 
+                "4194195158": "EXOTANT Helmet III", 
+                "3527939275": "EXOTANT Helmet IV", 
+                
+                # DLC MISHETICA
+                "1563279247": "DLC MISHETICA Helmet I", 
+                "4103047382": "DLC MISHETICA Helmet II", 
+                "4001710741": "DLC MISHETICA Helmet III", 
+                "1950293887": "DLC MISHETICA Helmet IV", 
+                
+                # Multiplayer Variants
+                "141479065": "Default RDA Helmet",
+                "525389396": "MP TUSK Helmet",
+                "300886691": "MP WARTHOG Helmet",
+                "3457132420": "MP HYDRA Helmet",
+                "2253457575": "MP KODIAK Helmet",
+                "737812838": "MP TITAN Helmet",
+                "3232037214": "MP CENTAURI Helmet",
+                "3494378620": "MP MILITUM Helmet",
+                
+                # Generic Categories
+                "1633102956": "ACAT Head Gear", 
             },
             "torso": {
-                "2818823188": "Default RDA Torso",
-                "2024422324":"Tusk Torso",
-                "531856612":  "E3 Exotant Torso", 
-                "205852157": "Titan Torso",
-                "4160278759": "Militum Torso",
-                "2716738620": "Kodiak Torso",
-                "1193780569": "Exotant Torso",
-                "3877361093": "Centauri Torso",
-                "1851965193": "Hydra Torso",
-                "1981144899": "Warthog Torso",
-                "3574042272": "Viper Torso",
-                "730661330": "DLC BRASHER I Torso",
-                "2822640242": "DLC BRASHER II Torso",
-                "1063425278": "DLC BRASHER III Troso",
-                "1993326532": "DLC BRASHER IV Torso",
-                "3313721598": "DLC MISHETICA I Torso",
-                "3927643407": "DLC MISHETICA II Torso",
-                "294960248": "DLC MISHETICA III Torso",
-                "3780161261": "DLC MISHETICA IV Torso",
+                # Base/Standard Armors
+                "2818823188": "Default RDA Torso", 
+                "2024422324": "TUSK Chest Armor I", 
+                "1981144899": "WARTHOG Chest Armor II",
+                "1851965193": "HYDRA Chest Armor III",
+                "2716738620": "KODIAK Chest Armor IV",
+                "205852157": "TITAN Chest Armor IV",
+                "3877361093": "CENTAURI Chest Armor IV",
+                "4160278759": "MILITUM Chest Armor IV",
+                "3574042272": "VIPER Chest Armor I", 
+                
+                # E3 Exclusive
+                "2628484515": "E3 RDA CHEST",
+                "531856612": "E3 Exotant Torso",
+                
+                # Plaza Variants
+                "1956713330": "(Plaza) ARTHURA Chest Armor I",
+                "207655578": "(Plaza) ARTHURA I Chest Armor I",
+                "48199277": "(Plaza) WARTHOG Chest Armor II",
+                
+                # DLC BRASHER
+                "730661330": "DLC BRASHER Chest Armor I", 
+                "2822640242": "DLC BRASHER Chest Armor II", 
+                "1063425278": "DLC BRASHER Chest Armor III", 
+                "1993326532": "DLC BRASHER Chest Armor IV", 
+                
+                # DLC EXOTANT
+                "2995015784": "EXOTANT Chest Armor I", 
+                "649139601": "EXOTANT Chest Armor II", 
+                "116369467": "EXOTANT Chest Armor III", 
+                "1193780569": "EXOTANT Chest Armor IV", 
+                
+                # DLC MISHETICA
+                "3313721598": "DLC MISHETICA Chest Armor I", 
+                "3927643407": "DLC MISHETICA Chest Armor II", 
+                "294960248": "DLC MISHETICA Chest Armor III", 
+                "3780161261": "DLC MISHETICA Chest Armor IV", 
+                
+                # Multiplayer Variants
+                "2048911708": "MP Default RDA Chest Armor",
+                "1762823826": "MP TUSK Chest Armor",
+                "1739418213": "MP WARTHOG Chest Armor",
+                "3162407489": "MP HYDRA Chest Armor",
+                "407920359": "MP KODIAK Chest Armor",
+                "3053156134": "MP TITAN Chest Armor",
+                "1587916574": "MP CENTAURI Chest Armor",
+                "1313253948": "MP MILITUM Chest Armor",
+                
+                # Full Gear Sets (Torso Only)
+                "73022142": "RDA Standard Issue Full Armor",
+                "2047018253": "TUSK Full Armor I",
+                "2529656365": "VIPER Full Armor I",
+                "1664737020": "WARTHOG Full Armor II",
+                "1042585997": "HYDRA Full Armor III",
+                "785085314": "TITAN Full Armor IV",
+                "2271254608": "KODIAK Full Armor IV",
+                "1639122250": "CENTAURI Full Armor IV",
+                "3033145114": "MILITUM Full Armor IV",
+                "3193262026": "BRASHER Full Armor IV",
+                "2543713080": "EXOTANT Full Armor IV",
+                "972384937": "MISHETICA Full Armor IV",
+                "3245854685": "BRASHER Full Armor I",
+                "708867294": "EXOTANT Full Armor I",
+                "3313639392": "MISHETICA Full Armor I",
+                "1583237298": "BRASHER Full Armor II",
+                "230953782": "EXOTANT Full Armor II",
+                "2321733749": "MISHETICA Full Armor II",
+                "2944242316": "BRASHER Full Armor III",
+                "1174097902": "EXOTANT Full Armor III",
+                "2863266063": "MISHETICA Full Armor III",
+                "663343731": "E3 TITAN Full Armor IV",
+                "3435030896": "E3 EXOTANT Full Armor IV",
+                
+                # Multiplayer Full Gear
+                "2152765075": "MP RDA Standard Full Armor",
+                "1144369633": "MP VIPER Full Armor",
+                "3471767070": "MP TUSK Full Armor",
+                "3621006831": "MP WARTHOG Full Armor",
+                "3123590560": "MP HYDRA Full Armor",
+                "1630387372": "MP KODIAK Full Armor",
+                "3364247422": "MP TITAN Full Armor",
+                "2281578934": "MP CENTAURI Full Armor",
+                "1384594406": "MP MILITUM Full Armor",
+                "3503258363": "MP BRASHER Full Armor I",
+                "1881585149": "MP BRASHER Full Armor II",
+                "1227929200": "MP BRASHER Full Armor III",
+                "1923449271": "MP BRASHER Full Armor IV",
+                "1006158328": "MP EXOTANT Full Armor I",
+                "599584377": "MP EXOTANT Full Armor II",
+                "2746641170": "MP EXOTANT Full Armor III",
+                "1533883717": "MP EXOTANT Full Armor IV",
+                "3560614598": "MP MISHETICA Full Armor I",
+                "2753176890": "MP MISHETICA Full Armor II",
+                "1290067443": "MP MISHETICA Full Armor III",
+                "4110787796": "MP MISHETICA Full Armor IV",
+                
+                # Generic Categories
+                "1178592625": "ACAT Chest Armor",
             },
             "legs": {
-                "1457212295": "Default RDA Legs",
-                "1949228588":"Tusk Legs",
-                "1234921930": "E3 Exotant Legs", 
-                "1052486966": "Titan Legs",
-                "3305533484": "Militum Legs",
-                "2467333367": "Kodiak Legs",
-                "1379870057": "Exotant Legs",
-                "3588584718": "Centauri Legs",
-                "2428117146": "Hydra Legs",
-                "2056338139": "Warthog Legs",
-                "1417888964": "Viper Legs",
-                "3718956374": "DLC BRASHER I Legs",
-                "2398239326": "DLC BRASHER II Legs",
-                "228340789": "DLC BRASHER III Legs",
-                "1675050996": "DLC BRASHER IV Legs",
-                "866428026": "DLC MISHETICA I Legs",
-                "3436657955": "DLC MISHETICA II Legs",
-                "594156723": "DLC MISHETICA III Legs",
-                "4098371293": "DLC MISHETICA IV Legs",
+                # Base/Standard Armors
+                "1457212295": "Default RDA Legs", 
+                "1949228588": "TUSK Leg Armor I", 
+                "2056338139": "WARTHOG Leg Armor II",
+                "2428117146": "HYDRA Leg Armor III",
+                "2467333367": "KODIAK Leg Armor IV",
+                "1052486966": "TITAN Leg Armor IV",
+                "3588584718": "CENTAURI Leg Armor IV",
+                "3305533484": "MILITUM Leg Armor IV",
+                "1417888964": "VIPER Leg Armor I",
+                
+                # E3 Exclusive
+                "694483043": "E3 RDA LEG",
+                "1234921930": "E3 Exotant Legs",
+                
+                # Plaza Variants
+                "765525764": "(Plaza) ARTHURA Leg Armor I",
+                "3199333350": "(Plaza) ARTHURA I Leg Armor I",
+                "2953713425": "(Plaza) WARTHOG Leg Armor II",
+                
+                # DLC BRASHER
+                "3718956374": "DLC BRASHER Leg Armor I", 
+                "2398239326": "DLC BRASHER Leg Armor II", 
+                "228340789": "DLC BRASHER Leg Armor III", 
+                "1675050996": "DLC BRASHER Leg Armor IV", 
+                
+                # DLC EXOTANT
+                "1151571180": "EXOTANT Leg Armor I", 
+                "8207805": "EXOTANT Leg Armor II", 
+                "873531632": "EXOTANT Leg Armor III", 
+                "1379870057": "EXOTANT Leg Armor IV", 
+                
+                # DLC MISHETICA
+                "866428026": "DLC MISHETICA Leg Armor I", 
+                "3436657955": "DLC MISHETICA Leg Armor II", 
+                "594156723": "DLC MISHETICA Leg Armor III", 
+                "4098371293": "DLC MISHETICA Leg Armor IV", 
+                
+                # Multiplayer Variants
+                "4016386396": "MP Default RDA Leg Armor",
+                "2894072922": "MP TUSK Leg Armor",
+                "2722097325": "MP WARTHOG Leg Armor",
+                "688151105": "MP HYDRA Leg Armor",
+                "820586591": "MP KODIAK Leg Armor",
+                "2638348702": "MP TITAN Leg Armor",
+                "1981602214": "MP CENTAURI Leg Armor",
+                "1728044164": "MP MILITUM Leg Armor",
+                
+                # Generic Categories
+                "1002215802": "ACAT Leg Armor",
             }
         }
 
@@ -1780,58 +3912,190 @@ class StatsManager:
         """Create mappings for Na'vi armor pieces by type"""
         self.navi_armor_sets = {
             "headwear": {
+                            
+                # Base/Standard Armors
                 "236713729": "RDA-Issue Avatar Head",
-                "3705555217":"TSAMSIYU Head",
-                "84098544": "EYKTAN Head",
-                "2070955956": "KARYU Head",
-                "1519513878": "NAWMA EYKTAN Head",
-                "3932154789": "NAWMA TARONYU Head",
-                "25166328": "NAWMA TSAMSIYU Head",
-                "985254384": "TIREA Head",
-                "3363478556": "NAWM Head",
-                "3529616870": "'AWVEA TSAMSIYU Head",
-                "1336514870": "DLC TSTEU II Head",
-                "1312065276": "DLC TSTEU III Head",
-                "1500118218": "DLC TSTEU IV Head",
-                "3240533717": "DLC TARONYU II Head",
-                "2008660537": "DLC TARONYU III Head",
-                "1753343575": "DLC TARONYU IV Head", 
+                "3705555217": "TSAMSIYU Head Gear I",
+                "3529616870": "'AWVEA TSAMSIYU Head Gear II",
+                "3363478556": "NAWM Head Gear III",
+                "84098544": "EYKTAN Head Gear IV",
+                "1519513878": "NAWMA EYKTAN Head Gear IV",
+                "25166328": "NAWMA TSAMSIYU Head Gear IV",
+                
+                # NAWMA TARONYU Series
+                "2628269855": "NAWMA TARONYU Head Gear I",
+                "2451035112": "NAWMA TARONYU Head Gear II",
+                "797099877": "NAWMA TARONYU Head Gear III",
+                "3932154789": "NAWMA TARONYU Head Gear IV",
+                
+                # DLC TARONYU
+                "2508072600": "DLC TARONYU Head Gear I",
+                "3240533717": "DLC TARONYU Head Gear II",
+                "2008660537": "DLC TARONYU Head Gear III",
+                "1753343575": "DLC TARONYU Head Gear IV",
+                
+                # DLC TSTEU
+                "209155874": "DLC TSTEU Head Gear I",
+                "1336514870": "DLC TSTEU Head Gear II",
+                "1312065276": "DLC TSTEU Head Gear III",
+                "1500118218": "DLC TSTEU Head Gear IV",
+                
+                # DLC TIREA
+                "3843346967": "DLC TIREA Head Gear I",
+                "2311491761": "DLC TIREA Head Gear II",
+                "1026490230": "DLC TIREA Head Gear III",
+                "985254384": "DLC TIREA Head Gear IV",
+                
+                # KARYU
+                "2070955956": "KARYU Head Gear IV",
+                
+                # Multiplayer Variants
+                "530792999": "MP Standard Avatar Braid",
+                "1700803530": "MP TSAMSIYU Head Gear",
+                "1809831741": "MP 'AWVEA TSAMSIYU Head Gear",
+                "3653380410": "MP NAWM Head Gear",
+                "2185175904": "MP NAWMA EYKTAN Head Gear",
+                "3643724686": "MP NAWMA TSAMSIYU Head Gear",
+                "3719163782": "MP EYKTAN Head Gear",
+                "3089741679": "MP NAWMA TARONYU Head Gear",
             },
             "torso": {
+
+                # Base/Standard Armors
                 "2228061969": "RDA-Issue Avatar Torso",
-                "1869067530":"TSAMSIYU Torso",
-                "3666151432": "EYKTAN Torso",
-                "1711646853": "KARYU Torso",
-                "2232927470": "NAWMA EYKTAN Torso",
-                "884530381": "NAWMA TARONYU Torso",
-                "3724948480": "NAWMA TSAMSIYU Torso",
-                "386149755": "TIREA Torso",
-                "1118628876": "NAWM Torso",
-                "1641566717": "'AWVEA TSAMSIYU Torso",
-                "904822394": "DLC TSTEU II Torso",
-                "824495264": "DLC TSTEU III Torso",
-                "1960056897": "DLC TSTSU IV Torso",
-                "3143727513": "DLC TARONYU II Torso",
-                "145354853": "DLC TARONYU III Torso",
-                "1161560796": "DLC TARONYU IV Torso",
+                "1869067530": "TSAMSIYU Chest Gear I",
+                "1641566717": "'AWVEA TSAMSIYU Chest Gear II",
+                "1118628876": "NAWM Chest Gear III",
+                "3666151432": "EYKTAN Chest Gear IV",
+                "2232927470": "NAWMA EYKTAN Chest Gear IV",
+                "3724948480": "NAWMA TSAMSIYU Chest Gear IV",
+                
+                # NAWMA TARONYU Series
+                "3743365442": "NAWMA TARONYU Chest Gear I",
+                "3516980661": "NAWMA TARONYU Chest Gear II",
+                "974871842": "NAWMA TARONYU Chest Gear III",
+                "884530381": "NAWMA TARONYU Chest Gear IV",
+                
+                # DLC TARONYU
+                "2282473897": "DLC TARONYU Chest Gear I",
+                "3143727513": "DLC TARONYU Chest Gear II",
+                "145354853": "DLC TARONYU Chest Gear III",
+                "1161560796": "DLC TARONYU Chest Gear IV",
+                
+                # DLC TSTEU
+                "285382675": "DLC TSTEU Chest Gear I",
+                "904822394": "DLC TSTEU Chest Gear II",
+                "824495264": "DLC TSTEU Chest Gear III",
+                "1960056897": "DLC TSTEU Chest Gear IV",
+                
+                # DLC TIREA
+                "4167122214": "DLC TIREA Chest Gear I",
+                "4085348349": "DLC TIREA Chest Gear II",
+                "1111405866": "DLC TIREA Chest Gear III",
+                "386149755": "DLC TIREA Chest Gear IV",
+                
+                # DLC KARYU
+                "1711646853": "KARYU Chest Gear IV",
+                
+                # Multiplayer Variants
+                "1456585305": "MP RDA-Issue Avatar Pack",
+                "2128543788": "MP TSAMSIYU Chest Gear",
+                "1885398235": "MP 'AWVEA TSAMSIYU Chest Gear",
+                "2427507012": "MP NAWM Chest Armor",
+                "1017757237": "MP NAWMA EYKTAN Chest Gear",
+                "1740132059": "MP NAWMA TSAMSIYU Chest Gear",
+                "1664840403": "MP EYKTAN Chest Gear",
+                "113191482": "MP NAWMA TARONYU Chest Gear",
+                
+                # Full Gear Sets (Torso Only)
+                "2032708175": "RDA-Issue Avatar Full Gear",
+                "252528002": "TSAMSIYU Full Armor I",
+                "372743795": "'AWVEA TSAMSIYU Full Armor II",
+                "1129711996": "NAWM Full Armor III",
+                "2989529994": "EYKTAN Full Armor IV",
+                "1402662052": "NAWMA EYKTAN Full Armor IV",
+                "4192587225": "NAWMA TSAMSIYU Full Armor IV",
+                "2879322417": "NAWMA TARONYU Full Armor I",
+                "2997101248": "NAWMA TARONYU Full Armor II",
+                "295336182": "NAWMA TARONYU Full Armor III",
+                "667753227": "NAWMA TARONYU Full Armor IV",
+                "1854698207": "TARONYU Full Armor I",
+                "996344322": "TARONYU Full Armor II",
+                "1685658698": "TARONYU Full Armor III",
+                "868628882": "TARONYU Full Armor IV",
+                "2243676636": "TSTEU Full Armor I",
+                "1761171846": "TSTEU Full Armor II",
+                "2399125800": "TSTEU Full Armor III",
+                "437161312": "TSTEU Full Armor IV",
+                "2292562331": "TIREA Full Armor I",
+                "3486379662": "TIREA Full Armor II",
+                "2156101037": "TIREA Full Armor III",
+                "1235215492": "TIREA Full Armor IV",
+                "1786356450": "KARYU Full Armor IV",
+                
+                # Multiplayer Full Gear
+                "4246865506": "MP RDA-Issue Avatar Full Gear",
+                "3152066193": "MP TSAMSIYU Full Armor",
+                "2732223840": "MP 'AWVEA TSAMSIYU Full Armor",
+                "3344737617": "MP NAWM Full Armor",
+                "3050817624": "MP NAWMA EYKTAN Full Armor",
+                "531163429": "MP NAWMA TSAMSIYU Full Armor",
+                "1417527158": "MP EYKTAN Full Armor",
+                "3339349152": "MP NAWMA TARONYU Full Armor I",
+                "3727734609": "MP NAWMA TARONYU Full Armor II",
+                "2533248945": "MP NAWMA TARONYU Full Armor III",
+                "1615540413": "MP NAWMA TARONYU Full Armor",
+                "3050137439": "MP NAWMA TARONYU Full Armor IV",
+                "499041501": "MP TARONYU Full Set",
+                "880177199": "MP TSTEU Full Armor",
             },
             "legs": {
+                
+                # Base/Standard Armors
                 "753645081": "RDA-Issue Avatar Legs",
-                "780789927":"TSAMSIYU Legs",
-                "815973795": "EYKTAN Legs",
-                "2024863229": "KARYU Legs",
-                "1865419077": "NAWMA EYKTAN Legs",
-                "3480671099": "NAWMA TARONYU Legs",
-                "874641835": "NAWMA TSAMSIYU Legs",
-                "216177023": "TIREA Legs",
-                "3934969092": "NAWM Legs",
-                "540413008": "'AWVEA TSAMSIYU Legs",
-                "848846039": "DLC TSTEU II Legs",
-                "2571396567": "DLC TSTEU III Legs",
-                "1865591877": "DLC TSTEU IV legs",
-                "3155647284": "DLC TARONYU II Legs",
-                "2697550098": "DLC TARONYU III Legs",
-                "1591391960": "DLC TARONYU IV Legs",
+                "780789927": "TSAMSIYU Leg Gear I",
+                "540413008": "'AWVEA TSAMSIYU Leg Gear II",
+                "3934969092": "NAWM Leg Gear III",
+                "815973795": "EYKTAN Leg Gear IV",
+                "1865419077": "NAWMA EYKTAN Leg Gear IV",
+                "874641835": "NAWMA TSAMSIYU Leg Gear IV",
+                
+                # NAWMA TARONYU Series
+                "4259766772": "NAWMA TARONYU Leg Gear I",
+                "4082697475": "NAWMA TARONYU Leg Gear II",
+                "406565443": "NAWMA TARONYU Leg Gear III",
+                "3480671099": "NAWMA TARONYU Leg Gear IV",
+                
+                # DLC TARONYU
+                "2529072337": "DLC TARONYU Leg Gear I",
+                "3155647284": "DLC TARONYU Leg Gear II",
+                "2697550098": "DLC TARONYU Leg Gear III",
+                "1591391960": "DLC TARONYU Leg Gear IV",
+                
+                # DLC TSTEU
+                "263701867": "DLC TSTEU Leg Gear I",
+                "848846039": "DLC TSTEU Leg Gear II",
+                "2571396567": "DLC TSTEU Leg Gear III",
+                "1865591877": "DLC TSTEU Leg Gear IV",
+                
+                # DLC TIREA
+                "3872677982": "DLC TIREA Leg Gear I",
+                "4109849936": "DLC TIREA Leg Gear II",
+                "3932036189": "DLC TIREA Leg Gear III",
+                "216177023": "DLC TIREA Leg Gear IV",
+                
+                # DLC KARYU
+                "2024863229": "DEV KARYU Leg Gear IV",
+                
+                # Multiplayer Variants
+                "2505428162": "MP RDA-Issue Avatar Pants",
+                "4129766097": "MP TSAMSIYU Leg Gear",
+                "4170767910": "MP 'AWVEA TSAMSIYU Leg Gear",
+                "1395959775": "MP NAWM Leg Armor",
+                "3435767277": "MP NAWMA EYKTAN Leg Gear",
+                "2547537155": "MP NAWMA TSAMSIYU Leg Gear",
+                "2472241419": "MP EYKTAN Leg Gear",
+                "4141822434": "MP NAWMA TARONYU Leg Gear",
             }
         }
 
@@ -1840,7 +4104,7 @@ class StatsManager:
             slot_type: {name: id for id, name in items.items()}
             for slot_type, items in self.navi_armor_sets.items()
         }
-
+        
     # Essential event handlers and methods (simplified versions)
     def _on_face_selected(self, event=None):
         """Handle face selection and update image"""
@@ -1856,11 +4120,45 @@ class StatsManager:
                 return
                 
             gender, number = parts
-            image_path = os.path.join("Face_Images", f"{gender} {number}.png")
+            
+            # Get pawn value to determine if human or avatar
+            pawn_widget = self.entries.get("pawn")
+            if pawn_widget:
+                pawn_value = pawn_widget.get() if hasattr(pawn_widget, 'get') else pawn_widget.cget("text")
+                # Pawn: "1" = Na'vi (Avatar), "2" = RDA (Human)
+                is_avatar = (pawn_value == "Na'vi" or pawn_value == "1")
+            else:
+                is_avatar = False  # Default to human if pawn not found
+            
+            # Determine folder and filename based on pawn
+            if is_avatar:
+                folder = "avatar"
+                filename = f"Avatar {gender} {number}.png"
+            else:
+                folder = "human"
+                filename = f"{gender} {number}.png"
+            
+            image_path = os.path.join("Face_Images", folder, filename)
             
             if os.path.exists(image_path):
                 original_image = Image.open(image_path)
-                resized_image = original_image.resize((150, 150), Image.LANCZOS)
+                
+                # Resize while preserving aspect ratio
+                # Set max dimensions
+                max_width = 150
+                max_height = 150
+                
+                # Calculate scaling factor to fit within max dimensions
+                width_ratio = max_width / original_image.width
+                height_ratio = max_height / original_image.height
+                scale_factor = min(width_ratio, height_ratio)
+                
+                # Calculate new dimensions
+                new_width = int(original_image.width * scale_factor)
+                new_height = int(original_image.height * scale_factor)
+                
+                # Resize with aspect ratio preserved
+                resized_image = original_image.resize((new_width, new_height), Image.LANCZOS)
                 photo = ImageTk.PhotoImage(resized_image)
                 
                 if self.face_image_label:
@@ -1872,6 +4170,7 @@ class StatsManager:
             else:
                 if self.face_image_label:
                     self.face_image_label.configure(image='', text="No Image\nFound")
+                self.logger.debug(f"Face image not found: {image_path}")
                         
         except Exception as e:
             self.logger.error(f"Error updating face image: {str(e)}", exc_info=True)
@@ -1892,125 +4191,8 @@ class StatsManager:
         except Exception as e:
             self.logger.error(f"Error marking unsaved changes: {str(e)}", exc_info=True)
 
-    def _max_out_level(self):
-        """Max out the experience based on selected faction"""
-        try:
-            if self.main_window.tree is None:
-                show_error("Error", "No save file loaded. Please load a save file first.")
-                return
-                
-            # Get current faction
-            faction_widget = self.entries["PlayerFaction"]
-            faction = faction_widget.get()
-            
-            # Set appropriate EP value based on faction
-            if faction in ["Na'vi", "Navi"]:
-                max_ep = 500000  # Max EP for Na'vi
-            else:  # RDA or Undecided
-                max_ep = 500000 # Max EP for RDA
-            
-            # Update the EP display
-            ep_widget = self.entries["TotalEP"]
-            formatted_ep = f"{max_ep}/{max_ep} (Max EP)"
-            if hasattr(ep_widget, 'config'):
-                ep_widget.config(text=formatted_ep)
-            else:
-                ep_widget.delete(0, tk.END)
-                ep_widget.insert(0, formatted_ep)
-            
-            # Update BaseInfo TotalEP if tree exists
-            if self.main_window.tree is not None:
-                base_info = self.main_window.tree.getroot().find(".//BaseInfo")
-                if base_info is not None:
-                    base_info.set("TotalEP", str(max_ep))
-            
-            # Mark changes as unsaved
-            self._mark_unsaved_changes()
-            
-            # Show success message
-            show_info("EP Maxed Out", 
-                            f"Successfully set experience to maximum amount ({max_ep}) for the {faction} faction.")
-            
-        except Exception as e:
-            self.logger.error(f"Error maxing out level: {str(e)}", exc_info=True)
-            show_error("Error", f"Failed to max out level: {str(e)}")
-
-    def _reset_ep_values(self):
-        """Reset Player0 EPs to 0 and update TotalEP"""
-        try:
-            if self.main_window.tree is None:
-                show_error("Error", "No save file loaded. Please load a save file first.")
-                return
-
-            # Reset only the Player0 EPs field
-            ep_widget = self.entries.get("EPs")
-            if ep_widget:
-                ep_widget.delete(0, tk.END)
-                ep_widget.insert(0, "0")
-
-            # Update the TotalEP display label
-            total_ep_widget = self.entries.get("TotalEP")
-            if total_ep_widget:
-                formatted_ep = "0/5000000 (Reset)"
-                if hasattr(total_ep_widget, 'config'):
-                    total_ep_widget.config(text=formatted_ep)
-                else:
-                    total_ep_widget.delete(0, tk.END)
-                    total_ep_widget.insert(0, formatted_ep)
-
-            # Update XML value for TotalEP
-            base_info = self.main_window.tree.getroot().find(".//BaseInfo")
-            if base_info is not None:
-                base_info.set("TotalEP", "0")
-
-            # Mark changes as unsaved
-            self._mark_unsaved_changes()
-
-            show_info("EP Reset", "Player0 EPs have been reset to 0.")
-
-        except Exception as e:
-            self.logger.error(f"Error resetting EPs: {str(e)}", exc_info=True)
-            show_error("Error", f"Failed to reset Player0 EPs: {str(e)}")
-
-    def _on_faction_selected(self, event):
-        """Handle faction selection change"""
-        try:
-            if self.main_window.tree is None:
-                show_error("Error", "No save file loaded. Please load a save file first.")
-                self.entries["PlayerFaction"].selection_clear()
-                return
-                
-            selected_faction = self.entries["PlayerFaction"].get()
-            
-            # Get the max EP for this faction
-            if selected_faction in ["Na'vi", "Navi"]:
-                max_ep = 500000  # Max EP for Na'vi
-            else:  # RDA or Undecided
-                max_ep = 500000  # Max EP for RDA
-            
-            # Update the EP display format
-            ep_widget = self.entries["TotalEP"]
-            current_ep = ep_widget.cget("text") if hasattr(ep_widget, 'cget') else ep_widget.get()
-            
-            # Handle format conversions
-            if "/" in current_ep:
-                current_ep = current_ep.split("/")[0]
-            
-            # Update with new format
-            if hasattr(ep_widget, 'config'):
-                ep_widget.config(text=f"{current_ep}/{max_ep} (Max EP)")
-            else:
-                ep_widget.delete(0, tk.END)
-                ep_widget.insert(0, f"{current_ep}/{max_ep} (Max EP)")
-            
-            # Mark changes as unsaved
-            self.main_window.unsaved_label.config(text="Unsaved Changes")
-        except Exception as e:
-            self.logger.error(f"Error in faction selection: {str(e)}")
-            show_error("Error", f"Failed to change faction: {str(e)}")
-
     def _on_weapon_selected(self, event, slot_index):
-        """Handle weapon selection for RDA"""
+        """Handle weapon selection for RDA - updated for composite rendering"""
         if self.main_window.tree is None:
             show_error("Error", "No save file loaded. Please load a save file first.")
             event.widget.set("-Empty-")
@@ -2019,27 +4201,47 @@ class StatsManager:
         combo = event.widget
         selected_weapon = combo.get()
         
+        # Handle empty selection
         if selected_weapon == "-Empty-":
-            return
+            # Clear this weapon from composite
+            faction_key = 'rda'
+            if hasattr(self, 'weapon_preview_labels') and faction_key in self.weapon_preview_labels:
+                if slot_index in self.weapon_preview_labels[faction_key]:
+                    label = self.weapon_preview_labels[faction_key][slot_index]
+                    if hasattr(label, 'weapon_frames') and slot_index in label.weapon_frames:
+                        del label.weapon_frames[slot_index]
+            # Re-render composite without this weapon (no force regenerate)
+            self._render_composite_weapons(is_navi=False, force_regenerate=False)
+        else:
+            # Find weapon ID and load into composite
+            weapon_id = None
+            for item_id, item_name in self.weapon_slots[slot_index]["all_weapons"].items():
+                if item_name == selected_weapon:
+                    weapon_id = item_id
+                    break
+            
+            if weapon_id:
+                self._load_weapon_image(weapon_id, slot_index, is_navi=False)
         
-        # Find the item ID from the selected weapon name
-        weapon_id = None
-        for item_id, item_name in self.weapon_slots[slot_index]["all_weapons"].items():
-            if item_name == selected_weapon:
-                weapon_id = item_id
-                break
-        
-        if weapon_id is None:
-            return
-                    
         # Update the XML
         profile = self.main_window.tree.getroot().find("PlayerProfile")
-        if profile is not None:
-            self._update_weapon(profile, slot_index, weapon_id, is_navi=False)
-            self.main_window.unsaved_label.config(text="Unsaved Changes")
+        if profile is None:
+            return
+            
+        if selected_weapon != "-Empty-":
+            weapon_id = None
+            for item_id, item_name in self.weapon_slots[slot_index]["all_weapons"].items():
+                if item_name == selected_weapon:
+                    weapon_id = item_id
+                    break
+            
+            if weapon_id:
+                xml_slot = {0: 3, 1: 0, 2: 1, 3: 2}.get(slot_index, slot_index)
+                self._update_weapon(profile, xml_slot, weapon_id, is_navi=False)
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
 
     def _on_navi_weapon_selected(self, event, slot_index):
-        """Handle weapon selection for Na'vi"""
+        """Handle weapon selection for Na'vi - updated for composite rendering"""
         if self.main_window.tree is None:
             show_error("Error", "No save file loaded. Please load a save file first.")
             event.widget.set("-Empty-")
@@ -2048,27 +4250,145 @@ class StatsManager:
         combo = event.widget
         selected_weapon = combo.get()
         
+        # Handle empty selection
         if selected_weapon == "-Empty-":
-            return
+            # Clear this weapon from composite
+            faction_key = 'navi'
+            if hasattr(self, 'weapon_preview_labels') and faction_key in self.weapon_preview_labels:
+                if slot_index in self.weapon_preview_labels[faction_key]:
+                    label = self.weapon_preview_labels[faction_key][slot_index]
+                    if hasattr(label, 'weapon_frames') and slot_index in label.weapon_frames:
+                        del label.weapon_frames[slot_index]
+            # Re-render composite without this weapon (no force regenerate)
+            self._render_composite_weapons(is_navi=True, force_regenerate=False)
+        else:
+            # Find weapon ID and load into composite
+            weapon_id = None
+            for item_id, item_name in self.navi_weapon_slots[slot_index]["all_weapons"].items():
+                if item_name == selected_weapon:
+                    weapon_id = item_id
+                    break
+            
+            if weapon_id:
+                self._load_weapon_image(weapon_id, slot_index, is_navi=True)
         
-        # Find the item ID from the selected weapon name
-        weapon_id = None
-        for item_id, item_name in self.navi_weapon_slots[slot_index]["all_weapons"].items():
-            if item_name == selected_weapon:
-                weapon_id = item_id
-                break
-        
-        if weapon_id is None:
-            return
-                    
         # Update the XML
         profile = self.main_window.tree.getroot().find("PlayerProfile")
-        if profile is not None:
-            self._update_weapon(profile, slot_index, weapon_id, is_navi=True)
-            self.main_window.unsaved_label.config(text="Unsaved Changes")
+        if profile is None:
+            return
+            
+        if selected_weapon != "-Empty-":
+            weapon_id = None
+            for item_id, item_name in self.navi_weapon_slots[slot_index]["all_weapons"].items():
+                if item_name == selected_weapon:
+                    weapon_id = item_id
+                    break
+            
+            if weapon_id:
+                xml_slot = {0: 3, 1: 0, 2: 1, 3: 2}.get(slot_index, slot_index)
+                self._update_weapon(profile, xml_slot, weapon_id, is_navi=True)
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
+
+    def create_compact_armor_section(self, parent, is_navi=False):
+        """Create compact armor section with layered PNG preview"""
+        armor_container = ttk.Frame(parent)
+        armor_container.pack(fill=tk.BOTH, expand=True, pady=5, padx=5)
+        
+        # Split into left (controls) and right (preview) sections
+        left_section = ttk.Frame(armor_container)
+        left_section.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        
+        right_section = ttk.Frame(armor_container)
+        right_section.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)  # Changed expand=False to expand=True
+        
+        # Create armor mappings
+        if is_navi:
+            if not hasattr(self, 'navi_armor_sets'):
+                self._create_navi_armor_mappings()
+            armor_sets = self.navi_armor_sets
+            armor_dropdowns = self.navi_armor_dropdowns
+            preview_labels = self.navi_armor_preview_labels
+        else:
+            if not hasattr(self, 'rda_armor_sets'):
+                self._create_rda_armor_mappings()
+            armor_sets = self.rda_armor_sets
+            armor_dropdowns = self.armor_dropdowns
+            preview_labels = self.armor_preview_labels
+        
+        # Armor slots with nicer display names
+        armor_slots = [
+            ("headwear", "Head"),
+            ("torso", "Torso"),
+            ("legs", "Legs")
+        ]
+        
+        # Outfit Manager Button - SMALLER
+        outfit_button_frame = ttk.Frame(left_section)
+        outfit_button_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        outfit_btn = ttk.Button(outfit_button_frame, text="💾 Outfit Manager", width=20)
+        self._wrap_button_with_sound(outfit_btn, lambda: self._open_outfit_manager(is_navi))
+        outfit_btn.pack(side=tk.LEFT)
+
+        # Add spacer at the top to push armor boxes down
+        ttk.Frame(left_section, height=50).pack(side=tk.TOP)
+                
+        # Create armor dropdowns on the left
+        for slot_id, slot_name in armor_slots:
+            # Compact control frame
+            control_frame = ttk.Frame(left_section)
+            control_frame.pack(fill=tk.X, pady=12)
+            
+            # Slot label (small)
+            ttk.Label(control_frame, text=f"{slot_name}:", font=('Segoe UI', 9, 'bold'), width=6).pack(side=tk.LEFT, padx=(0, 8))
+            
+            # Armor dropdown (BIGGER and LONGER)
+            values = list(armor_sets[slot_id].values())
+            combo = ttk.Combobox(control_frame, values=values, state="readonly", 
+                            font=('Segoe UI', 10), width=40, height=10)
+            combo.set("-Empty-")
+            combo.pack(side=tk.LEFT, padx=(0, 8))
+            block_combobox_mousewheel(combo)
+            self._add_hover_sound_to_combobox(combo)
+            
+            # Bind events with preview loading
+            if is_navi:
+                combo.bind('<<ComboboxSelected>>', lambda e, slot=slot_id: self._on_navi_armor_selected(e, slot))
+            else:
+                combo.bind('<<ComboboxSelected>>', lambda e, slot=slot_id: self._on_armor_selected(e, slot))
+            
+            armor_dropdowns[slot_id] = combo
+        
+        # Create preview area on the right - COMPOSITE VIEW (BIGGER)
+        right_section.grid_columnconfigure(0, weight=1)
+        right_section.grid_rowconfigure(0, weight=1)
+        
+        # Single composite preview frame - BIGGER
+        composite_frame = ttk.LabelFrame(right_section, text="Armor Preview", padding=5)
+        composite_frame.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        
+        # Configure the frame to expand
+        composite_frame.grid_columnconfigure(0, weight=1)
+        composite_frame.grid_rowconfigure(0, weight=1)
+        
+        composite_label = ttk.Label(composite_frame, text="No Armor\nEquipped", 
+                                    width=20, anchor="center", relief="sunken")
+        composite_label.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        
+        # Store the composite label
+        if not hasattr(self, 'composite_preview_labels'):
+            self.composite_preview_labels = {}
+        faction_key = 'navi' if is_navi else 'rda'
+        self.composite_preview_labels[faction_key] = composite_label
+        
+        # Create hidden individual preview labels for internal tracking
+        for slot_id, slot_name in armor_slots:
+            # These labels won't be displayed but will hold the individual armor images
+            image_label = ttk.Label(composite_frame)  # Create but don't pack
+            preview_labels[slot_id] = image_label
 
     def _on_armor_selected(self, event, slot_type):
-        """Handle armor selection for RDA"""
+        """Handle armor selection for RDA with layered PNG preview"""
         if self.main_window.tree is None:
             show_error("Error", "No save file loaded. Please load a save file first.")
             event.widget.set("-Empty-")
@@ -2077,6 +4397,22 @@ class StatsManager:
         combo = event.widget
         selected_armor = combo.get()
         
+        # Handle empty selection
+        if selected_armor == "-Empty-":
+            # Clear the armor image for this slot
+            if slot_type in self.armor_preview_labels:
+                preview_label = self.armor_preview_labels[slot_type]
+                if hasattr(preview_label, 'armor_images') and slot_type in preview_label.armor_images:
+                    del preview_label.armor_images[slot_type]
+            # Re-render composite without this piece
+            self._render_composite_armor(is_navi=False)
+        else:
+            # Find armor ID and load preview
+            armor_id = self.rda_armor_ids[slot_type].get(selected_armor)
+            if armor_id:
+                self._load_armor_image(armor_id, slot_type, is_navi=False)
+        
+        # Update the XML
         profile = self.main_window.tree.getroot().find("PlayerProfile")
         if profile is None:
             return
@@ -2087,7 +4423,7 @@ class StatsManager:
             self.main_window.unsaved_label.config(text="Unsaved Changes")
 
     def _on_navi_armor_selected(self, event, slot_type):
-        """Handle armor selection for Na'vi"""
+        """Handle armor selection for Na'vi with layered PNG preview"""
         if self.main_window.tree is None:
             show_error("Error", "No save file loaded. Please load a save file first.")
             event.widget.set("-Empty-")
@@ -2096,6 +4432,22 @@ class StatsManager:
         combo = event.widget
         selected_armor = combo.get()
         
+        # Handle empty selection
+        if selected_armor == "-Empty-":
+            # Clear the armor image for this slot
+            if slot_type in self.navi_armor_preview_labels:
+                preview_label = self.navi_armor_preview_labels[slot_type]
+                if hasattr(preview_label, 'armor_images') and slot_type in preview_label.armor_images:
+                    del preview_label.armor_images[slot_type]
+            # Re-render composite without this piece
+            self._render_composite_armor(is_navi=True)
+        else:
+            # Find armor ID and load preview
+            armor_id = self.navi_armor_ids[slot_type].get(selected_armor)
+            if armor_id:
+                self._load_armor_image(armor_id, slot_type, is_navi=True)
+        
+        # Update the XML
         profile = self.main_window.tree.getroot().find("PlayerProfile")
         if profile is None:
             return
@@ -2145,7 +4497,7 @@ class StatsManager:
             show_error("Error", f"Failed to toggle infinite ammo: {str(e)}")
 
     def _apply_infinite_ammo(self, slot_index, is_navi, weapon_id):
-        """Apply the infinite ammo setting"""
+        """Apply the infinite ammo setting by maxing out ammo count"""
         try:
             slot_data = self.navi_weapon_slots[slot_index] if is_navi else self.weapon_slots[slot_index]
             infinite_enabled = slot_data["infinite_var"].get()
@@ -2175,7 +4527,7 @@ class StatsManager:
                     if possessions is None:
                         return
                     
-                    # Find and update the weapon
+                    # Find the weapon
                     weapon_poss = None
                     for poss in possessions.findall("Poss"):
                         if poss.get("Index") == poss_idx:
@@ -2184,27 +4536,44 @@ class StatsManager:
                     
                     if weapon_poss is None:
                         return
-                        
-                    current_ammo_type = weapon_poss.get("crc_AmmoType", "4294967295")
                     
-                    if infinite_enabled:
-                        weapon_poss.set("crc_AmmoType", "4294967295")
-                        weapon_poss.set("NbInClip", "999999")
-                    else:
-                        correct_ammo_type = self._get_ammo_type_for_weapon(weapon_id)
-                        weapon_poss.set("crc_AmmoType", correct_ammo_type)
-                        weapon_poss.set("NbInClip", "500")
+                    # Get the ammo type (but don't change it)
+                    ammo_type = weapon_poss.get("crc_AmmoType", "4294967295")
                     
                     # Update UI
                     ammo_entry = slot_data["ammo_entry"]
+                    
                     if infinite_enabled:
+                        # ✅ ONLY update the weapon's NbInStack, not the separate ammo item
+                        weapon_poss.set("NbInStack", "999999")
+                        
+                        # Ensure the ammo item exists in inventory (but don't modify its NbInStack)
+                        if ammo_type != "4294967295":
+                            ammo_exists = False
+                            for poss in possessions.findall("Poss"):
+                                if poss.get("crc_ItemID") == ammo_type:
+                                    ammo_exists = True
+                                    break
+                            
+                            # If ammo doesn't exist, create it with normal amount
+                            if not ammo_exists:
+                                self._ensure_ammo_exists(possessions, ammo_type, "500")
+                        
+                        # Update UI to show infinity symbol
                         ammo_entry.delete(0, tk.END)
                         ammo_entry.insert(0, "∞")
                         ammo_entry.configure(state="disabled")
+                        
+                        self.logger.debug(f"Set infinite ammo for weapon {weapon_id} (weapon NbInStack = 999999)")
                     else:
+                        # Restore normal ammo count for the weapon
+                        weapon_poss.set("NbInStack", "1")  # Weapons typically have NbInStack="1"
+                        
                         ammo_entry.delete(0, tk.END)
                         ammo_entry.insert(0, "500")
                         ammo_entry.configure(state="normal")
+                        
+                        self.logger.debug(f"Reset ammo to normal for weapon {weapon_id}")
                     
                     self.main_window.unsaved_label.config(text="Unsaved Changes")
         
@@ -2249,12 +4618,105 @@ class StatsManager:
             return
         
         try:
-            # Implementation would go here - simplified for space
-            show_info("Reset Complete", "Weapon ammo types have been reset.")
-            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            total_reset = 0
+            
+            # Reset RDA weapons
+            soldier = profile.find("Possessions_Soldier")
+            if soldier is not None:
+                possessions = soldier.find("Posessions")
+                if possessions is not None:
+                    reset_count = self._reset_faction_weapon_ammo(possessions, is_navi=False)
+                    total_reset += reset_count
+                    self.logger.info(f"Reset {reset_count} RDA weapons")
+            
+            # Reset Na'vi weapons
+            avatar = profile.find("Possessions_Avatar")
+            if avatar is not None:
+                possessions = avatar.find("Posessions")
+                if possessions is not None:
+                    reset_count = self._reset_faction_weapon_ammo(possessions, is_navi=True)
+                    total_reset += reset_count
+                    self.logger.info(f"Reset {reset_count} Na'vi weapons")
+            
+            # Refresh the weapon displays
+            self._update_loadout_display(profile)
+            self._update_navi_loadout_display(profile)
+            
+            # Mark changes as unsaved
+            if total_reset > 0:
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
+                show_success("Reset Complete", f"Successfully reset ammo types for {total_reset} weapons.")
+            else:
+                show_info("No Weapons Found", "No weapons found to reset.")
+            
+            self.logger.info(f"Weapon ammo reset completed. Total reset: {total_reset}")
+            
         except Exception as e:
+            self.logger.error(f"Error resetting weapon ammo: {str(e)}", exc_info=True)
             show_error("Error", f"Failed to reset weapon ammo: {str(e)}")
 
+    def _reset_faction_weapon_ammo(self, possessions, is_navi=False):
+        """Reset weapon ammo types for a specific faction"""
+        try:
+            reset_count = 0
+            
+            # Get all weapon IDs for this faction
+            weapon_ids = set(self._get_navi_weapon_ids() if is_navi else self._get_rda_weapon_ids())
+            
+            # Find all weapon possessions and reset their ammo types
+            for poss in possessions.findall("Poss"):
+                item_id = poss.get("crc_ItemID")
+                
+                # Check if this is a weapon
+                if item_id in weapon_ids:
+                    # Get the correct ammo type for this weapon
+                    correct_ammo_type = self._get_ammo_type_for_weapon(item_id)
+                    current_ammo_type = poss.get("crc_AmmoType", "4294967295")
+                    current_nb_in_stack = poss.get("NbInStack", "1")
+                    
+                    # Only reset if something is different
+                    needs_reset = False
+                    
+                    # Check if ammo type is wrong
+                    if current_ammo_type != correct_ammo_type:
+                        needs_reset = True
+                    
+                    # Check if weapon has infinite ammo (NbInStack = 999999) and shouldn't
+                    if current_nb_in_stack == "999999":
+                        needs_reset = True
+                    
+                    if needs_reset:
+                        old_ammo = current_ammo_type
+                        old_stack = current_nb_in_stack
+                        
+                        # Reset ammo type to correct value
+                        poss.set("crc_AmmoType", correct_ammo_type)
+                        
+                        # Reset weapon's NbInStack to 1 (normal weapon stack size)
+                        poss.set("NbInStack", "1")
+                        
+                        # Set reasonable clip size
+                        poss.set("NbInClip", "100")
+                        
+                        # Ensure the ammo exists in inventory with normal amount
+                        if correct_ammo_type != "4294967295":
+                            self._ensure_ammo_exists(possessions, correct_ammo_type, "500")
+                        
+                        weapon_name = self._get_item_name(item_id)
+                        self.logger.debug(f"Reset {weapon_name}: ammo type {old_ammo} -> {correct_ammo_type}, NbInStack {old_stack} -> 1")
+                        reset_count += 1
+            
+            return reset_count
+            
+        except Exception as e:
+            self.logger.error(f"Error resetting faction weapon ammo: {str(e)}", exc_info=True)
+            return 0
+        
     def _remove_duplicate_items(self):
         """Remove duplicate items from inventory"""
         if self.main_window.tree is None:
@@ -2262,11 +4724,97 @@ class StatsManager:
             return
         
         try:
-            # Implementation would go here - simplified for space
-            show_info("Duplicates Removed", "Duplicate items have been removed from inventory.")
-            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            total_removed = 0
+            
+            # Process RDA possessions
+            soldier = profile.find("Possessions_Soldier")
+            if soldier is not None:
+                possessions = soldier.find("Posessions")
+                if possessions is not None:
+                    removed = self._remove_duplicates_from_possessions(possessions, "RDA")
+                    total_removed += removed
+            
+            # Process Na'vi possessions
+            avatar = profile.find("Possessions_Avatar")
+            if avatar is not None:
+                possessions = avatar.find("Posessions")
+                if possessions is not None:
+                    removed = self._remove_duplicates_from_possessions(possessions, "Na'vi")
+                    total_removed += removed
+            
+            # Mark changes as unsaved
+            if total_removed > 0:
+                self.main_window.unsaved_label.config(text="Unsaved Changes")
+                show_success("Duplicates Removed", f"Successfully removed {total_removed} duplicate items from inventory.")
+            else:
+                show_info("No Duplicates", "No duplicate items found in inventory.")
+            
+            self.logger.info(f"Duplicate removal completed. Total removed: {total_removed}")
+            
         except Exception as e:
+            self.logger.error(f"Error removing duplicates: {str(e)}", exc_info=True)
             show_error("Error", f"Failed to remove duplicates: {str(e)}")
+
+    def _remove_duplicates_from_possessions(self, possessions, faction_name):
+        """Remove duplicate items from a possessions element"""
+        try:
+            # Track items we've seen: crc_ItemID -> first Poss element
+            seen_items = {}
+            items_to_remove = []
+            
+            # Find duplicates
+            for poss in possessions.findall("Poss"):
+                item_id = poss.get("crc_ItemID")
+                
+                if item_id in seen_items:
+                    # This is a duplicate - mark for removal
+                    items_to_remove.append(poss)
+                    self.logger.debug(f"Found duplicate {faction_name} item: {self._get_item_name(item_id)} (ID: {item_id})")
+                else:
+                    # First occurrence - track it
+                    seen_items[item_id] = poss
+            
+            # Remove the duplicates
+            for poss in items_to_remove:
+                possessions.remove(poss)
+            
+            removed_count = len(items_to_remove)
+            
+            if removed_count > 0:
+                # Re-index all remaining possessions to maintain sequential indices
+                self._reindex_possessions(possessions)
+                self.logger.info(f"Removed {removed_count} duplicate {faction_name} items")
+            
+            return removed_count
+            
+        except Exception as e:
+            self.logger.error(f"Error removing duplicates from {faction_name} possessions: {str(e)}", exc_info=True)
+            return 0
+
+    def _reindex_possessions(self, possessions):
+        """Re-index possession items to be sequential starting from 0"""
+        try:
+            all_poss = possessions.findall("Poss")
+            
+            # Sort by current index to maintain relative order
+            sorted_poss = sorted(all_poss, key=lambda p: int(p.get("Index", "0")))
+            
+            # Re-assign indices sequentially
+            for new_index, poss in enumerate(sorted_poss):
+                old_index = poss.get("Index")
+                poss.set("Index", str(new_index))
+                if old_index != str(new_index):
+                    self.logger.debug(f"Re-indexed item from {old_index} to {new_index}")
+            
+            self.logger.info(f"Re-indexed {len(sorted_poss)} possessions")
+            
+        except Exception as e:
+            self.logger.error(f"Error re-indexing possessions: {str(e)}", exc_info=True)
 
     def _add_all_rda_dlc_items(self):
         """Add all RDA DLC items to inventory - WORKING IMPLEMENTATION"""
@@ -2478,24 +5026,610 @@ class StatsManager:
             self.logger.error(f"Error adding Na'vi DLC items: {str(e)}", exc_info=True)
             show_error("Error", f"Failed to add Na'vi DLC items: {str(e)}")
 
+    def _add_all_rda_armor(self):
+        """Add all RDA armor pieces to inventory"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        try:
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            # Find or create RDA possessions
+            soldier = profile.find("Possessions_Soldier")
+            if soldier is None:
+                soldier = ET.SubElement(profile, "Possessions_Soldier")
+            
+            possessions = soldier.find("Posessions")
+            if possessions is None:
+                possessions = ET.SubElement(soldier, "Posessions")
+            
+            # Get all RDA armor item IDs from the armor mappings
+            rda_armor_items = []
+            for slot_type in ["headwear", "torso", "legs"]:
+                if hasattr(self, 'rda_armor_sets') and slot_type in self.rda_armor_sets:
+                    rda_armor_items.extend(self.rda_armor_sets[slot_type].keys())
+                else:
+                    # Create mappings if they don't exist
+                    self._create_rda_armor_mappings()
+                    rda_armor_items.extend(self.rda_armor_sets[slot_type].keys())
+            
+            # Get existing item IDs to avoid duplicates
+            existing_items = set()
+            for poss in possessions.findall("Poss"):
+                existing_items.add(poss.get("crc_ItemID"))
+            
+            # Find next available index
+            existing_indices = [int(poss.get("Index", "0")) for poss in possessions.findall("Poss")]
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            items_added = 0
+            
+            # Add each armor item if it doesn't already exist
+            for item_id in rda_armor_items:
+                if item_id not in existing_items:
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", str(next_index))
+                    new_poss.set("crc_ItemID", item_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    new_poss.set("crc_AmmoType", "4294967295")
+                    new_poss.set("NoveltyState", "2")
+                    
+                    # Copy formatting from existing items
+                    other_poss = possessions.find("Poss")
+                    if other_poss is not None and hasattr(other_poss, 'tail'):
+                        new_poss.tail = other_poss.tail
+                    
+                    self.logger.debug(f"Added RDA armor: {self._get_item_name(item_id)} (ID: {item_id})")
+                    items_added += 1
+                    next_index += 1
+                    existing_items.add(item_id)
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+            if items_added > 0:
+                show_success("Armor Added", f"Successfully added {items_added} RDA armor pieces to inventory.")
+            else:
+                show_info("No Items Added", "All RDA armor pieces are already in your inventory.")
+            
+            self.logger.info(f"RDA armor addition completed. Added: {items_added}")
+            
+        except Exception as e:
+            self.logger.error(f"Error adding RDA armor: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to add RDA armor: {str(e)}")
+
+    def _add_all_rda_weapons(self):
+        """Add all RDA weapons to inventory"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        try:
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            # Find or create RDA possessions
+            soldier = profile.find("Possessions_Soldier")
+            if soldier is None:
+                soldier = ET.SubElement(profile, "Possessions_Soldier")
+            
+            possessions = soldier.find("Posessions")
+            if possessions is None:
+                possessions = ET.SubElement(soldier, "Posessions")
+            
+            # Get all RDA weapon IDs
+            rda_weapon_items = self._get_rda_weapon_ids()
+            
+            # Get existing item IDs to avoid duplicates
+            existing_items = set()
+            for poss in possessions.findall("Poss"):
+                existing_items.add(poss.get("crc_ItemID"))
+            
+            # Find next available index
+            existing_indices = [int(poss.get("Index", "0")) for poss in possessions.findall("Poss")]
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            items_added = 0
+            
+            # Add each weapon if it doesn't already exist
+            for item_id in rda_weapon_items:
+                if item_id not in existing_items:
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", str(next_index))
+                    new_poss.set("crc_ItemID", item_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    
+                    # Set appropriate ammo type
+                    ammo_type = self._get_ammo_type_for_weapon(item_id)
+                    new_poss.set("crc_AmmoType", ammo_type)
+                    new_poss.set("NoveltyState", "2")
+                    
+                    # Copy formatting from existing items
+                    other_poss = possessions.find("Poss")
+                    if other_poss is not None and hasattr(other_poss, 'tail'):
+                        new_poss.tail = other_poss.tail
+                    
+                    self.logger.debug(f"Added RDA weapon: {self._get_item_name(item_id)} (ID: {item_id})")
+                    items_added += 1
+                    next_index += 1
+                    existing_items.add(item_id)
+            
+            # Ensure all ammo types exist
+            self._ensure_faction_ammo_exists(possessions, is_navi=False)
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+            if items_added > 0:
+                show_success("Weapons Added", f"Successfully added {items_added} RDA weapons to inventory.")
+            else:
+                show_info("No Items Added", "All RDA weapons are already in your inventory.")
+            
+            self.logger.info(f"RDA weapons addition completed. Added: {items_added}")
+            
+        except Exception as e:
+            self.logger.error(f"Error adding RDA weapons: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to add RDA weapons: {str(e)}")
+
+    def _add_all_rda_skills(self):
+        """Add all RDA skills to inventory AND unlock ALL skills in skill database"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        try:
+            root = self.main_window.tree.getroot()
+            profile = root.find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            # PART 1: Add skills to inventory (possessions)
+            soldier = profile.find("Possessions_Soldier")
+            if soldier is None:
+                soldier = ET.SubElement(profile, "Possessions_Soldier")
+            
+            possessions = soldier.find("Posessions")
+            if possessions is None:
+                possessions = ET.SubElement(soldier, "Posessions")
+            
+            # Get all RDA skill IDs
+            rda_skill_items = list(self.rda_skill_mappings.keys())
+            
+            # Get existing item IDs to avoid duplicates
+            existing_items = set()
+            for poss in possessions.findall("Poss"):
+                existing_items.add(poss.get("crc_ItemID"))
+            
+            # Find next available index
+            existing_indices = [int(poss.get("Index", "0")) for poss in possessions.findall("Poss")]
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            items_added = 0
+            
+            # Add each skill if it doesn't already exist
+            for item_id in rda_skill_items:
+                if item_id not in existing_items:
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", str(next_index))
+                    new_poss.set("crc_ItemID", item_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    new_poss.set("crc_AmmoType", "4294967295")
+                    new_poss.set("NoveltyState", "2")
+                    
+                    # Copy formatting from existing items
+                    other_poss = possessions.find("Poss")
+                    if other_poss is not None and hasattr(other_poss, 'tail'):
+                        new_poss.tail = other_poss.tail
+                    
+                    self.logger.debug(f"Added RDA skill: {self.rda_skill_mappings[item_id]} (ID: {item_id})")
+                    items_added += 1
+                    next_index += 1
+                    existing_items.add(item_id)
+            
+            # PART 2: Unlock ALL skills in AvatarSkillDB_Status
+            # Try multiple search methods to find AvatarSkillDB_Status
+            skill_db = None
+            
+            # Method 1: Direct child of root
+            skill_db = root.find("AvatarSkillDB_Status")
+            if skill_db is not None:
+                self.logger.debug("Found AvatarSkillDB_Status as direct child of root")
+            
+            # Method 2: Search anywhere in tree using XPath
+            if skill_db is None:
+                skill_db = root.find(".//AvatarSkillDB_Status")
+                if skill_db is not None:
+                    self.logger.debug("Found AvatarSkillDB_Status using XPath search")
+            
+            # Method 3: Manual search through all elements
+            if skill_db is None:
+                for elem in root.iter():
+                    if elem.tag == "AvatarSkillDB_Status":
+                        skill_db = elem
+                        self.logger.debug("Found AvatarSkillDB_Status through manual iteration")
+                        break
+            
+            skills_unlocked = 0
+            
+            if skill_db is not None:
+                all_skills = skill_db.findall("Skill")
+                self.logger.debug(f"Found AvatarSkillDB_Status with {len(all_skills)} skills")
+                
+                # Update ALL skills to eLocked="2" (Unlocked | Has Seen)
+                for skill in all_skills:
+                    old_status = skill.get("eLocked", "0")
+                    skill.set("eLocked", "2")  # Always set to 2, regardless of current value
+                    
+                    if old_status != "2":
+                        skills_unlocked += 1
+                    
+                    skill_id = skill.get("crc_id", "Unknown")
+                    self.logger.debug(f"Set skill ID {skill_id} eLocked: {old_status} -> 2")
+                
+                self.logger.info(f"Successfully unlocked {skills_unlocked} skills out of {len(all_skills)} total")
+            else:
+                # Debug: Print the entire XML structure to see what's available
+                self.logger.error("AvatarSkillDB_Status not found anywhere in XML!")
+                self.logger.debug("Available root-level elements:")
+                for child in root:
+                    self.logger.debug(f"  - {child.tag}")
+                
+                show_warning("Partial Success", 
+                            f"Added {items_added} RDA skills to inventory, but could not find skill database to unlock them.\n\n"
+                            "Skills are in your inventory but may not show as unlocked in the skill menu.")
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+            # Show success message
+            if items_added > 0 or skills_unlocked > 0:
+                message = f"Successfully added {items_added} RDA skills to inventory"
+                if skills_unlocked > 0:
+                    message += f" and unlocked {skills_unlocked} skills in skill database"
+                message += "."
+                show_success("Skills Added & Unlocked", message)
+            else:
+                if skill_db is None:
+                    show_info("Partial Success", f"Added {items_added} RDA skills to inventory.")
+                else:
+                    show_info("No Changes", "All RDA skills are already in your inventory and all skills are unlocked.")
+            
+            self.logger.info(f"RDA skills operation completed. Added: {items_added}, Skills unlocked: {skills_unlocked}")
+            
+        except Exception as e:
+            self.logger.error(f"Error adding RDA skills: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to add RDA skills: {str(e)}")
+
+    def _add_all_navi_skills(self):
+        """Add all Na'vi skills to inventory AND unlock ALL skills in skill database"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        try:
+            root = self.main_window.tree.getroot()
+            profile = root.find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            # PART 1: Add skills to inventory (possessions)
+            avatar = profile.find("Possessions_Avatar")
+            if avatar is None:
+                avatar = ET.SubElement(profile, "Possessions_Avatar")
+            
+            possessions = avatar.find("Posessions")
+            if possessions is None:
+                possessions = ET.SubElement(avatar, "Posessions")
+            
+            # Get all Na'vi skill IDs
+            navi_skill_items = list(self.navi_skill_mappings.keys())
+            
+            # Get existing item IDs to avoid duplicates
+            existing_items = set()
+            for poss in possessions.findall("Poss"):
+                existing_items.add(poss.get("crc_ItemID"))
+            
+            # Find next available index
+            existing_indices = [int(poss.get("Index", "0")) for poss in possessions.findall("Poss")]
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            items_added = 0
+            
+            # Add each skill if it doesn't already exist
+            for item_id in navi_skill_items:
+                if item_id not in existing_items:
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", str(next_index))
+                    new_poss.set("crc_ItemID", item_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    new_poss.set("crc_AmmoType", "4294967295")
+                    new_poss.set("NoveltyState", "2")
+                    
+                    # Copy formatting from existing items
+                    other_poss = possessions.find("Poss")
+                    if other_poss is not None and hasattr(other_poss, 'tail'):
+                        new_poss.tail = other_poss.tail
+                    
+                    self.logger.debug(f"Added Na'vi skill: {self.navi_skill_mappings[item_id]} (ID: {item_id})")
+                    items_added += 1
+                    next_index += 1
+                    existing_items.add(item_id)
+            
+            # PART 2: Unlock ALL skills in AvatarSkillDB_Status
+            # Try multiple search methods to find AvatarSkillDB_Status
+            skill_db = None
+            
+            # Method 1: Direct child of root
+            skill_db = root.find("AvatarSkillDB_Status")
+            if skill_db is not None:
+                self.logger.debug("Found AvatarSkillDB_Status as direct child of root")
+            
+            # Method 2: Search anywhere in tree using XPath
+            if skill_db is None:
+                skill_db = root.find(".//AvatarSkillDB_Status")
+                if skill_db is not None:
+                    self.logger.debug("Found AvatarSkillDB_Status using XPath search")
+            
+            # Method 3: Manual search through all elements
+            if skill_db is None:
+                for elem in root.iter():
+                    if elem.tag == "AvatarSkillDB_Status":
+                        skill_db = elem
+                        self.logger.debug("Found AvatarSkillDB_Status through manual iteration")
+                        break
+            
+            skills_unlocked = 0
+            
+            if skill_db is not None:
+                all_skills = skill_db.findall("Skill")
+                self.logger.debug(f"Found AvatarSkillDB_Status with {len(all_skills)} skills")
+                
+                # Update ALL skills to eLocked="2" (Unlocked | Has Seen)
+                for skill in all_skills:
+                    old_status = skill.get("eLocked", "0")
+                    skill.set("eLocked", "2")  # Always set to 2, regardless of current value
+                    
+                    if old_status != "2":
+                        skills_unlocked += 1
+                    
+                    skill_id = skill.get("crc_id", "Unknown")
+                    self.logger.debug(f"Set skill ID {skill_id} eLocked: {old_status} -> 2")
+                
+                self.logger.info(f"Successfully unlocked {skills_unlocked} skills out of {len(all_skills)} total")
+            else:
+                # Debug: Print the entire XML structure to see what's available
+                self.logger.error("AvatarSkillDB_Status not found anywhere in XML!")
+                self.logger.debug("Available root-level elements:")
+                for child in root:
+                    self.logger.debug(f"  - {child.tag}")
+                
+                show_warning("Partial Success", 
+                            f"Added {items_added} Na'vi skills to inventory, but could not find skill database to unlock them.\n\n"
+                            "Skills are in your inventory but may not show as unlocked in the skill menu.")
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+            # Show success message
+            if items_added > 0 or skills_unlocked > 0:
+                message = f"Successfully added {items_added} Na'vi skills to inventory"
+                if skills_unlocked > 0:
+                    message += f" and unlocked {skills_unlocked} skills in skill database"
+                message += "."
+                show_success("Skills Added & Unlocked", message)
+            else:
+                if skill_db is None:
+                    show_info("Partial Success", f"Added {items_added} Na'vi skills to inventory.")
+                else:
+                    show_info("No Changes", "All Na'vi skills are already in your inventory and all skills are unlocked.")
+            
+            self.logger.info(f"Na'vi skills operation completed. Added: {items_added}, Skills unlocked: {skills_unlocked}")
+            
+        except Exception as e:
+            self.logger.error(f"Error adding Na'vi skills: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to add Na'vi skills: {str(e)}")
+
+    def _add_all_navi_armor(self):
+        """Add all Na'vi armor pieces to inventory"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        try:
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            # Find or create Na'vi possessions
+            avatar = profile.find("Possessions_Avatar")
+            if avatar is None:
+                avatar = ET.SubElement(profile, "Possessions_Avatar")
+            
+            possessions = avatar.find("Posessions")
+            if possessions is None:
+                possessions = ET.SubElement(avatar, "Posessions")
+            
+            # Get all Na'vi armor item IDs from the armor mappings
+            navi_armor_items = []
+            for slot_type in ["headwear", "torso", "legs"]:
+                if hasattr(self, 'navi_armor_sets') and slot_type in self.navi_armor_sets:
+                    navi_armor_items.extend(self.navi_armor_sets[slot_type].keys())
+                else:
+                    # Create mappings if they don't exist
+                    self._create_navi_armor_mappings()
+                    navi_armor_items.extend(self.navi_armor_sets[slot_type].keys())
+            
+            # Get existing item IDs to avoid duplicates
+            existing_items = set()
+            for poss in possessions.findall("Poss"):
+                existing_items.add(poss.get("crc_ItemID"))
+            
+            # Find next available index
+            existing_indices = [int(poss.get("Index", "0")) for poss in possessions.findall("Poss")]
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            items_added = 0
+            
+            # Add each armor item if it doesn't already exist
+            for item_id in navi_armor_items:
+                if item_id not in existing_items:
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", str(next_index))
+                    new_poss.set("crc_ItemID", item_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    new_poss.set("crc_AmmoType", "4294967295")
+                    new_poss.set("NoveltyState", "2")
+                    
+                    # Copy formatting from existing items
+                    other_poss = possessions.find("Poss")
+                    if other_poss is not None and hasattr(other_poss, 'tail'):
+                        new_poss.tail = other_poss.tail
+                    
+                    self.logger.debug(f"Added Na'vi armor: {self._get_item_name(item_id)} (ID: {item_id})")
+                    items_added += 1
+                    next_index += 1
+                    existing_items.add(item_id)
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+            if items_added > 0:
+                show_success("Armor Added", f"Successfully added {items_added} Na'vi armor pieces to inventory.")
+            else:
+                show_info("No Items Added", "All Na'vi armor pieces are already in your inventory.")
+            
+            self.logger.info(f"Na'vi armor addition completed. Added: {items_added}")
+            
+        except Exception as e:
+            self.logger.error(f"Error adding Na'vi armor: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to add Na'vi armor: {str(e)}")
+
+    def _add_all_navi_weapons(self):
+        """Add all Na'vi weapons to inventory"""
+        if self.main_window.tree is None:
+            show_error("Error", "No save file loaded. Please load a save file first.")
+            return
+        
+        try:
+            profile = self.main_window.tree.getroot().find("PlayerProfile")
+            if profile is None:
+                show_error("Error", "PlayerProfile not found in save file.")
+                return
+            
+            # Find or create Na'vi possessions
+            avatar = profile.find("Possessions_Avatar")
+            if avatar is None:
+                avatar = ET.SubElement(profile, "Possessions_Avatar")
+            
+            possessions = avatar.find("Posessions")
+            if possessions is None:
+                possessions = ET.SubElement(avatar, "Posessions")
+            
+            # Get all Na'vi weapon IDs
+            navi_weapon_items = self._get_navi_weapon_ids()
+            
+            # Get existing item IDs to avoid duplicates
+            existing_items = set()
+            for poss in possessions.findall("Poss"):
+                existing_items.add(poss.get("crc_ItemID"))
+            
+            # Find next available index
+            existing_indices = [int(poss.get("Index", "0")) for poss in possessions.findall("Poss")]
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            items_added = 0
+            
+            # Add each weapon if it doesn't already exist
+            for item_id in navi_weapon_items:
+                if item_id not in existing_items:
+                    # Create new possession
+                    new_poss = ET.SubElement(possessions, "Poss")
+                    new_poss.set("Index", str(next_index))
+                    new_poss.set("crc_ItemID", item_id)
+                    new_poss.set("NbInStack", "1")
+                    new_poss.set("NbInClip", "0")
+                    
+                    # Set appropriate ammo type
+                    ammo_type = self._get_ammo_type_for_weapon(item_id)
+                    new_poss.set("crc_AmmoType", ammo_type)
+                    new_poss.set("NoveltyState", "2")
+                    
+                    # Copy formatting from existing items
+                    other_poss = possessions.find("Poss")
+                    if other_poss is not None and hasattr(other_poss, 'tail'):
+                        new_poss.tail = other_poss.tail
+                    
+                    self.logger.debug(f"Added Na'vi weapon: {self._get_item_name(item_id)} (ID: {item_id})")
+                    items_added += 1
+                    next_index += 1
+                    existing_items.add(item_id)
+            
+            # Ensure all ammo types exist
+            self._ensure_faction_ammo_exists(possessions, is_navi=True)
+            
+            # Mark changes as unsaved
+            self.main_window.unsaved_label.config(text="Unsaved Changes")
+            
+            if items_added > 0:
+                show_success("Weapons Added", f"Successfully added {items_added} Na'vi weapons to inventory.")
+            else:
+                show_info("No Items Added", "All Na'vi weapons are already in your inventory.")
+            
+            self.logger.info(f"Na'vi weapons addition completed. Added: {items_added}")
+            
+        except Exception as e:
+            self.logger.error(f"Error adding Na'vi weapons: {str(e)}", exc_info=True)
+            show_error("Error", f"Failed to add Na'vi weapons: {str(e)}")
+            
     def _get_all_rda_ammo_items(self):
         """Get all RDA ammo item IDs for ensuring ammo availability"""
         return [
-            "4029490973",  # Rifle Ammo
-            "2220072441",  # Shotgun Ammo
-            "3183424835",  # SMG Ammo
-            "3227899887",  # Grenade Ammo
-            "4198025789",  # Rocket Ammo
-            "2442117335",  # LMG Ammo
-            "3819023512"   # Heavy Ammo
+            "4029490973",  
+            "2220072441",  
+            "3183424835",  
+            "3227899887",  
+            "4198025789",  
+            "2442117335",  
+            "3819023512"   
         ]
 
     def _get_all_navi_ammo_items(self):
         """Get all Na'vi ammo item IDs for ensuring ammo availability"""
         return [
-            "1042656528",  # Arrow Ammo
-            "435601722",   # Spear Ammo
-            "3069972540"   # Poison Ammo
+            "1042656528",  
+            "435601722",   
+            "3069972540"   
         ]
 
     def _ensure_faction_ammo_exists(self, possessions, is_navi=False):
@@ -3072,6 +6206,7 @@ class StatsManager:
             "1132447925": "1042656528",  # AVR-M30 Machine Gun II
             "1048019290": "1042656528",  # ELITE AVR-M30 II
             "1304439874": "1042656528",  # AVR-M30 Machine Gun I
+            "818439597": "1042656528",   # ELITE AVR-M30 I
             
             # Club - No ammo (melee)
             "240531571": "4294967295",   # Nawm Club IV
@@ -3114,8 +6249,12 @@ class StatsManager:
         return weapon_ammo_map.get(weapon_id, default_ammo)
 
     def load_stats(self, tree: ET.ElementTree) -> None:
-        """Load stats data with modern interface - UPDATED to include skills loading"""
+        """Load stats data with modern interface - UPDATED to include outfit loading"""
         self.logger.debug("Loading stats with modern interface")
+        
+        # DEBUG: Print all attributes of main_window to find the file path
+        self.logger.debug(f"Main window attributes: {[attr for attr in dir(self.main_window) if not attr.startswith('_') and 'file' in attr.lower()]}")
+    
         try:
             root = tree.getroot()
             profile = root.find("PlayerProfile")
@@ -3132,8 +6271,11 @@ class StatsManager:
                 self._load_rda_skills(profile)
                 self._load_navi_skills(profile)
                 
-                # IMPORTANT: Also load time info here
+                # Load time info
                 self.load_time_info(tree)
+                
+                # INITIALIZE OUTFIT STORAGE
+                self._initialize_outfit_storage()
             
             metagame = root.find("Metagame")
             if metagame is not None:
@@ -3157,11 +6299,11 @@ class StatsManager:
             name_vec = base_info.get("namevec", "Count(0) ")
             name = self._name_vec_to_string(name_vec)
             widget = self.entries["namevec"]
-            if hasattr(widget, 'config'):
-                widget.config(text=name)
-            else:
+            if hasattr(widget, 'delete'):
                 widget.delete(0, tk.END)
                 widget.insert(0, name)
+            else:
+                widget.config(text=name)
 
         # Handle location from LocationInfo (separate from BaseInfo) - UPDATED WITH MAP NAMES
         location_value = "0,0"  # Default
@@ -3229,27 +6371,19 @@ class StatsManager:
         # Format location with map name
         formatted_location = self._format_location_display(location_value)
 
-        # Get bEntityScanningEnabled from OptionsInfo instead of BaseInfo
-        entity_scanning_value = "0"  # Default
-        if tree is not None:
-            root = tree.getroot()
-            profile = root.find("PlayerProfile")
-            if profile is not None:
-                options_info = profile.find("OptionsInfo")
-                if options_info is not None:
-                    entity_scanning_value = options_info.get("bEntityScanningEnabled", "0")
-                    print(f"DEBUG: Found bEntityScanningEnabled: {entity_scanning_value}")
+        # Get bEntityScanningEnabled from BaseInfo (correct location)
+        entity_scanning_value = base_info.get("bEntityScanningEnabled", "0") if base_info is not None else "0"
 
         # Update other fields with proper mapping
         field_mappings = {
             "side": {
                 "xml_key": "side",
-                "value_map": {"4": "Undecided", "1": "Na'vi", "2": "RDA"},
+                "value_map": {"4": "Undecided", "1": "Na'vi", "2": "RDA", "3": "Neutral"},
                 "default": "4"
             },
             "pawn": {
                 "xml_key": "pawn", 
-                "value_map": {"1": "Na'vi", "2": "RDA"},
+                "value_map": {"1": "Na'vi", "2": "RDA"},  # No Animals option
                 "default": "1"
             },
             "isfemale": {
@@ -3262,7 +6396,7 @@ class StatsManager:
                 "custom_handler": True
             },
             "bEntityScanningEnabled": {
-                "custom_value": entity_scanning_value,  # Use the value we found from OptionsInfo
+                "custom_value": entity_scanning_value,  # Use the value we found from BaseInfo
                 "value_map": {"0": "Disabled", "1": "Enabled"}
             },
             "TotalEP": {
@@ -3378,7 +6512,7 @@ class StatsManager:
             self.entries["CorpCostReduction"].insert(0, value)
 
         faction_value = metagame.get("PlayerFaction", "0")
-        faction_map = {"0": "Undecided", "1": "Na'vi", "2": "RDA"}
+        faction_map = {"0": "Undecided", "1": "Na'vi", "2": "RDA", "3": "Neutral"}
         if "PlayerFaction" in self.entries:
             self.entries["PlayerFaction"].set(faction_map.get(faction_value, "Undecided"))
 
@@ -3408,51 +6542,6 @@ class StatsManager:
                 self.entries["newEPs_Player1"].delete(0, tk.END)
                 self.entries["newEPs_Player1"].insert(0, new_eps_value)
 
-    def _update_xp_info(self, xp_info: Optional[ET.Element]) -> None:
-        if xp_info is None:
-            return
-        
-        # First, check if there's a TotalEP value in BaseInfo
-        total_ep = "0"
-        if self.main_window.tree is not None:
-            base_info = self.main_window.tree.getroot().find(".//BaseInfo")
-            if base_info is not None:
-                total_ep = base_info.get("TotalEP", total_ep)
-        
-        # If no TotalEP found in BaseInfo, fall back to 0
-        if total_ep == "0":
-            total_ep = "0"
-        
-        # Get current player faction
-        faction = "0"  # Default to undecided
-        if self.main_window.tree is not None:
-            metagame = self.main_window.tree.getroot().find("Metagame")
-            if metagame is not None:
-                faction = metagame.get("PlayerFaction", "0")
-        
-        # Get faction name from value
-        faction_map = {"0": "Undecided", "1": "Na'vi", "2": "RDA"}
-        faction_name = faction_map.get(faction, "Undecided")
-        
-        # Determine max EP based on faction
-        if faction_name in ["Na'vi", "Navi"]:
-            max_ep = 500000  # Max EP for Na'vi
-        else:  # RDA or Undecided
-            max_ep = 500000  # Max EP for RDA
-        
-        # Update TotalEP display with the new format
-        if "TotalEP" in self.entries:
-            widget = self.entries["TotalEP"]
-            formatted_ep = f"{total_ep}/{max_ep} (Max EP)"
-            if isinstance(widget, ttk.Label):
-                widget.config(text=formatted_ep)
-            else:
-                widget.delete(0, tk.END)
-                widget.insert(0, formatted_ep)
-        
-        # Log the total EP for debugging
-        self.logger.debug(f"Total EP set to: {total_ep}")
-
     def _update_options_info(self, options_info):
         """Update options information"""
         if options_info is None:
@@ -3472,22 +6561,30 @@ class StatsManager:
         """Update the RDA loadout display with current equipment"""
         # Update weapons
         weapons = self._get_equipped_weapons(profile)
+        
+        # XML slot order was Right=0,Down=1,Left=2,Top=3; display order is Top=0,Right=1,Down=2,Left=3
+        _xml_to_display = {0: 1, 1: 2, 2: 3, 3: 0}
         for slot_num, slot_data in weapons.items():
-            if slot_num < len(self.weapon_slots):
+            display_slot = _xml_to_display.get(slot_num, slot_num)
+            if display_slot < len(self.weapon_slots):
                 main_weapon = self._get_weapon_info(profile, slot_data["main"])
-                
+
                 if main_weapon:
                     # Get the dropdown for this slot
-                    if "dropdown" in self.weapon_slots[slot_num]:
+                    if "dropdown" in self.weapon_slots[display_slot]:
                         weapon_name = main_weapon["name"]
-                        dropdown = self.weapon_slots[slot_num]["dropdown"]
+                        dropdown = self.weapon_slots[display_slot]["dropdown"]
                         dropdown.set(weapon_name)
-                        
+
+                        # Load weapon GIF in its specific slot
+                        weapon_id = main_weapon["id"]
+                        self._load_weapon_image(weapon_id, display_slot, is_navi=False)
+
                         # Update ammo entry
-                        if "ammo_entry" in self.weapon_slots[slot_num]:
-                            ammo_entry = self.weapon_slots[slot_num]["ammo_entry"]
+                        if "ammo_entry" in self.weapon_slots[display_slot]:
+                            ammo_entry = self.weapon_slots[display_slot]["ammo_entry"]
                             ammo_entry.delete(0, tk.END)
-                            
+
                             # For melee weapons, show "Melee" in the ammo entry
                             if main_weapon.get("is_melee", False):
                                 ammo_entry.insert(0, "Melee")
@@ -3500,11 +6597,11 @@ class StatsManager:
                                 # For normal weapons, keep field enabled
                                 ammo_entry.insert(0, main_weapon.get("total_ammo", "0"))
                                 ammo_entry.configure(state="normal")
-                        
+
                         # Update clip size label
-                        if "clip_entry" in self.weapon_slots[slot_num]:
-                            clip_label = self.weapon_slots[slot_num]["clip_entry"]
-                            
+                        if "clip_entry" in self.weapon_slots[display_slot]:
+                            clip_label = self.weapon_slots[display_slot]["clip_entry"]
+
                             # For melee weapons, we don't need to show anything in the clip
                             if main_weapon.get("is_melee", False):
                                 clip_label.config(text="--")
@@ -3513,21 +6610,21 @@ class StatsManager:
                                 clip_label.config(text="∞")
                             else:
                                 clip_label.config(text=main_weapon.get("ammo", "0"))
-                        
+
                         # Set infinite ammo checkbox based on weapon info
-                        if "infinite_var" in self.weapon_slots[slot_num]:
-                            infinite_var = self.weapon_slots[slot_num]["infinite_var"]
+                        if "infinite_var" in self.weapon_slots[display_slot]:
+                            infinite_var = self.weapon_slots[display_slot]["infinite_var"]
                             is_infinite = main_weapon.get("infinite_ammo", False)
                             infinite_var.set(is_infinite)
-                            
-                            # NEW CODE: Disable infinite ammo checkbox for melee or inherently infinite weapons
-                            if "infinite_check" in self.weapon_slots[slot_num]:
-                                infinite_check = self.weapon_slots[slot_num]["infinite_check"]
+
+                            # Disable infinite ammo checkbox for melee or inherently infinite weapons
+                            if "infinite_check" in self.weapon_slots[display_slot]:
+                                infinite_check = self.weapon_slots[display_slot]["infinite_check"]
                                 # For melee weapons OR weapons with inherent infinite ammo, disable checkbox
                                 inherent_infinite = main_weapon.get("is_melee", False) or any(
                                     keyword in main_weapon["name"].lower() for keyword in ["wasp pistol"]
                                 )
-                                
+
                                 # Correctly set and disable checkbox for weapons that should have fixed ammo settings
                                 if inherent_infinite:
                                     # Configure the checkbox to be disabled but checked for these weapons
@@ -3542,32 +6639,41 @@ class StatsManager:
                                     for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
                                         infinite_check.unbind(event_name)
                                     # Re-bind the toggle function
-                                    infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_num, navi=False: 
+                                    infinite_check.bind('<ButtonRelease-1>', lambda e, idx=display_slot, navi=False:
                                         self._toggle_infinite_ammo(e, idx, navi))
                 else:
                     # Set to empty if no weapon
-                    if "dropdown" in self.weapon_slots[slot_num]:
-                        self.weapon_slots[slot_num]["dropdown"].set("-Empty-")
-                        
+                    if "dropdown" in self.weapon_slots[display_slot]:
+                        self.weapon_slots[display_slot]["dropdown"].set("-Empty-")
+
+                        # Clear weapon GIF for this slot
+                        faction_key = 'rda'
+                        if hasattr(self, 'weapon_preview_labels') and faction_key in self.weapon_preview_labels:
+                            if display_slot in self.weapon_preview_labels[faction_key]:
+                                preview_label = self.weapon_preview_labels[faction_key][display_slot]
+                                preview_label.configure(image="", text="No Weapon")
+                                if hasattr(preview_label, 'frames'):
+                                    delattr(preview_label, 'frames')
+
                         # Reset ammo entry
-                        if "ammo_entry" in self.weapon_slots[slot_num]:
-                            ammo_entry = self.weapon_slots[slot_num]["ammo_entry"]
+                        if "ammo_entry" in self.weapon_slots[display_slot]:
+                            ammo_entry = self.weapon_slots[display_slot]["ammo_entry"]
                             ammo_entry.delete(0, tk.END)
                             ammo_entry.insert(0, "0")
                             ammo_entry.configure(state="normal")
-                        
+
                         # Reset clip label
-                        if "clip_entry" in self.weapon_slots[slot_num]:
-                            clip_label = self.weapon_slots[slot_num]["clip_entry"]
+                        if "clip_entry" in self.weapon_slots[display_slot]:
+                            clip_label = self.weapon_slots[display_slot]["clip_entry"]
                             clip_label.config(text="0")
-                        
+
                         # Reset infinite ammo checkbox
-                        if "infinite_var" in self.weapon_slots[slot_num]:
-                            self.weapon_slots[slot_num]["infinite_var"].set(False)
-                        
+                        if "infinite_var" in self.weapon_slots[display_slot]:
+                            self.weapon_slots[display_slot]["infinite_var"].set(False)
+
                         # Enable the infinite checkbox since no weapon is selected
-                        if "infinite_check" in self.weapon_slots[slot_num]:
-                            infinite_check = self.weapon_slots[slot_num]["infinite_check"]
+                        if "infinite_check" in self.weapon_slots[display_slot]:
+                            infinite_check = self.weapon_slots[display_slot]["infinite_check"]
                             infinite_check.state(['!disabled'])
                             # Clear any special bindings
                             for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
@@ -3583,27 +6689,49 @@ class StatsManager:
                 dropdown.set(armor_info[slot_type]["name"])
             else:
                 dropdown.set("-Empty-")
+        
+        # Load armor preview images
+        for slot_type, dropdown in self.armor_dropdowns.items():
+            armor_name = dropdown.get()
+            if armor_name != "-Empty-" and slot_type in self.rda_armor_ids:
+                armor_id = self.rda_armor_ids[slot_type].get(armor_name)
+                if armor_id:
+                    self._load_armor_image(armor_id, slot_type, is_navi=False)
+            elif armor_name == "-Empty-" and slot_type in self.armor_preview_labels:
+                # Clear preview for empty slots
+                preview_label = self.armor_preview_labels[slot_type]
+                preview_label.configure(image="", text="No Armor")
+                if hasattr(preview_label, 'frames'):
+                    delattr(preview_label, 'frames')
 
     def _update_navi_loadout_display(self, profile: ET.Element) -> None:
         """Update the Na'vi loadout display with current equipment"""
         # Update weapons
         weapons = self._get_avatar_weapons(profile)
+        
+        # XML slot order was Right=0,Down=1,Left=2,Top=3; display order is Top=0,Right=1,Down=2,Left=3
+        _xml_to_display = {0: 1, 1: 2, 2: 3, 3: 0}
         for slot_num, slot_data in weapons.items():
-            if slot_num < len(self.navi_weapon_slots):
+            display_slot = _xml_to_display.get(slot_num, slot_num)
+            if display_slot < len(self.navi_weapon_slots):
                 main_weapon = self._get_avatar_weapon_info(profile, slot_data["main"])
-                
+
                 if main_weapon:
                     # Get the dropdown for this slot
-                    if "dropdown" in self.navi_weapon_slots[slot_num]:
+                    if "dropdown" in self.navi_weapon_slots[display_slot]:
                         weapon_name = main_weapon["name"]
-                        dropdown = self.navi_weapon_slots[slot_num]["dropdown"]
+                        dropdown = self.navi_weapon_slots[display_slot]["dropdown"]
                         dropdown.set(weapon_name)
-                        
+
+                        # Load weapon GIF in its specific slot
+                        weapon_id = main_weapon["id"]
+                        self._load_weapon_image(weapon_id, display_slot, is_navi=True)
+
                         # Update ammo entry
-                        if "ammo_entry" in self.navi_weapon_slots[slot_num]:
-                            ammo_entry = self.navi_weapon_slots[slot_num]["ammo_entry"]
+                        if "ammo_entry" in self.navi_weapon_slots[display_slot]:
+                            ammo_entry = self.navi_weapon_slots[display_slot]["ammo_entry"]
                             ammo_entry.delete(0, tk.END)
-                            
+
                             # For melee weapons, show "Melee" in the ammo entry
                             if main_weapon.get("is_melee", False):
                                 ammo_entry.insert(0, "Melee")
@@ -3616,11 +6744,11 @@ class StatsManager:
                                 # For normal weapons, keep field enabled
                                 ammo_entry.insert(0, main_weapon.get("total_ammo", "0"))
                                 ammo_entry.configure(state="normal")
-                        
+
                         # Update clip size label
-                        if "clip_entry" in self.navi_weapon_slots[slot_num]:
-                            clip_label = self.navi_weapon_slots[slot_num]["clip_entry"]
-                            
+                        if "clip_entry" in self.navi_weapon_slots[display_slot]:
+                            clip_label = self.navi_weapon_slots[display_slot]["clip_entry"]
+
                             # For melee weapons, we don't need to show anything in the clip
                             if main_weapon.get("is_melee", False):
                                 clip_label.config(text="--")
@@ -3629,19 +6757,19 @@ class StatsManager:
                                 clip_label.config(text="∞")
                             else:
                                 clip_label.config(text=main_weapon.get("ammo", "0"))
-                        
+
                         # Set infinite ammo checkbox based on weapon info
-                        if "infinite_var" in self.navi_weapon_slots[slot_num]:
-                            infinite_var = self.navi_weapon_slots[slot_num]["infinite_var"]
+                        if "infinite_var" in self.navi_weapon_slots[display_slot]:
+                            infinite_var = self.navi_weapon_slots[display_slot]["infinite_var"]
                             is_infinite = main_weapon.get("infinite_ammo", False)
                             infinite_var.set(is_infinite)
-                            
-                            # NEW CODE: Disable infinite ammo checkbox for melee or inherently infinite weapons
-                            if "infinite_check" in self.navi_weapon_slots[slot_num]:
-                                infinite_check = self.navi_weapon_slots[slot_num]["infinite_check"]
+
+                            # Disable infinite ammo checkbox for melee or inherently infinite weapons
+                            if "infinite_check" in self.navi_weapon_slots[display_slot]:
+                                infinite_check = self.navi_weapon_slots[display_slot]["infinite_check"]
                                 # For melee weapons OR weapons with inherent infinite ammo, disable checkbox
                                 inherent_infinite = main_weapon.get("is_melee", False) or "dual blade" in main_weapon["name"].lower() or "club" in main_weapon["name"].lower() or "staff" in main_weapon["name"].lower() or "axe" in main_weapon["name"].lower()
-                                
+
                                 # Correctly set and disable checkbox for weapons that should have fixed ammo settings
                                 if inherent_infinite:
                                     # Configure the checkbox to be disabled but checked for these weapons
@@ -3656,32 +6784,41 @@ class StatsManager:
                                     for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
                                         infinite_check.unbind(event_name)
                                     # Re-bind the toggle function
-                                    infinite_check.bind('<ButtonRelease-1>', lambda e, idx=slot_num, navi=True: 
+                                    infinite_check.bind('<ButtonRelease-1>', lambda e, idx=display_slot, navi=True:
                                         self._toggle_infinite_ammo(e, idx, navi))
                 else:
                     # Set to empty if no weapon
-                    if "dropdown" in self.navi_weapon_slots[slot_num]:
-                        self.navi_weapon_slots[slot_num]["dropdown"].set("-Empty-")
-                        
+                    if "dropdown" in self.navi_weapon_slots[display_slot]:
+                        self.navi_weapon_slots[display_slot]["dropdown"].set("-Empty-")
+
+                        # Clear weapon GIF for this slot
+                        faction_key = 'navi'
+                        if hasattr(self, 'weapon_preview_labels') and faction_key in self.weapon_preview_labels:
+                            if display_slot in self.weapon_preview_labels[faction_key]:
+                                preview_label = self.weapon_preview_labels[faction_key][display_slot]
+                                preview_label.configure(image="", text="No Weapon")
+                                if hasattr(preview_label, 'frames'):
+                                    delattr(preview_label, 'frames')
+
                         # Reset ammo entry
-                        if "ammo_entry" in self.navi_weapon_slots[slot_num]:
-                            ammo_entry = self.navi_weapon_slots[slot_num]["ammo_entry"]
+                        if "ammo_entry" in self.navi_weapon_slots[display_slot]:
+                            ammo_entry = self.navi_weapon_slots[display_slot]["ammo_entry"]
                             ammo_entry.delete(0, tk.END)
                             ammo_entry.insert(0, "0")
                             ammo_entry.configure(state="normal")
-                        
+
                         # Reset clip label
-                        if "clip_entry" in self.navi_weapon_slots[slot_num]:
-                            clip_label = self.navi_weapon_slots[slot_num]["clip_entry"]
+                        if "clip_entry" in self.navi_weapon_slots[display_slot]:
+                            clip_label = self.navi_weapon_slots[display_slot]["clip_entry"]
                             clip_label.config(text="0")
-                        
+
                         # Reset infinite ammo checkbox
-                        if "infinite_var" in self.navi_weapon_slots[slot_num]:
-                            self.navi_weapon_slots[slot_num]["infinite_var"].set(False)
-                        
+                        if "infinite_var" in self.navi_weapon_slots[display_slot]:
+                            self.navi_weapon_slots[display_slot]["infinite_var"].set(False)
+
                         # Enable the infinite checkbox since no weapon is selected
-                        if "infinite_check" in self.navi_weapon_slots[slot_num]:
-                            infinite_check = self.navi_weapon_slots[slot_num]["infinite_check"] 
+                        if "infinite_check" in self.navi_weapon_slots[display_slot]:
+                            infinite_check = self.navi_weapon_slots[display_slot]["infinite_check"]
                             infinite_check.state(['!disabled'])
                             # Clear any special bindings
                             for event_name in ["<ButtonPress-1>", "<ButtonRelease-1>", "<space>"]:
@@ -3697,13 +6834,35 @@ class StatsManager:
                 dropdown.set(armor_info[slot_type]["name"])
             else:
                 dropdown.set("-Empty-")
+        
+        # Load armor preview images
+        for slot_type, dropdown in self.navi_armor_dropdowns.items():
+            armor_name = dropdown.get()
+            if armor_name != "-Empty-" and slot_type in self.navi_armor_ids:
+                armor_id = self.navi_armor_ids[slot_type].get(armor_name)
+                if armor_id:
+                    self._load_armor_image(armor_id, slot_type, is_navi=True)
+            elif armor_name == "-Empty-" and slot_type in self.navi_armor_preview_labels:
+                # Clear preview for empty slots
+                preview_label = self.navi_armor_preview_labels[slot_type]
+                preview_label.configure(image="", text="No Armor")
+                if hasattr(preview_label, 'frames'):
+                    delattr(preview_label, 'frames')
 
     def _update_player_info(self, profile: ET.Element) -> None:
         """Update player info in the XML structure"""
-        # Change this to check in the PlayerProfile element instead
         recovery = profile.find("Possessions_Recovery")
         if recovery is not None:
             recovery_bits = recovery.get("RecoveryBits", "0")
+            
+            # Cap at 500
+            try:
+                recovery_bits_int = int(recovery_bits)
+                if recovery_bits_int > 500:
+                    recovery_bits = "500"
+                    recovery.set("RecoveryBits", "500")
+            except ValueError:
+                recovery_bits = "0"
             
             # Update the RecoveryBits display
             if "RecoveryBits" in self.entries:
@@ -3719,17 +6878,29 @@ class StatsManager:
         try:
             if not name_vec or not name_vec.startswith("Count("):
                 return ""
-            
+
             parts = name_vec.split(") ")
             if len(parts) < 2:
                 return ""
-            
+
             values = parts[1].rstrip(";").split(";")
             name = "".join(chr(int(val)) for val in values if val)
             return name
         except Exception as e:
             self.logger.error(f"Error converting name vector: {str(e)}")
             return ""
+
+    def _string_to_name_vec(self, name):
+        """Convert string to namevec format"""
+        try:
+            if not name:
+                return "Count(0) "
+            values = [str(ord(char)) for char in name]
+            count = len(values)
+            return f"Count({count}) {';'.join(values)};"
+        except Exception as e:
+            self.logger.error(f"Error converting string to name vector: {str(e)}")
+            return "Count(0) "
 
     def get_stats_updates(self) -> Dict[str, Dict[str, str]]:
         """Get all stats updates for saving - COMPLETE IMPLEMENTATION"""
@@ -3748,7 +6919,7 @@ class StatsManager:
             # Get faction updates
             if "PlayerFaction" in self.entries:
                 current_faction = self.entries["PlayerFaction"].get()
-                faction_map = {"Undecided": "0", "Na'vi": "1", "Navi": "1", "RDA": "2"}
+                faction_map = {"Undecided": "0", "Na'vi": "1", "Navi": "1", "RDA": "2", "Neutral": "3"}
                 faction_value = faction_map.get(current_faction, "0")
                 updates["Metagame"]["PlayerFaction"] = faction_value
 
@@ -3772,19 +6943,19 @@ class StatsManager:
             # Get side and pawn updates for BaseInfo
             if "side" in self.entries:
                 side_value = self.entries["side"].get()
-                side_map = {"Undecided": "4", "Na'vi": "1", "RDA": "2"}
+                side_map = {"Undecided": "4", "Na'vi": "1", "RDA": "2", "Neutral": "3"}
                 updates["BaseInfo"]["side"] = side_map.get(side_value, "4")
                 
             if "pawn" in self.entries:
                 pawn_value = self.entries["pawn"].get()
-                pawn_map = {"Na'vi": "1", "RDA": "2"}
+                pawn_map = {"Na'vi": "1", "RDA": "2"}  # No Animals option
                 updates["BaseInfo"]["pawn"] = pawn_map.get(pawn_value, "1")
 
-            # Get Entity Scanning update for OptionsInfo
+            # Get Entity Scanning update for BaseInfo (correct location)
             if "bEntityScanningEnabled" in self.entries:
                 entity_value = self.entries["bEntityScanningEnabled"].get()
                 entity_map = {"Disabled": "0", "Enabled": "1"}
-                updates["OptionsInfo"]["bEntityScanningEnabled"] = entity_map.get(entity_value, "0")
+                updates["BaseInfo"]["bEntityScanningEnabled"] = entity_map.get(entity_value, "0")
 
             # Get other options
             if "RumbleEnabled" in self.entries:
@@ -3809,20 +6980,61 @@ class StatsManager:
             if "CorpCostReduction" in self.entries:
                 updates["Metagame"]["CorpCostReduction"] = self.entries["CorpCostReduction"].get()
 
-            # Get RecoveryBits
+            # Get RecoveryBits (cap at 500)
             if "RecoveryBits" in self.entries:
                 recovery_value = self.entries["RecoveryBits"].get()
+                try:
+                    recovery_int = int(recovery_value)
+                    if recovery_int > 500:
+                        recovery_value = "500"
+                        # Update the UI to show capped value
+                        self.entries["RecoveryBits"].delete(0, tk.END)
+                        self.entries["RecoveryBits"].insert(0, "500")
+                        show_warning("Value Capped", "Recovery Bits cannot exceed 500. Value has been set to 500.")
+                    elif recovery_int < 0:
+                        recovery_value = "0"
+                        # Update the UI to show minimum value
+                        self.entries["RecoveryBits"].delete(0, tk.END)
+                        self.entries["RecoveryBits"].insert(0, "0")
+                except ValueError:
+                    recovery_value = "0"
+                    # Update the UI to show default value
+                    self.entries["RecoveryBits"].delete(0, tk.END)
+                    self.entries["RecoveryBits"].insert(0, "0")
+                
                 updates["BaseInfo"]["RecoveryBits"] = recovery_value
 
             # Extract TotalEP from the formatted display
             if "TotalEP" in self.entries:
                 total_ep_widget = self.entries["TotalEP"]
                 total_ep_text = total_ep_widget.cget("text") if hasattr(total_ep_widget, 'cget') else total_ep_widget.get()
-                
+
                 # Extract actual EP value from "12345/500000 (Max EP)" format
                 if "/" in total_ep_text:
                     actual_ep = total_ep_text.split("/")[0]
                     updates["BaseInfo"]["TotalEP"] = actual_ep
+
+            # Get character name update
+            if "namevec" in self.entries:
+                widget = self.entries["namevec"]
+                if hasattr(widget, 'get'):
+                    name = widget.get()[:10]
+                    updates["BaseInfo"]["namevec"] = self._string_to_name_vec(name)
+
+            # Get Environment Time from the main window entry (HH:MM:SS → seconds)
+            if hasattr(self.main_window, 'env_time_var'):
+                env_time_val = self.main_window.env_time_var.get().strip()
+                if env_time_val:
+                    try:
+                        if ':' in env_time_val:
+                            parts = env_time_val.split(':')
+                            h, m, s = int(parts[0]), int(parts[1]), int(parts[2])
+                            updates["TimeInfo"]["EnvTime"] = str(h * 3600 + m * 60 + s)
+                        else:
+                            # Fallback: user may have typed raw seconds
+                            updates["TimeInfo"]["EnvTime"] = str(int(float(env_time_val)))
+                    except (ValueError, IndexError):
+                        self.logger.warning(f"Invalid EnvTime format, skipping: {env_time_val}")
 
             return updates
         except Exception as e:
@@ -3849,20 +7061,20 @@ class StatsManager:
             game_time_raw = time_info.get("GameTime", "0")
             played_time_raw = time_info.get("PlayedTime", "0")
             env_time_raw = time_info.get("EnvTime", "0")
-            
-            # AUTOMATICALLY SET ENVIRONMENT TIME TO 43200 (12 hours)
-            target_env_time = "43200"
-            if env_time_raw != target_env_time:
-                self.logger.info(f"Auto-fixing EnvTime: {env_time_raw} -> {target_env_time}")
-                time_info.set("EnvTime", target_env_time)
-                env_time_raw = target_env_time
-                
-                # Mark as unsaved changes since we modified the XML
-                if hasattr(self.main_window, 'unsaved_label'):
-                    self.main_window.unsaved_label.config(text="Unsaved Changes")
-                    self.logger.debug("Marked save as having unsaved changes due to EnvTime auto-fix")
-            else:
-                self.logger.debug(f"EnvTime already correct: {env_time_raw}")
+
+            # Populate the editable Environment Time entry in HH:MM:SS format
+            if hasattr(self.main_window, 'env_time_var'):
+                try:
+                    total = int(float(env_time_raw))
+                    h = total // 3600
+                    m = (total % 3600) // 60
+                    s = total % 60
+                    self.main_window.env_time_var.set(f"{h:02d}:{m:02d}:{s:02d}")
+                except (ValueError, TypeError):
+                    self.main_window.env_time_var.set("12:00:00")
+                # Refresh checkbox state (no event → no unsaved mark)
+                if hasattr(self.main_window, '_on_env_time_changed'):
+                    self.main_window._on_env_time_changed()
             
             self.logger.debug(f"Raw time values - GameTime: {game_time_raw}, PlayedTime: {played_time_raw}, EnvTime: {env_time_raw}")
             
@@ -3889,10 +7101,10 @@ class StatsManager:
         """Update the main window's time_labels dictionary"""
         try:
             # Mapping from XML attributes to main window display names
+            # EnvTime is handled separately via env_time_var (HH:MM:SS entry)
             time_mapping = {
                 "GameTime": "Game Time",
-                "PlayedTime": "Played Time", 
-                "EnvTime": "Environment Time"
+                "PlayedTime": "Played Time",
             }
             
             self.logger.debug("Updating main window time labels...")
@@ -3919,24 +7131,9 @@ class StatsManager:
 
     def _update_stats_manager_time_entries(self, formatted_times):
         """Update StatsManager's own time entries if they exist"""
-        try:
-            time_fields = ["GameTime", "PlayedTime", "EnvTime"]
-            
-            for field in time_fields:
-                if field in self.entries:
-                    widget = self.entries[field]
-                    formatted_value = formatted_times[field]
-                    success = self._update_single_time_widget(widget, field, formatted_value)
-                    
-                    if success:
-                        self.logger.debug(f"✅ Updated StatsManager {field}: {formatted_value}")
-                    else:
-                        self.logger.warning(f"❌ Failed to update StatsManager {field}")
-                else:
-                    self.logger.debug(f"⚠️ StatsManager field {field} not found in entries")
-                    
-        except Exception as e:
-            self.logger.error(f"Error updating StatsManager time entries: {str(e)}")
+        # StatsManager doesn't have its own time fields - they're only in main window
+        # This method is kept for potential future use but currently does nothing
+        return
 
     def _update_single_time_widget(self, widget, field_name, formatted_value):
         """Update a single time widget - handles all widget types"""
@@ -3991,8 +7188,7 @@ class StatsManager:
             minutes = (total_seconds_int % 3600) // 60
             seconds = total_seconds_int % 60
             
-            # Format to match your main window's default format: "0h 00m 00s"
-            return f"{hours}h {minutes:02d}m {seconds:02d}s"
+            return f"{hours:02d}h {minutes:02d}m {seconds:02d}s"
                 
         except (ValueError, TypeError) as e:
             self.logger.error(f"Error formatting time '{time_str}': {e}")

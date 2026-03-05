@@ -5,6 +5,7 @@ from PIL import Image, ImageTk  # You'll need to install Pillow: pip install Pil
 import logging
 import sys
 
+
 class VersionSelector:
     def __init__(self):
         self.logger = logging.getLogger('VersionSelector')
@@ -12,15 +13,25 @@ class VersionSelector:
         self.root = None
         self.hover_effects = {}
         self.background_image = None  # Store background image reference
-        
-    def show_selection_screen(self):
+        self.sound_manager = None  # Will be set in show_selection_screen()
+        self.config = None  # Will be set in show_selection_screen()
+
+    def show_selection_screen(self, config):
         """Show the modern version selection screen and return the selected version."""
+        # Store config and sound manager
+        self.config = config
+        self.sound_manager = getattr(config, 'sound_manager', None)
+        
+        # Start version selector background music
+        if self.sound_manager and getattr(config, 'play_background_music', True):
+            self.sound_manager.play_background_music("version_selector", loop=True)
+
         self.logger.debug("Showing modern version selection screen")
         
         # Create a new root window
         self.root = tk.Tk()
-        self.root.title("Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.1.1")
-        self.root.geometry("1400x800")
+        self.root.title("Avatar: The Game Save Editor | Made by: Jasper_Zebra | Version 2.2")
+        self.root.geometry("1366x768")
         self.root.resizable(False, False)
         
         # Set up protocol for window close - exit the program
@@ -34,12 +45,8 @@ class VersionSelector:
         except Exception as e:
             self.logger.debug(f"Failed to set application icon: {str(e)}")
         
-        # ADD THESE TWO LINES:
         # Load and set background image
         self._setup_background_image()
-        
-        # Apply modern dark theme
-        # self._setup_modern_theme()
         
         # Create the main interface
         self._create_modern_interface()
@@ -99,7 +106,7 @@ class VersionSelector:
         # Main title
         self.canvas.create_text(
             100, 80, 
-            text="🎮 Avatar: The Game Save Editor Version 2.1.1",
+            text="🎮 Avatar: The Game Save Editor Version 2.2",
             font=('Segoe UI', 28, 'bold'),
             fill='white',
             anchor=tk.NW
@@ -117,7 +124,7 @@ class VersionSelector:
         # Version info
         self.canvas.create_text(
             100, 160,
-            text="Made by: Jasper_Zebra | Version 2.1.1",
+            text="Made by: Jasper_Zebra | Version 2.2",
             font=('Segoe UI', 10),
             fill='#bbbbbb',
             anchor=tk.NW
@@ -167,7 +174,7 @@ class VersionSelector:
             self._create_platform_card_canvas(platform)
 
     def _create_platform_card_canvas(self, platform):
-        """Create a platform card on canvas"""
+        """Create a platform card on canvas WITH SOUND EFFECTS (play once)"""
         x = platform["x"]
         y = 280
         width = 250
@@ -182,7 +189,7 @@ class VersionSelector:
         )
         
         # Platform icon
-        self.canvas.create_text(
+        icon_text = self.canvas.create_text(
             x + width//2, y + 50,
             text=platform["icon"],
             font=('Segoe UI Emoji', 48),
@@ -190,7 +197,7 @@ class VersionSelector:
         )
         
         # Platform name
-        self.canvas.create_text(
+        name_text = self.canvas.create_text(
             x + width//2, y + 120,
             text=platform["name"],
             font=('Segoe UI', 18, 'bold'),
@@ -198,15 +205,15 @@ class VersionSelector:
         )
         
         # Platform description
-        self.canvas.create_text(
+        desc_text = self.canvas.create_text(
             x + width//2, y + 150,
             text=platform["description"],
             font=('Segoe UI', 11),
             fill='#dddddd'
         )
         
-        # File format
-        self.canvas.create_text(
+        # File format label
+        format_label = self.canvas.create_text(
             x + 20, y + 200,
             text="📄 File Format:",
             font=('Segoe UI', 9, 'bold'),
@@ -214,7 +221,8 @@ class VersionSelector:
             anchor=tk.NW
         )
         
-        self.canvas.create_text(
+        # File format value
+        format_value = self.canvas.create_text(
             x + 20, y + 220,
             text=platform["file_format"],
             font=('Segoe UI', 9),
@@ -222,7 +230,7 @@ class VersionSelector:
             anchor=tk.NW
         )
         
-        # Select button
+        # Select button background
         button_bg = self.canvas.create_rectangle(
             x + 20, y + 280, x + width - 20, y + 320,
             fill='#2a7fff',
@@ -230,6 +238,7 @@ class VersionSelector:
             width=0
         )
         
+        # Select button text
         button_text = self.canvas.create_text(
             x + width//2, y + 300,
             text="✨ Select Platform",
@@ -237,28 +246,48 @@ class VersionSelector:
             fill='white'
         )
         
-        # Make card clickable
+        # Store all canvas items for this card
+        card_items = [card_bg, icon_text, name_text, desc_text, 
+                    format_label, format_value, button_bg, button_text]
+        
+        # Track hover state for this specific card
+        hover_state = {'is_hovering': False}
+        
+        # Click handler WITH SOUND
         def on_click(event):
+            # Play click sound
+            if self.sound_manager and self.sound_manager.is_enabled():
+                self.sound_manager.play_sound_effect('click')
+            # Handle selection
             self._on_version_selected(platform["id"])
         
-        # Bind click events to card elements
-        self.canvas.tag_bind(card_bg, "<Button-1>", on_click)
-        self.canvas.tag_bind(button_bg, "<Button-1>", on_click)
-        self.canvas.tag_bind(button_text, "<Button-1>", on_click)
-        
-        # Add hover effects
+        # Hover enter handler WITH SOUND (play only once)
         def on_enter(event):
+            # Only play sound if we weren't already hovering
+            if not hover_state['is_hovering']:
+                hover_state['is_hovering'] = True
+                # Play hover sound
+                if self.sound_manager and self.sound_manager.is_enabled():
+                    self.sound_manager.play_sound_effect('hover')
+            # Visual feedback
             self.canvas.itemconfig(card_bg, outline='#2a7fff', width=2)
             self.canvas.itemconfig(button_bg, fill='#3cc0fd')
+            self.canvas.config(cursor="hand2")
         
+        # Hover leave handler
         def on_leave(event):
+            # Reset hover state when leaving the card
+            hover_state['is_hovering'] = False
+            # Reset visual state
             self.canvas.itemconfig(card_bg, outline='#404040', width=1)
             self.canvas.itemconfig(button_bg, fill='#2a7fff')
+            self.canvas.config(cursor="")
         
-        self.canvas.tag_bind(card_bg, "<Enter>", on_enter)
-        self.canvas.tag_bind(card_bg, "<Leave>", on_leave)
-        self.canvas.tag_bind(button_bg, "<Enter>", on_enter)
-        self.canvas.tag_bind(button_bg, "<Leave>", on_leave)
+        # Bind events to all card items
+        for item in card_items:
+            self.canvas.tag_bind(item, "<Button-1>", on_click)
+            self.canvas.tag_bind(item, "<Enter>", on_enter)
+            self.canvas.tag_bind(item, "<Leave>", on_leave)
 
     def _add_card_hover_effects(self, card_frame, content_frame, platform):
         """Add hover effects to platform cards"""
@@ -332,12 +361,16 @@ class VersionSelector:
         self.logger.debug(f"Selected version: {version}")
         self.selected_version = version
         
+        # Stop version selector background music
+        if hasattr(self, 'sound_manager') and self.sound_manager:
+            self.sound_manager.stop_background_music()
+        
         # Show selection feedback
         self._show_selection_feedback(version)
         
         # Close window after brief delay
         self.root.after(500, self._close_window)
-    
+
     def _show_selection_feedback(self, version):
         """Show visual feedback for selection"""
         # This could be expanded with animations or visual feedback

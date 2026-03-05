@@ -420,7 +420,7 @@ class MapsManager:
         # Create detailed map information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Region Details - {map_data['name']}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("1366x768")
         detail_window.resizable(True, True)
         
         # Main frame with padding

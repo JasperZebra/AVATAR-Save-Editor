@@ -464,7 +464,7 @@ class MissionsManager:
         # Create detailed mission information dialog
         detail_window = tk.Toplevel(self.parent)
         detail_window.title(f"Mission Details - {mission_name}")
-        detail_window.geometry("1600x800")
+        detail_window.geometry("683x384")
         detail_window.resizable(True, True)
         
         # Main frame with padding
