@@ -16,7 +16,7 @@ A Python-based save editor for **Avatar: The Game** for the **Xbox 360** and **P
 <img width="347" height="393" alt="Screenshot 2025-08-05 153844" src="https://github.com/user-attachments/assets/1efd3056-1a21-43d7-96fc-46bb53cdc620" />
 
 # Video Showcase
-[![YouTube](http://i.ytimg.com/vi/854m2cfOvYA/hqdefault.jpg)](https://www.youtube.com/watch?v=854m2cfOvYA)
+[![YouTube](http://i.ytimg.com/vi/UL-BVEzdGEE/maxresdefault.jpg)](https://www.youtube.com/watch?v=UL-BVEzdGEE)
 
 # Selection Screen:
 
